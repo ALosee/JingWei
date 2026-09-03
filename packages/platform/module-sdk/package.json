@@ -1,0 +1,26 @@
+{
+  "name": "@jingwei/module-sdk",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./server": "./src/server.ts",
+    "./web": "./src/web.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@jingwei/auth": "workspace:*",
+    "@jingwei/config": "workspace:*",
+    "@jingwei/database": "workspace:*",
+    "@jingwei/kernel": "workspace:*",
+    "@jingwei/observability": "workspace:*",
+    "hono": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
+}

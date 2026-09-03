@@ -1,0 +1,36 @@
+packages:
+  - apps/*
+  - packages/platform/*
+  - packages/modules/*
+  - tooling/*
+
+catalog:
+  '@eslint/js': 10.0.1
+  '@hono/node-server': 2.1.1
+  '@hono/zod-validator': 0.9.1
+  '@playwright/test': 1.62.1
+  '@types/node': 24.13.3
+  '@types/pg': 8.23.1
+  '@vitejs/plugin-vue': 6.0.8
+  argon2: 0.45.1
+  elegant-router: 1.4.0-beta.1
+  eslint: 10.9.1
+  eslint-plugin-vue: 10.10.0
+  globals: 17.11.0
+  hono: 4.13.5
+  kysely: 0.29.5
+  pg: 8.23.0
+  pinia: 4.0.3
+  pino: 10.3.1
+  tsdown: 0.22.14
+  tsx: 4.23.13
+  typescript: 5.9.3
+  typescript-eslint: 8.69.0
+  uuid: 14.0.2
+  vite: 8.2.2
+  vitest: 4.1.11
+  vue: 3.5.42
+  vue-eslint-parser: 10.4.1
+  vue-router: 5.3.0
+  vue-tsc: 3.3.11
+  zod: 4.5.4

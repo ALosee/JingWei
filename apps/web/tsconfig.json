@@ -1,0 +1,17 @@
+{
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "lib": ["ES2024", "DOM", "DOM.Iterable"],
+    "rootDir": "../.."
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.vue",
+    "elegant-router.config.ts",
+    "vite.config.ts",
+    "playwright.config.ts",
+    "e2e/**/*.ts",
+    "../../packages/modules/*/src/web/**/*.vue"
+  ],
+  "exclude": ["src/router/_generated/typed-router.d.ts"]
+}

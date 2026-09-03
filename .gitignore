@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+.DS_Store
+.env
+.env.*
+!.env.example
+
+# Elegant Router build artifacts are generated from Edition inputs.
+apps/web/src/router/_generated/

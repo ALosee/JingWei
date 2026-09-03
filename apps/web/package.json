@@ -1,0 +1,34 @@
+{
+  "name": "@jingwei/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:test": "vite --mode test",
+    "build": "er --generate && vite build",
+    "preview": "vite preview",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.json",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "@jingwei/module-dictionary": "workspace:*",
+    "@jingwei/module-iam": "workspace:*",
+    "@jingwei/module-navigation": "workspace:*",
+    "@jingwei/module-organization": "workspace:*",
+    "@jingwei/module-sdk": "workspace:*",
+    "@jingwei/ui": "workspace:*",
+    "pinia": "catalog:",
+    "vue": "catalog:",
+    "vue-router": "catalog:"
+  },
+  "devDependencies": {
+    "@playwright/test": "catalog:",
+    "@types/node": "catalog:",
+    "@vitejs/plugin-vue": "catalog:",
+    "elegant-router": "catalog:",
+    "typescript": "catalog:",
+    "vite": "catalog:",
+    "vue-tsc": "catalog:"
+  }
+}

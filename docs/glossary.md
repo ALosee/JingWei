@@ -1,0 +1,46 @@
+# 术语表
+
+本表统一 Jingwei 文档和代码中的核心词汇。概念出现歧义时，以这里和对应专题文档为准。
+
+| 术语 | 定义 | 容易混淆之处 |
+| --- | --- | --- |
+| Product / 产品 | 对外提供价值的整体软件产品，当前为 Jingwei | 产品不是一个可导入的代码包 |
+| Edition / 版本组合 | 面向某类交付场景选择的一组根模块及其依赖闭包 | 不是 SemVer 版本号，也不是运行时 feature flag |
+| Module / 业务模块 | 拥有明确业务能力、数据和边界的垂直切片 | 不等于 npm package；platform 包不是业务模块 |
+| Platform / 平台包 | 无单一业务所有者、供多个模块复用的技术机制 | 不应成为业务代码的“公共杂物箱” |
+| Capability / 能力 | 产品是否具备某项功能的稳定标识 | 不等同用户是否被授权 |
+| Permission / 权限 | 主体是否能执行某项动作的授权标识 | 前端隐藏控件不能替代服务端权限检查 |
+| Data Scope / 数据范围 | 已获权限后，还能访问哪些业务数据 | 不是新的 permission，也不是 SQL 片段 |
+| Manifest / 模块清单 | 模块 code、依赖、能力、权限等静态元数据 | 不保存运行时服务实例 |
+| Dependency Closure / 依赖闭包 | 从 Edition 根模块递归得到的全部必需模块 | 只列根模块不足以直接启动 |
+| DAG / 有向无环图 | 模块同步依赖形成的无环图 | 循环依赖说明边界需要重构 |
+| Composition Root / 组合根 | 统一实例化配置、数据库、模块和 HTTP/Web 入口的位置 | 业务模块不应自己成为第二个组合根 |
+| Public API / 公共 API | 模块明确允许其他模块同步调用的最小契约 | 不是把整个内部目录重新导出 |
+| Integration Event / 集成事件 | 向其他模块声明“某事实已发生”的异步契约 | 事件不是命令，也不保证只投递一次 |
+| Outbox / 事务发件箱 | 与业务数据同事务保存、之后异步发布事件的模式 | 不等于普通日志表 |
+| Audit / 审计 | 记录主体对业务资源所做高价值动作的不可随意丢弃记录 | 与诊断日志的保留、访问和语义不同 |
+| Application Context / 应用上下文 | 一次操作的 request、tenant、user、session 等关联信息 | 不应放在隐式全局变量中 |
+| Tenant / 租户 | 数据和权限隔离的客户/组织边界 | 组织树节点不必然等于租户 |
+| Tenant Directory / 租户目录 | 把 tenantId 映射到数据位置的基础设施端口 | 业务模块不应知道部署拓扑 |
+| Session Token / 会话令牌 | 浏览器持有、用于证明会话的随机秘密 | 数据库只保存摘要，不保存原文 |
+| CSRF | 利用浏览器自动携带 Cookie 发起跨站修改请求的攻击 | SameSite 有帮助，但不能替代完整校验策略 |
+| Page Binding / 页面绑定 | 稳定 routeKey 到 Elegant Router pageKey 的静态映射 | 不决定最终 URL 或授权 |
+| Navigation Source / 导航来源 | 读取租户已发布数据库快照及角色 code grants 的端口 | 初始化模板不是运行时回退来源 |
+| Navigation Code / 导航编码 | 菜单/页面/外链的稳定授权资源标识 | 不等于 routeKey 或功能 Permission |
+| Navigation Version / 导航版本 | 可以发布、回滚的完整配置快照 | 不等于 Edition 或 HTTP schemaVersion；角色 grant 不随其回滚 |
+| Physical Trimming / 物理裁剪 | 构建产物不包含 Edition 未选择的模块代码 | 运行时不展示不等于已经物理裁剪 |
+| Migration / 迁移 | 可追踪、按顺序执行的数据库结构/数据演进步骤 | 已发布迁移不应被原地重写 |
+| Idempotency / 幂等 | 同一操作重复执行不会产生额外不正确效果 | “检查后执行”本身未必能抵抗并发 |
+| Snapshot / 快照 | 跨边界返回的不可依赖内部实体行为的数据视图 | 不是数据库快照隔离级别 |
+| Port / 端口 | 应用/领域层定义的依赖接口 | Adapter 才是数据库或外部服务的具体实现 |
+| Adapter / 适配器 | 实现端口并连接 PostgreSQL、HTTP 等技术系统的代码 | 不应把基础设施类型泄露回领域层 |
+| ADR | 记录重要架构决定、背景、取舍和后果的短文档 | 普通实现说明不必都写 ADR |
+
+## 命名约定
+
+- module code、capability、permission 和 error code 使用稳定英文标识；
+- 中文名称用于展示和解释，可以随产品文案演进；
+- 事件用过去式事实命名，例如 `OrganizationCreated`；
+- 用例用动作和对象命名，例如 `AuthenticateUser`；
+- 查询公共接口返回 `Snapshot`，避免泄露内部实体；
+- 数据库表归属必须能从模块文档中明确找到。

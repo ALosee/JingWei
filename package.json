@@ -1,0 +1,51 @@
+{
+  "name": "jingwei",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "pnpm edition:generate development && pnpm -r --parallel --filter @jingwei/server --filter @jingwei/web dev",
+    "dev:test": "pnpm edition:generate development && pnpm -r --parallel --filter @jingwei/server --filter @jingwei/web dev:test",
+    "dev:server": "pnpm --filter @jingwei/server dev",
+    "dev:web": "pnpm --filter @jingwei/web dev",
+    "build": "pnpm edition:generate full && pnpm --filter @jingwei/server build && pnpm --filter @jingwei/web build",
+    "typecheck": "pnpm edition:generate development && pnpm -r --if-present typecheck",
+    "lint": "eslint . --max-warnings 0",
+    "test": "vitest run",
+    "test:e2e": "pnpm --filter @jingwei/web test:e2e",
+    "architecture:check": "tsx tooling/architecture-check/src/cli.ts",
+    "edition:generate": "tsx tooling/edition-builder/src/cli.ts",
+    "migration:up": "tsx tooling/migration/src/cli.ts up",
+    "migration:status": "tsx tooling/migration/src/cli.ts status",
+    "seed:dev": "tsx tooling/migration/src/seed-dev.ts",
+    "seed:navigation": "tsx tooling/migration/src/seed-navigation.ts",
+    "test:auth:real": "tsx tooling/migration/src/smoke-auth.ts",
+    "test:navigation:real": "tsx tooling/migration/src/test-navigation-real.ts",
+    "module:create": "tsx tooling/module-generator/src/cli.ts",
+    "check": "pnpm typecheck && pnpm lint && pnpm architecture:check && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "@eslint/js": "catalog:",
+    "@jingwei/module-sdk": "workspace:*",
+    "@playwright/test": "catalog:",
+    "@types/node": "catalog:",
+    "eslint": "catalog:",
+    "eslint-plugin-vue": "catalog:",
+    "globals": "catalog:",
+    "tsx": "catalog:",
+    "typescript": "catalog:",
+    "typescript-eslint": "catalog:",
+    "vitest": "catalog:",
+    "vue-eslint-parser": "catalog:"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "argon2",
+      "esbuild"
+    ]
+  }
+}
