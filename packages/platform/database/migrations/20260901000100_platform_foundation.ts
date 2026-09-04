@@ -14,9 +14,7 @@ export async function up(database: Kysely<unknown>): Promise<void> {
     .addColumn('default_locale', 'varchar(20)', (column) => column.notNull())
     .addColumn('default_timezone', 'varchar(80)', (column) => column.notNull())
     .addColumn('default_currency', 'varchar(3)', (column) => column.notNull())
-    .addColumn('settings', 'jsonb', (column) =>
-      column.notNull().defaultTo(sql`'{}'::jsonb`),
-    )
+    .addColumn('settings', 'jsonb', (column) => column.notNull().defaultTo(sql`'{}'::jsonb`))
     .addColumn('created_at', 'timestamptz', (column) => column.notNull())
     .addColumn('updated_at', 'timestamptz', (column) => column.notNull())
     .execute()
@@ -29,11 +27,7 @@ export async function up(database: Kysely<unknown>): Promise<void> {
     .addColumn('sequence_key', 'varchar(120)', (column) => column.notNull())
     .addColumn('business_date', 'date', (column) => column.notNull())
     .addColumn('current_value', 'bigint', (column) => column.notNull())
-    .addPrimaryKeyConstraint('number_sequence_pk', [
-      'tenant_id',
-      'sequence_key',
-      'business_date',
-    ])
+    .addPrimaryKeyConstraint('number_sequence_pk', ['tenant_id', 'sequence_key', 'business_date'])
     .execute()
 }
 

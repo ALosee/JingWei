@@ -18,15 +18,15 @@ worker claim → dispatch → mark published
 
 ## 公共 API
 
-| API | 作用 |
-| --- | --- |
-| `IntegrationEvent<TPayload>` | 模块发布的事实契约 |
-| `PostgresOutboxAppender.append` | 使用 Kysely/Transaction 追加事件 |
-| `OutboxRepository` | claim、成功和失败状态端口 |
-| `PostgresOutboxRepository` | 使用 `FOR UPDATE SKIP LOCKED` 的并发实现 |
-| `EventDispatcher` | 将 outbox row 发送给进程内/外部消费者的端口 |
-| `OutboxWorker.runOnce` | 领取并分发一个批次，返回领取数量 |
-| `./migrations` | `platform.outbox` 迁移 |
+| API                             | 作用                                        |
+| ------------------------------- | ------------------------------------------- |
+| `IntegrationEvent<TPayload>`    | 模块发布的事实契约                          |
+| `PostgresOutboxAppender.append` | 使用 Kysely/Transaction 追加事件            |
+| `OutboxRepository`              | claim、成功和失败状态端口                   |
+| `PostgresOutboxRepository`      | 使用 `FOR UPDATE SKIP LOCKED` 的并发实现    |
+| `EventDispatcher`               | 将 outbox row 发送给进程内/外部消费者的端口 |
+| `OutboxWorker.runOnce`          | 领取并分发一个批次，返回领取数量            |
+| `./migrations`                  | `platform.outbox` 迁移                      |
 
 ## 事件契约
 

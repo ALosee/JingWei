@@ -15,6 +15,9 @@
     "build": "pnpm edition:generate full && pnpm --filter @jingwei/server build && pnpm --filter @jingwei/web build",
     "typecheck": "pnpm edition:generate development && pnpm -r --if-present typecheck",
     "lint": "eslint . --max-warnings 0",
+    "lint:fix": "eslint . --fix --max-warnings 0",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
     "test": "vitest run",
     "test:e2e": "pnpm --filter @jingwei/web test:e2e",
     "architecture:check": "tsx tooling/architecture-check/src/cli.ts",
@@ -26,7 +29,7 @@
     "test:auth:real": "tsx tooling/migration/src/smoke-auth.ts",
     "test:navigation:real": "tsx tooling/migration/src/test-navigation-real.ts",
     "module:create": "tsx tooling/module-generator/src/cli.ts",
-    "check": "pnpm typecheck && pnpm lint && pnpm architecture:check && pnpm test && pnpm build"
+    "check": "pnpm format:check && pnpm typecheck && pnpm lint && pnpm architecture:check && pnpm test && pnpm build"
   },
   "devDependencies": {
     "@eslint/js": "catalog:",
@@ -36,6 +39,7 @@
     "eslint": "catalog:",
     "eslint-plugin-vue": "catalog:",
     "globals": "catalog:",
+    "oxfmt": "catalog:",
     "tsx": "catalog:",
     "typescript": "catalog:",
     "typescript-eslint": "catalog:",

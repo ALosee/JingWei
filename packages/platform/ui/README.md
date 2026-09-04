@@ -4,9 +4,9 @@ Jingwei Web 的基础 UI 组件与全局设计样式入口。它提供无业务�
 
 ## 导出
 
-| 入口 | 内容 |
-| --- | --- |
-| `@jingwei/ui` | `JwButton`、`PageContainer` |
+| 入口                     | 内容                           |
+| ------------------------ | ------------------------------ |
+| `@jingwei/ui`            | `JwButton`、`PageContainer`    |
 | `@jingwei/ui/styles.css` | 全局 token、基础元素和通用样式 |
 
 Web 壳在应用入口导入一次 `styles.css`。模块不重复加载全局样式，避免顺序依赖。

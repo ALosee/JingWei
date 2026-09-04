@@ -1,12 +1,8 @@
 import { zValidator } from '@hono/zod-validator'
-import { deleteCookie, setCookie } from 'hono/cookie'
 import { Hono } from 'hono'
+import { deleteCookie, setCookie } from 'hono/cookie'
 
-import {
-  csrfCookieName,
-  sessionCookieName,
-  type SessionService,
-} from '@jingwei/auth'
+import { csrfCookieName, sessionCookieName, type SessionService } from '@jingwei/auth'
 import { ApplicationError } from '@jingwei/kernel'
 import type { ServerAppEnv } from '@jingwei/module-sdk/server'
 

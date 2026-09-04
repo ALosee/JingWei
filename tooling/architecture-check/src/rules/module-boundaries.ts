@@ -7,9 +7,13 @@ import { defineEdition, resolveEdition } from '@jingwei/module-sdk'
 import type { ArchitectureViolation } from '../contracts.js'
 import { listSourceFiles } from '../source-files.js'
 
-const importPattern = /(?:import|export)\s+(?:[^'"()]*?\s+from\s+)?['"]([^'"]+)['"]|import\(\s*['"]([^'"]+)['"]\s*\)/gu
+const importPattern =
+  /(?:import|export)\s+(?:[^'"()]*?\s+from\s+)?['"]([^'"]+)['"]|import\(\s*['"]([^'"]+)['"]\s*\)/gu
 
-export async function checkModuleBoundaries(repositoryRoot: string, modules: readonly DiscoveredModule[]): Promise<ArchitectureViolation[]> {
+export async function checkModuleBoundaries(
+  repositoryRoot: string,
+  modules: readonly DiscoveredModule[],
+): Promise<ArchitectureViolation[]> {
   assertAcyclic(modules)
   const schemaOwners = new Map([
     ['platform', '@jingwei/platform'],
@@ -41,14 +45,7 @@ export async function checkModuleBoundaries(repositoryRoot: string, modules: rea
           violations,
         })
       }
-      inspectDatabaseOwnership(
-        repositoryRoot,
-        module,
-        file,
-        content,
-        schemaOwners,
-        violations,
-      )
+      inspectDatabaseOwnership(repositoryRoot, module, file, content, schemaOwners, violations)
     }
   }
 
@@ -113,7 +110,7 @@ function inspectImport(options: {
   }
   if (
     subpath === 'server' ||
-    subpath.startsWith('server/') && subpath !== 'server/public' ||
+    (subpath.startsWith('server/') && subpath !== 'server/public') ||
     subpath === 'web' ||
     subpath.startsWith('web/') ||
     subpath === 'migrations' ||
@@ -172,9 +169,7 @@ function inspectPackageDependencies(
 
   for (const packageName of Object.keys(dependencies)) {
     if (packageName === '@jingwei/module-sdk') continue
-    const target = modules.find(
-      ({ manifest }) => packageName === `@jingwei/module-${manifest.id}`,
-    )
+    const target = modules.find(({ manifest }) => packageName === `@jingwei/module-${manifest.id}`)
     if (target === undefined) {
       if (packageName.startsWith('@jingwei/module-')) {
         violations.push({

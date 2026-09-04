@@ -189,10 +189,7 @@ export class SessionService {
     }
 
     const idleExpiresAt = new Date(
-      Math.min(
-        now.getTime() + this.expiry.idleSeconds * 1_000,
-        row.absolute_expires_at.getTime(),
-      ),
+      Math.min(now.getTime() + this.expiry.idleSeconds * 1_000, row.absolute_expires_at.getTime()),
     )
 
     await this.repository.updateActivity(row.id, {

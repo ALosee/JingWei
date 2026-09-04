@@ -6,33 +6,40 @@ export const codeSchema = z.string().regex(/^[a-z][a-z0-9._-]{0,119}$/u)
 const parameterKey = z.string().regex(/^[a-zA-Z][a-zA-Z0-9_]*$/u)
 const scalar = z.union([z.string().max(2_000), z.number(), z.boolean()])
 export const paramsSchema = z.record(parameterKey, z.union([z.string().max(500), z.number()]))
-export const querySchema = z.record(parameterKey, z.union([scalar, z.null(), z.array(scalar).max(50)]))
+export const querySchema = z.record(
+  parameterKey,
+  z.union([scalar, z.null(), z.array(scalar).max(50)]),
+)
 
 /** Configuration DTO, never a database row. PAGE is routable but absent from the menu projection. */
-export const navigationNodeSchema = z.object({
-  id: z.uuid(),
-  code: codeSchema,
-  name: z.string().trim().min(1).max(200),
-  parentId: z.uuid().nullable(),
-  type: z.enum(navigationNodeTypes),
-  status: z.enum(['ENABLED', 'DISABLED']),
-  routeKey: z.string().max(160).nullable(),
-  path: z.string().max(500).nullable(),
-  layout: z.enum(['base', 'blank']).nullable(),
-  icon: z.string().max(160).nullable(),
-  sortOrder: z.number().int().min(-100_000).max(100_000),
-  accessMode: z.enum(navigationAccessModes).nullable(),
-  href: z.string().max(2048).nullable(),
-  externalTarget: z.enum(['SELF', 'BLANK']).nullable(),
-  params: paramsSchema,
-  query: querySchema,
-}).strict()
+export const navigationNodeSchema = z
+  .object({
+    id: z.uuid(),
+    code: codeSchema,
+    name: z.string().trim().min(1).max(200),
+    parentId: z.uuid().nullable(),
+    type: z.enum(navigationNodeTypes),
+    status: z.enum(['ENABLED', 'DISABLED']),
+    routeKey: z.string().max(160).nullable(),
+    path: z.string().max(500).nullable(),
+    layout: z.enum(['base', 'blank']).nullable(),
+    icon: z.string().max(160).nullable(),
+    sortOrder: z.number().int().min(-100_000).max(100_000),
+    accessMode: z.enum(navigationAccessModes).nullable(),
+    href: z.string().max(2048).nullable(),
+    externalTarget: z.enum(['SELF', 'BLANK']).nullable(),
+    params: paramsSchema,
+    query: querySchema,
+  })
+  .strict()
 
-export const configurationSchema = z.object({
-  authEntryCode: codeSchema,
-  homeCode: codeSchema.nullable(),
-  nodes: z.array(navigationNodeSchema).max(1_000),
-}).strict()
+export const configurationSchema = z
+  .object({
+    authEntryCode: codeSchema,
+    homeCode: codeSchema.nullable(),
+    nodes: z.array(navigationNodeSchema).max(1_000),
+  })
+  .strict()
 
 export const versionSchema = configurationSchema.extend({
   id: z.uuid(),
@@ -56,26 +63,34 @@ export const adminNavigationSchema = z.object({
 export const saveDraftSchema = configurationSchema.extend({
   expectedEditRevision: z.number().int().nonnegative(),
 })
-export const publishSchema = z.object({
-  expectedEditRevision: z.number().int().nonnegative(),
-  expectedPublishedVersionId: z.uuid().nullable(),
-}).strict()
-export const roleGrantsSchema = z.object({
-  codes: z.array(codeSchema).max(1_000),
-}).strict()
+export const publishSchema = z
+  .object({
+    expectedEditRevision: z.number().int().nonnegative(),
+    expectedPublishedVersionId: z.uuid().nullable(),
+  })
+  .strict()
+export const roleGrantsSchema = z
+  .object({
+    codes: z.array(codeSchema).max(1_000),
+  })
+  .strict()
 export const saveRoleGrantsSchema = roleGrantsSchema.extend({
   expectedCodes: z.array(codeSchema).max(1_000),
 })
 export const validationResultSchema = z.object({
-  issues: z.array(z.object({ code: z.string(), nodeId: z.string().optional(), message: z.string() })),
+  issues: z.array(
+    z.object({ code: z.string(), nodeId: z.string().optional(), message: z.string() }),
+  ),
 })
 export const catalogSchema = z.object({
-  routes: z.array(z.object({
-    key: z.string(),
-    layout: z.enum(['base', 'blank']),
-    allowedLayouts: z.array(z.enum(['base', 'blank'])),
-    allowedAccessModes: z.array(z.enum(navigationAccessModes)),
-  })),
+  routes: z.array(
+    z.object({
+      key: z.string(),
+      layout: z.enum(['base', 'blank']),
+      allowedLayouts: z.array(z.enum(['base', 'blank'])),
+      allowedAccessModes: z.array(z.enum(navigationAccessModes)),
+    }),
+  ),
   roles: z.array(z.object({ id: z.uuid(), code: z.string(), name: z.string() })),
 })
 
@@ -99,7 +114,8 @@ export function isInternal(node: NavigationNode): boolean {
 
 /** Only safe path-template syntax is configurable; no custom regex or executable expressions. */
 export function pathParameters(path: string): { name: string; optional: boolean }[] | null {
-  if (!path.startsWith('/') || path === '/' || path.endsWith('/') || path.includes('//')) return null
+  if (!path.startsWith('/') || path === '/' || path.endsWith('/') || path.includes('//'))
+    return null
   const result: { name: string; optional: boolean }[] = []
   const segments = path.slice(1).split('/')
   for (const [index, segment] of segments.entries()) {

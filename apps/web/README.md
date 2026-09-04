@@ -63,11 +63,11 @@ e2e/                           # Playwright 关键路径测试
 
 一条动态路由只有同时满足以下条件才可安装：
 
-| 来源 | 提供内容 |
-| --- | --- |
+| 来源                   | 提供内容                                                      |
+| ---------------------- | ------------------------------------------------------------- |
 | 服务端 Navigation 响应 | 当前用户可见节点、`routeKey`、path、layout、默认 params/query |
-| Module manifest | 默认/允许布局、允许访问模式、capability/permission 元数据 |
-| Web Module `pages` | `routeKey` 到具体 `pageKey` 的绑定 |
+| Module manifest        | 默认/允许布局、允许访问模式、capability/permission 元数据     |
+| Web Module `pages`     | `routeKey` 到具体 `pageKey` 的绑定                            |
 
 如果 Edition 中缺少定义或页面绑定，`installDynamicRoutes` 会快速失败并进入恢复页。不能用“找不到页面时静默跳过”掩盖构建不一致。
 
@@ -84,10 +84,10 @@ e2e/                           # Playwright 关键路径测试
 
 Route Definition 只允许两种页面外部结构：
 
-| Layout | 结构 | 适合页面 |
-| --- | --- | --- |
-| `base` / `BaseLayout` | 标准企业工作区；当前实现 header + sidebar + content，tabs 暂未实现 | 组织、字典、导航管理、个人账号和普通业务页面 |
-| `blank` / `BlankLayout` | 只有 `RouterView`，页面完全拥有 DOM、尺寸和视觉结构 | 登录、密码重置、MFA、SSO、错误页、大屏、地图和沉浸式编辑器 |
+| Layout                  | 结构                                                               | 适合页面                                                   |
+| ----------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------- |
+| `base` / `BaseLayout`   | 标准企业工作区；当前实现 header + sidebar + content，tabs 暂未实现 | 组织、字典、导航管理、个人账号和普通业务页面               |
+| `blank` / `BlankLayout` | 只有 `RouterView`，页面完全拥有 DOM、尺寸和视觉结构                | 登录、密码重置、MFA、SSO、错误页、大屏、地图和沉浸式编辑器 |
 
 应用和浏览器 viewport 本身已经占满屏幕，是否隐藏工作区 chrome 才是布局的实际差异。因此不再为 `fullscreen` 建立一个仅增加 `min-height: 100vh` 的独立概念。认证页面也使用 `blank`；多个认证页面若需要共享品牌或表单结构，应抽取普通 Vue 组件，而不是扩展 Router Layout 种类。
 

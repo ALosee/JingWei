@@ -1,14 +1,6 @@
-import {
-  PostgresSessionRepository,
-  SessionService,
-  type AuthDatabase,
-} from '@jingwei/auth'
+import { PostgresSessionRepository, SessionService, type AuthDatabase } from '@jingwei/auth'
 import { loadConfig, type AppConfig } from '@jingwei/config'
-import {
-  DatabaseRuntime,
-  PostgresTenantDirectory,
-  type TenantDirectory,
-} from '@jingwei/database'
+import { DatabaseRuntime, PostgresTenantDirectory, type TenantDirectory } from '@jingwei/database'
 import { systemClock } from '@jingwei/kernel'
 import { ModuleRegistry } from '@jingwei/module-sdk'
 import type { ServerModuleContext } from '@jingwei/module-sdk/server'

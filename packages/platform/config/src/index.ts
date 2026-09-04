@@ -4,9 +4,10 @@ const configSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   HTTP_HOST: z.string().min(1).default('127.0.0.1'),
   HTTP_PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
-  DATABASE_URL: z.url().startsWith('postgres').default(
-    'postgres://jingwei:jingwei@127.0.0.1:5432/jingwei',
-  ),
+  DATABASE_URL: z
+    .url()
+    .startsWith('postgres')
+    .default('postgres://jingwei:jingwei@127.0.0.1:5432/jingwei'),
   APP_ORIGIN: z.url().default('http://localhost:5173'),
   BOOTSTRAP_TENANT_CODE: z.string().trim().min(1).max(80).default('default'),
   SESSION_IDLE_SECONDS: z.coerce.number().int().positive().default(1_800),

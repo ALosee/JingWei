@@ -10,10 +10,6 @@ describe('extractImports', () => {
         export { api } from '@jingwei/module-iam/server/public'
         const page = import('./Page.vue')
       `),
-    ).toEqual([
-      '@jingwei/kernel',
-      '@jingwei/module-iam/server/public',
-      './Page.vue',
-    ])
+    ).toEqual(['@jingwei/kernel', '@jingwei/module-iam/server/public', './Page.vue'])
   })
 })

@@ -6,14 +6,14 @@
 
 ### `AuditEntry`
 
-| 字段 | 含义 |
-| --- | --- |
-| `context` | requestId、tenantId、actor userId |
-| `module` / `action` | 动作所有者和稳定动作标识 |
-| `entityType` / `entityId` | 被操作业务对象 |
-| `result` | `SUCCESS` 或 `FAILURE` |
-| `before` / `after` | 可选且已脱敏的变化快照 |
-| `ipAddress` / `userAgent` | 可选协议来源信息 |
+| 字段                      | 含义                              |
+| ------------------------- | --------------------------------- |
+| `context`                 | requestId、tenantId、actor userId |
+| `module` / `action`       | 动作所有者和稳定动作标识          |
+| `entityType` / `entityId` | 被操作业务对象                    |
+| `result`                  | `SUCCESS` 或 `FAILURE`            |
+| `before` / `after`        | 可选且已脱敏的变化快照            |
+| `ipAddress` / `userAgent` | 可选协议来源信息                  |
 
 ### `AuditWriter.append(entry)`
 
@@ -34,11 +34,11 @@ await audit.append({
 
 ## 与日志、事件的区别
 
-| 机制 | 主要用途 | 是否可因日志级别关闭 |
-| --- | --- | --- |
-| 运行日志 | 诊断性能和故障 | 可以过滤 |
-| 审计 | 合规、追责、业务操作历史 | 不应关闭 |
-| Integration Event | 通知其他模块事实 | 不作为审计记录替代品 |
+| 机制              | 主要用途                 | 是否可因日志级别关闭 |
+| ----------------- | ------------------------ | -------------------- |
+| 运行日志          | 诊断性能和故障           | 可以过滤             |
+| 审计              | 合规、追责、业务操作历史 | 不应关闭             |
+| Integration Event | 通知其他模块事实         | 不作为审计记录替代品 |
 
 同一个动作可能同时产生日志、审计和 outbox，但三者载荷和保留策略不同。
 

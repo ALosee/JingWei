@@ -27,10 +27,7 @@ export interface IamDatabase {
 export class PostgresCredentialReader implements CredentialReader {
   constructor(private readonly database: Kysely<IamDatabase>) {}
 
-  async findByLogin(
-    tenantId: string,
-    normalizedLogin: string,
-  ): Promise<CredentialSnapshot | null> {
+  async findByLogin(tenantId: string, normalizedLogin: string): Promise<CredentialSnapshot | null> {
     const row = await this.database
       .selectFrom('iam.user as user')
       .innerJoin('iam.user_credential as credential', 'credential.user_id', 'user.id')

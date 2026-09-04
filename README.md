@@ -24,6 +24,7 @@ pnpm dev:test
 
 pnpm typecheck
 pnpm lint
+pnpm format:check
 pnpm architecture:check
 pnpm test
 TEST_ADMIN_PASSWORD='<开发管理员密码>' pnpm test:auth:real
@@ -38,6 +39,8 @@ Local infrastructure can be started with `docker compose -f docker-compose.dev.y
 Migration/seed/test commands require explicitly supplied environment variables. For the local `.env.test` database, see the [exact initialization commands](./tooling/migration/README.md#显式使用-envtest). `seed:navigation` preserves existing passwords and published configuration; `seed:dev` updates the development password. Navigation bootstrap now reads a published database version and returns 503 until one exists.
 
 ## Documentation
+
+Code quality uses ESLint; formatting and import sorting use Oxfmt. Run `pnpm lint:fix` for lint fixes and `pnpm format` for formatting. `pnpm check` runs all local quality gates, including the read-only formatting check. See the [formatting and editor setup](./docs/development-guide.md#14-lint格式化与导入排序).
 
 Start at the [documentation center](./docs/README.md). It provides reading paths and detailed guides for:
 

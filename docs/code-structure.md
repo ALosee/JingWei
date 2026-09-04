@@ -4,14 +4,14 @@
 
 ## 1. 六种职责
 
-| 层次 | 负责 | 不负责 |
-| --- | --- | --- |
-| 可执行入口 | 导入并调用启动函数 | 功能分支、HTTP、SQL、编辑状态 |
-| Composition Root | 创建资源、选择实现、连接依赖、注册模块 | 页面筛选、权限决策、内联 HTTP handler |
-| 功能流程 / Application / controller | 协调一次明确任务及状态、处理成功/失败 | 拼装全局 Runtime、创建隐式单例 |
-| 规则 / 策略 / Domain | 给定输入得出判断或目标 | 浏览器、环境变量、数据库连接 |
-| Adapter | HTTP、Router、PostgreSQL、Cookie 等技术实现 | 决定模块业务授权或事务边界 |
-| 页面 / View | 模板、展示、声明式绑定、组合 controller | 多步骤网络提交、角色/版本状态混管 |
+| 层次                                | 负责                                        | 不负责                                |
+| ----------------------------------- | ------------------------------------------- | ------------------------------------- |
+| 可执行入口                          | 导入并调用启动函数                          | 功能分支、HTTP、SQL、编辑状态         |
+| Composition Root                    | 创建资源、选择实现、连接依赖、注册模块      | 页面筛选、权限决策、内联 HTTP handler |
+| 功能流程 / Application / controller | 协调一次明确任务及状态、处理成功/失败       | 拼装全局 Runtime、创建隐式单例        |
+| 规则 / 策略 / Domain                | 给定输入得出判断或目标                      | 浏览器、环境变量、数据库连接          |
+| Adapter                             | HTTP、Router、PostgreSQL、Cookie 等技术实现 | 决定模块业务授权或事务边界            |
+| 页面 / View                         | 模板、展示、声明式绑定、组合 controller     | 多步骤网络提交、角色/版本状态混管     |
 
 这不是要求每个功能机械建立六个文件。一个简单、职责清晰的函数可以保留；只有出现独立规则、资源或状态所有权时才拆。库的 index.ts 可能是导出入口，也可能直接实现一个小型公共能力，不适用可执行入口的限制。
 
@@ -55,13 +55,13 @@ start-server 负责进程边界，建立监听并注册信号；shutdown 负责�
 
 导航管理页仍保留完整模板，其脚本只组合：
 
-| Composable | 状态与职责 |
-| --- | --- |
-| useNavigationManagement | 实际客户端/确认框的装配与首次加载 |
-| useNavigationEditor | 本地节点、选中项、脏状态、JSON 字段，不请求接口 |
-| useNavigationVersions | 版本列表、发布指针、保存/校验/发布/回滚 |
-| useRoleNavigationGrants | 所选角色、已加载角色、原始/编辑 code 集合 |
-| useNavigationFeedback | 该管理页的 busy、安全错误、操作反馈 |
+| Composable              | 状态与职责                                      |
+| ----------------------- | ----------------------------------------------- |
+| useNavigationManagement | 实际客户端/确认框的装配与首次加载               |
+| useNavigationEditor     | 本地节点、选中项、脏状态、JSON 字段，不请求接口 |
+| useNavigationVersions   | 版本列表、发布指针、保存/校验/发布/回滚         |
+| useRoleNavigationGrants | 所选角色、已加载角色、原始/编辑 code 集合       |
+| useNavigationFeedback   | 该管理页的 busy、安全错误、操作反馈             |
 
 这些不是任意共享状态：角色授权不会因版本回滚而恢复，所以不能与版本编辑共用一套“保存状态”。版本保存返回新节点 ID，编辑器必须采用返回快照；角色保存则使用原始 code 集合做并发比较。
 
@@ -79,15 +79,15 @@ commands 是有明确目的的运维流程，不是把一般业务规则搬出 M
 
 运行 pnpm architecture:check。新增规则：
 
-| Rule | 检查 |
-| --- | --- |
-| thin-entrypoint | App main/index、工具 cli 和根 package scripts 指向的 TS 入口只有 startup import/call |
-| composition-no-handlers | App bootstrap/app 与模块装配工厂不能内联 HTTP handler |
-| no-persistence-in-orchestration | 装配、Domain、Application、API 不直接执行常见 SQL builder 操作 |
-| server-layer-boundary | 服务端分层不能向基础设施或外层反向导入 |
-| page-workflow-boundary | 模块 Vue pages 不直接导入 client/api-client |
-| workflow-outside-boundary | 页面/装配不直接调用 fetch 或已识别模块 client |
-| module-no-process-env | 模块通过注入获得配置，不读取 process.env |
+| Rule                            | 检查                                                                                 |
+| ------------------------------- | ------------------------------------------------------------------------------------ |
+| thin-entrypoint                 | App main/index、工具 cli 和根 package scripts 指向的 TS 入口只有 startup import/call |
+| composition-no-handlers         | App bootstrap/app 与模块装配工厂不能内联 HTTP handler                                |
+| no-persistence-in-orchestration | 装配、Domain、Application、API 不直接执行常见 SQL builder 操作                       |
+| server-layer-boundary           | 服务端分层不能向基础设施或外层反向导入                                               |
+| page-workflow-boundary          | 模块 Vue pages 不直接导入 client/api-client                                          |
+| workflow-outside-boundary       | 页面/装配不直接调用 fetch 或已识别模块 client                                        |
+| module-no-process-env           | 模块通过注入获得配置，不读取 process.env                                             |
 
 检查 authored TS/Vue script，排除测试、generated、dist 和 node_modules。TypeScript AST 避免将模板文本、注释或普通字符串误认为代码。Application/API 可 type-only 引用明确的 TenantDirectory/TenantSnapshot/AppConfig 契约，但不能因此导入 DatabaseRuntime/Kysely 实现。
 

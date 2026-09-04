@@ -1,8 +1,9 @@
 import { onMounted, ref } from 'vue'
+
 import * as api from '../../client/index.js'
 import type { NavigationCatalog } from '../../shared/index.js'
-import { useNavigationFeedback } from './use-navigation-feedback.js'
 import { useNavigationEditor } from './use-navigation-editor.js'
+import { useNavigationFeedback } from './use-navigation-feedback.js'
 import { useNavigationVersions } from './use-navigation-versions.js'
 import { useRoleNavigationGrants } from './use-role-navigation-grants.js'
 

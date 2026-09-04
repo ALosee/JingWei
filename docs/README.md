@@ -41,68 +41,68 @@
 
 ## 文档地图
 
-| 文档 | 回答的问题 |
-|---|---|
-| [architecture.md](./architecture.md) | 系统的最高层架构是什么？ |
-| [repository-structure.md](./repository-structure.md) | 代码放在哪里，为什么这样分？ |
-| [code-structure.md](./code-structure.md) | 入口、装配、流程、规则、适配器、页面怎样分工，如何自动约束？ |
-| [edition-module-handbook.md](./edition-module-handbook.md) | Edition、Module、Capability 如何解析和裁剪？ |
-| [module-design.md](./module-design.md) | 一个模块内部如何分层、如何与其他模块通信？ |
-| [database-design.md](./database-design.md) | Schema、Tenant、ID、Migration 如何设计？ |
-| [identity-authorization-design.md](./identity-authorization-design.md) | 登录、Session、RBAC、Data Scope 如何工作？ |
-| [navigation-routing-design.md](./navigation-routing-design.md) | routeKey、Navigation、Permission、Vue 页面如何解耦？ |
-| [runtime-lifecycle.md](./runtime-lifecycle.md) | 进程启动和一次请求经历哪些阶段？ |
-| [http-api.md](./http-api.md) | 当前 HTTP API、Cookie、错误结构是什么？ |
-| [api-reference.md](./api-reference.md) | 关键 TypeScript API 的职责和使用约束是什么？ |
-| [development-guide.md](./development-guide.md) | 如何安全地增加模块、能力、路由和迁移？ |
-| [testing-quality.md](./testing-quality.md) | 如何测试，CI 为什么会失败？ |
-| [operations.md](./operations.md) | 如何配置、迁移、构建、启动和排障？ |
-| [glossary.md](./glossary.md) | 项目术语的精确定义是什么？ |
+| 文档                                                                   | 回答的问题                                                   |
+| ---------------------------------------------------------------------- | ------------------------------------------------------------ |
+| [architecture.md](./architecture.md)                                   | 系统的最高层架构是什么？                                     |
+| [repository-structure.md](./repository-structure.md)                   | 代码放在哪里，为什么这样分？                                 |
+| [code-structure.md](./code-structure.md)                               | 入口、装配、流程、规则、适配器、页面怎样分工，如何自动约束？ |
+| [edition-module-handbook.md](./edition-module-handbook.md)             | Edition、Module、Capability 如何解析和裁剪？                 |
+| [module-design.md](./module-design.md)                                 | 一个模块内部如何分层、如何与其他模块通信？                   |
+| [database-design.md](./database-design.md)                             | Schema、Tenant、ID、Migration 如何设计？                     |
+| [identity-authorization-design.md](./identity-authorization-design.md) | 登录、Session、RBAC、Data Scope 如何工作？                   |
+| [navigation-routing-design.md](./navigation-routing-design.md)         | routeKey、Navigation、Permission、Vue 页面如何解耦？         |
+| [runtime-lifecycle.md](./runtime-lifecycle.md)                         | 进程启动和一次请求经历哪些阶段？                             |
+| [http-api.md](./http-api.md)                                           | 当前 HTTP API、Cookie、错误结构是什么？                      |
+| [api-reference.md](./api-reference.md)                                 | 关键 TypeScript API 的职责和使用约束是什么？                 |
+| [development-guide.md](./development-guide.md)                         | 如何安全地增加模块、能力、路由和迁移？                       |
+| [testing-quality.md](./testing-quality.md)                             | 如何测试，CI 为什么会失败？                                  |
+| [operations.md](./operations.md)                                       | 如何配置、迁移、构建、启动和排障？                           |
+| [glossary.md](./glossary.md)                                           | 项目术语的精确定义是什么？                                   |
 
 ## 子项目文档
 
 ### 应用与 Edition
 
-| 子项目 | 文档 |
-| --- | --- |
+| 子项目        | 文档                                    |
+| ------------- | --------------------------------------- |
 | Server 组合根 | [apps/server](../apps/server/README.md) |
-| Web 应用壳 | [apps/web](../apps/web/README.md) |
-| 产品 Edition | [editions](../editions/README.md) |
+| Web 应用壳    | [apps/web](../apps/web/README.md)       |
+| 产品 Edition  | [editions](../editions/README.md)       |
 
 ### 业务模块
 
-| 模块 | 文档 | 当前定位 |
-| --- | --- | --- |
-| IAM | [packages/modules/iam](../packages/modules/iam/README.md) | 用户、凭据、角色、权限与数据范围 |
-| Navigation | [packages/modules/navigation](../packages/modules/navigation/README.md) | 发布导航、路由校验与用户导航解析 |
-| Organization | [packages/modules/organization](../packages/modules/organization/README.md) | 组织树、岗位与用户组织关系 |
-| Dictionary | [packages/modules/dictionary](../packages/modules/dictionary/README.md) | 租户字典类型和条目 |
+| 模块         | 文档                                                                        | 当前定位                         |
+| ------------ | --------------------------------------------------------------------------- | -------------------------------- |
+| IAM          | [packages/modules/iam](../packages/modules/iam/README.md)                   | 用户、凭据、角色、权限与数据范围 |
+| Navigation   | [packages/modules/navigation](../packages/modules/navigation/README.md)     | 发布导航、路由校验与用户导航解析 |
+| Organization | [packages/modules/organization](../packages/modules/organization/README.md) | 组织树、岗位与用户组织关系       |
+| Dictionary   | [packages/modules/dictionary](../packages/modules/dictionary/README.md)     | 租户字典类型和条目               |
 
 ### Platform Packages
 
-| 包 | 文档 | 核心能力 |
-| --- | --- | --- |
-| kernel | [README](../packages/platform/kernel/README.md) | ID、上下文、错误、时间、分页 |
-| config | [README](../packages/platform/config/README.md) | 环境配置解析 |
-| database | [README](../packages/platform/database/README.md) | PostgreSQL 运行时、事务、迁移、租户目录 |
-| module-sdk | [README](../packages/platform/module-sdk/README.md) | Manifest、Edition、Registry、模块契约 |
-| auth | [README](../packages/platform/auth/README.md) | 密码、会话、Origin 与 CSRF |
-| api-client | [README](../packages/platform/api-client/README.md) | Zod 验证的 JSON 客户端 |
-| audit | [README](../packages/platform/audit/README.md) | 审计写入 |
-| observability | [README](../packages/platform/observability/README.md) | 结构化日志 |
-| outbox | [README](../packages/platform/outbox/README.md) | 事务发件箱与 worker |
-| storage | [README](../packages/platform/storage/README.md) | 对象存储端口 |
-| testing | [README](../packages/platform/testing/README.md) | 测试上下文和固定时钟 |
-| ui | [README](../packages/platform/ui/README.md) | 基础 Vue 组件与样式 |
+| 包            | 文档                                                   | 核心能力                                |
+| ------------- | ------------------------------------------------------ | --------------------------------------- |
+| kernel        | [README](../packages/platform/kernel/README.md)        | ID、上下文、错误、时间、分页            |
+| config        | [README](../packages/platform/config/README.md)        | 环境配置解析                            |
+| database      | [README](../packages/platform/database/README.md)      | PostgreSQL 运行时、事务、迁移、租户目录 |
+| module-sdk    | [README](../packages/platform/module-sdk/README.md)    | Manifest、Edition、Registry、模块契约   |
+| auth          | [README](../packages/platform/auth/README.md)          | 密码、会话、Origin 与 CSRF              |
+| api-client    | [README](../packages/platform/api-client/README.md)    | Zod 验证的 JSON 客户端                  |
+| audit         | [README](../packages/platform/audit/README.md)         | 审计写入                                |
+| observability | [README](../packages/platform/observability/README.md) | 结构化日志                              |
+| outbox        | [README](../packages/platform/outbox/README.md)        | 事务发件箱与 worker                     |
+| storage       | [README](../packages/platform/storage/README.md)       | 对象存储端口                            |
+| testing       | [README](../packages/platform/testing/README.md)       | 测试上下文和固定时钟                    |
+| ui            | [README](../packages/platform/ui/README.md)            | 基础 Vue 组件与样式                     |
 
 ### 工程工具
 
-| 工具 | 文档 |
-| --- | --- |
+| 工具               | 文档                                                                  |
+| ------------------ | --------------------------------------------------------------------- |
 | Architecture Check | [tooling/architecture-check](../tooling/architecture-check/README.md) |
-| Edition Builder | [tooling/edition-builder](../tooling/edition-builder/README.md) |
-| Migration CLI | [tooling/migration](../tooling/migration/README.md) |
-| Module Generator | [tooling/module-generator](../tooling/module-generator/README.md) |
+| Edition Builder    | [tooling/edition-builder](../tooling/edition-builder/README.md)       |
+| Migration CLI      | [tooling/migration](../tooling/migration/README.md)                   |
+| Module Generator   | [tooling/module-generator](../tooling/module-generator/README.md)     |
 
 ## 就近文档原则
 

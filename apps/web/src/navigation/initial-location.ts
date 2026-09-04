@@ -11,8 +11,9 @@ export function selectInitialLocation(input: {
   if (initialLocation !== '/' && recognized) return initialLocation
   if (initialLocation !== '/' && authenticated) return '/__recovery'
   const authEntry = navigation.nodes.find((node) => node.code === navigation.authEntryCode)
-  const home = navigation.nodes.find((node) => node.code === navigation.homeCode)
-    ?? navigation.nodes.find((node) => node.type === 'MENU' && node.accessMode !== 'PUBLIC')
+  const home =
+    navigation.nodes.find((node) => node.code === navigation.homeCode) ??
+    navigation.nodes.find((node) => node.type === 'MENU' && node.accessMode !== 'PUBLIC')
   const fallback = authenticated ? home : authEntry
-  return fallback === undefined ? '/__recovery' : navigationTarget(fallback) ?? '/__recovery'
+  return fallback === undefined ? '/__recovery' : (navigationTarget(fallback) ?? '/__recovery')
 }

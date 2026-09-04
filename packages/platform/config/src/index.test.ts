@@ -1,4 +1,5 @@
 import { expect, it } from 'vitest'
+
 import { loadConfig } from './index.js'
 
 it('validates and normalizes the anonymous bootstrap tenant without accepting an empty code', () => {

@@ -1,0 +1,39 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "printWidth": 100,
+  "tabWidth": 2,
+  "useTabs": false,
+  "singleQuote": true,
+  "semi": false,
+  "trailingComma": "all",
+  "endOfLine": "lf",
+  "insertFinalNewline": true,
+  "proseWrap": "preserve",
+  "sortPackageJson": false,
+  "sortImports": {
+    "internalPattern": ["@jingwei/"],
+    "groups": [
+      "builtin",
+      "external",
+      "internal",
+      ["parent", "sibling", "index"],
+      "style",
+      "unknown"
+    ],
+    "newlinesBetween": true,
+    "ignoreCase": true,
+    "order": "asc",
+    "partitionByComment": true,
+    "sortSideEffects": false
+  },
+  "ignorePatterns": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/coverage/**",
+    "**/playwright-report/**",
+    "**/test-results/**",
+    "**/generated/**",
+    "**/_generated/**",
+    "pnpm-lock.yaml"
+  ]
+}

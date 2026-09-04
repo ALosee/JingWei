@@ -3,7 +3,9 @@ import { sql, type Kysely } from 'kysely'
 /** Forward migration: preserves legacy rows, then protects tenant/version ownership and snapshots. */
 export async function up(database: Kysely<unknown>): Promise<void> {
   await sql`ALTER TABLE navigation.navigation_node RENAME COLUMN title TO name`.execute(database)
-  await sql`ALTER TABLE navigation.navigation_node RENAME COLUMN external_url TO href`.execute(database)
+  await sql`ALTER TABLE navigation.navigation_node RENAME COLUMN external_url TO href`.execute(
+    database,
+  )
   await sql`ALTER TABLE navigation.navigation_node
     ADD COLUMN code varchar(120), ADD COLUMN status varchar(20) NOT NULL DEFAULT 'ENABLED',
     ADD COLUMN layout varchar(20), ADD COLUMN params jsonb NOT NULL DEFAULT '{}',
@@ -11,7 +13,9 @@ export async function up(database: Kysely<unknown>): Promise<void> {
   await sql`UPDATE navigation.navigation_node SET
     code = COALESCE(route_key, 'node.' || id::text),
     layout = CASE WHEN type = 'ROUTE' THEN CASE WHEN route_key = 'iam.login' THEN 'blank' ELSE 'base' END ELSE NULL END,
-    type = CASE WHEN type = 'ROUTE' THEN CASE WHEN visible THEN 'MENU' ELSE 'PAGE' END ELSE type END`.execute(database)
+    type = CASE WHEN type = 'ROUTE' THEN CASE WHEN visible THEN 'MENU' ELSE 'PAGE' END ELSE type END`.execute(
+    database,
+  )
   await sql`ALTER TABLE navigation.navigation_node
     ALTER COLUMN code SET NOT NULL, DROP COLUMN visible,
     ADD CONSTRAINT navigation_node_type_ck CHECK (type IN ('DIRECTORY','GROUP','MENU','PAGE','EXTERNAL_LINK')),
@@ -27,26 +31,39 @@ export async function up(database: Kysely<unknown>): Promise<void> {
     ADD COLUMN home_code varchar(120), ADD COLUMN edit_revision integer NOT NULL DEFAULT 0,
     ADD COLUMN published_by uuid,
     ADD CONSTRAINT navigation_version_owner_uq UNIQUE (tenant_id, id),
-    ADD CONSTRAINT navigation_version_root_uq UNIQUE (tenant_id, navigation_id, id)`.execute(database)
-  await sql`ALTER TABLE navigation.navigation ADD CONSTRAINT navigation_owner_uq UNIQUE (tenant_id, id)`.execute(database)
+    ADD CONSTRAINT navigation_version_root_uq UNIQUE (tenant_id, navigation_id, id)`.execute(
+    database,
+  )
+  await sql`ALTER TABLE navigation.navigation ADD CONSTRAINT navigation_owner_uq UNIQUE (tenant_id, id)`.execute(
+    database,
+  )
   await sql`ALTER TABLE navigation.navigation_version ADD CONSTRAINT navigation_version_tenant_fk
-    FOREIGN KEY (tenant_id, navigation_id) REFERENCES navigation.navigation(tenant_id, id)`.execute(database)
+    FOREIGN KEY (tenant_id, navigation_id) REFERENCES navigation.navigation(tenant_id, id)`.execute(
+    database,
+  )
   await sql`ALTER TABLE navigation.navigation_node ADD CONSTRAINT navigation_node_version_tenant_fk
-    FOREIGN KEY (tenant_id, version_id) REFERENCES navigation.navigation_version(tenant_id, id) ON DELETE CASCADE`.execute(database)
+    FOREIGN KEY (tenant_id, version_id) REFERENCES navigation.navigation_version(tenant_id, id) ON DELETE CASCADE`.execute(
+    database,
+  )
   await sql`ALTER TABLE navigation.navigation_node ADD CONSTRAINT navigation_node_parent_fk
     FOREIGN KEY (tenant_id, version_id, parent_id) REFERENCES navigation.navigation_node(tenant_id, version_id, id)
     DEFERRABLE INITIALLY DEFERRED`.execute(database)
   await sql`ALTER TABLE navigation.navigation ADD CONSTRAINT navigation_published_fk
     FOREIGN KEY (tenant_id, id, published_version_id)
-    REFERENCES navigation.navigation_version(tenant_id, navigation_id, id) DEFERRABLE INITIALLY DEFERRED`.execute(database)
+    REFERENCES navigation.navigation_version(tenant_id, navigation_id, id) DEFERRABLE INITIALLY DEFERRED`.execute(
+    database,
+  )
 
-  await database.schema.withSchema('navigation').createTable('role_navigation')
+  await database.schema
+    .withSchema('navigation')
+    .createTable('role_navigation')
     .addColumn('tenant_id', 'uuid', (c) => c.notNull())
     .addColumn('role_id', 'uuid', (c) => c.notNull())
     .addColumn('navigation_code', 'varchar(120)', (c) => c.notNull())
     .addColumn('created_at', 'timestamptz', (c) => c.notNull())
     .addColumn('created_by', 'uuid', (c) => c.notNull())
-    .addPrimaryKeyConstraint('role_navigation_pk', ['tenant_id', 'role_id', 'navigation_code']).execute()
+    .addPrimaryKeyConstraint('role_navigation_pk', ['tenant_id', 'role_id', 'navigation_code'])
+    .execute()
 
   await sql`CREATE FUNCTION navigation.protect_published_nodes() RETURNS trigger LANGUAGE plpgsql AS $$
     BEGIN
@@ -71,5 +88,7 @@ export async function up(database: Kysely<unknown>): Promise<void> {
 
 // Irreversible semantic conversion: recover with a reviewed forward migration.
 export function down(): Promise<void> {
-  return Promise.reject(new Error('Navigation configuration migration requires a forward recovery migration'))
+  return Promise.reject(
+    new Error('Navigation configuration migration requires a forward recovery migration'),
+  )
 }

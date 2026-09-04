@@ -1,5 +1,7 @@
 /** Explicit command boundary; importing this module performs no I/O. */
-export async function runAuthenticationSmokeTest(environment: NodeJS.ProcessEnv = process.env): Promise<void> {
+export async function runAuthenticationSmokeTest(
+  environment: NodeJS.ProcessEnv = process.env,
+): Promise<void> {
   const baseUrl = environment.TEST_BASE_URL ?? 'http://127.0.0.1:3000'
   const password = environment.TEST_ADMIN_PASSWORD
   if (password === undefined) {
@@ -66,7 +68,9 @@ export async function runAuthenticationSmokeTest(environment: NodeJS.ProcessEnv 
   }
 
   console.log('Real authentication smoke test passed')
-  console.log('Verified invalid login, session creation, restore, navigation, CSRF logout, and revocation')
+  console.log(
+    'Verified invalid login, session creation, restore, navigation, CSRF logout, and revocation',
+  )
 
   function assertStatus(response: Response, expected: number, operation: string): void {
     if (response.status !== expected) {

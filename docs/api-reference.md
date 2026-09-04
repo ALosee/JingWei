@@ -4,13 +4,13 @@
 
 ## 1. API 稳定性分层
 
-| 入口 | 使用者 | 稳定性要求 |
-| --- | --- | --- |
-| `@jingwei/*` 平台包根导出 | 所有应用和模块 | 平台公共契约，修改需评估全仓库影响 |
-| `@jingwei/module-*/public` | 其他业务模块 | 模块公开同步契约，必须保持最小化 |
-| Integration Event 类型 | 异步消费者 | 需要版本与兼容性策略 |
-| 模块内部文件 | 模块自身 | 不承诺跨模块兼容，禁止被外部深层导入 |
-| `apps/*` 内部入口 | 组合根 | 不作为复用库发布 |
+| 入口                       | 使用者         | 稳定性要求                           |
+| -------------------------- | -------------- | ------------------------------------ |
+| `@jingwei/*` 平台包根导出  | 所有应用和模块 | 平台公共契约，修改需评估全仓库影响   |
+| `@jingwei/module-*/public` | 其他业务模块   | 模块公开同步契约，必须保持最小化     |
+| Integration Event 类型     | 异步消费者     | 需要版本与兼容性策略                 |
+| 模块内部文件               | 模块自身       | 不承诺跨模块兼容，禁止被外部深层导入 |
+| `apps/*` 内部入口          | 组合根         | 不作为复用库发布                     |
 
 ## 2. `@jingwei/kernel`
 
@@ -55,9 +55,7 @@ export const manifest = defineModule({
   dependencies: ['iam'],
   optionalDependencies: [],
   capabilities: [{ id: 'organization.core', name: '组织与岗位基础' }],
-  permissions: [
-    { code: 'organization.view', name: '查看组织', supportsDataScope: false },
-  ],
+  permissions: [{ code: 'organization.view', name: '查看组织', supportsDataScope: false }],
   routeDefinitions: [],
 })
 ```
@@ -197,12 +195,12 @@ IAM 的 `getSessionStatus()` typed client 使用一个允许匿名的 `200` 状�
 
 ## 12. 选择同步调用还是事件
 
-| 需求 | 选择 |
-| --- | --- |
-| 当前操作必须立即得到结果才能继续 | 模块 Public API |
-| 只是通知其他模块一个已经发生的事实 | Integration Event |
-| 要求与业务写入原子落库 | 事务内追加 outbox |
-| 允许短暂最终一致 | 事件消费者 |
-| 只是共享纯技术能力 | platform 包，而不是业务模块 API |
+| 需求                               | 选择                            |
+| ---------------------------------- | ------------------------------- |
+| 当前操作必须立即得到结果才能继续   | 模块 Public API                 |
+| 只是通知其他模块一个已经发生的事实 | Integration Event               |
+| 要求与业务写入原子落库             | 事务内追加 outbox               |
+| 允许短暂最终一致                   | 事件消费者                      |
+| 只是共享纯技术能力                 | platform 包，而不是业务模块 API |
 
 新增公共 API 前先确认它不是临时实现细节；新增事件时要说明事件所有者、版本策略、幂等键和敏感字段策略。

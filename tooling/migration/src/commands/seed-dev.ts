@@ -51,7 +51,9 @@ interface SeedDatabase {
 }
 
 /** Explicit command boundary; importing this module performs no I/O. */
-export async function runDevelopmentSeed(environment: NodeJS.ProcessEnv = process.env): Promise<void> {
+export async function runDevelopmentSeed(
+  environment: NodeJS.ProcessEnv = process.env,
+): Promise<void> {
   const config = loadConfig(environment)
   if (config.environment === 'production') {
     throw new Error('Development seed is forbidden in production')

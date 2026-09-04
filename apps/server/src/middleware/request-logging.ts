@@ -1,4 +1,5 @@
 import type { MiddlewareHandler } from 'hono'
+
 import type { ServerAppEnv } from '@jingwei/module-sdk/server'
 import type { AppLogger } from '@jingwei/observability'
 

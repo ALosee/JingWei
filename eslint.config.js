@@ -8,6 +8,8 @@ export default tseslint.config(
     ignores: [
       '**/dist/**',
       '**/coverage/**',
+      '**/playwright-report/**',
+      '**/test-results/**',
       '**/node_modules/**',
       '**/src/generated/**',
       '**/src/router/_generated/**',
@@ -33,10 +35,7 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/consistent-type-imports': 'error',
       '@typescript-eslint/no-confusing-void-expression': 'off',
-      '@typescript-eslint/restrict-template-expressions': [
-        'error',
-        { allowNumber: true },
-      ],
+      '@typescript-eslint/restrict-template-expressions': ['error', { allowNumber: true }],
       'vue/multi-word-component-names': 'off',
       'vue/require-default-prop': 'off',
     },
@@ -48,6 +47,19 @@ export default tseslint.config(
   {
     files: ['**/*.vue'],
     rules: {
+      // Oxfmt owns template formatting; Vue correctness and convention rules stay enabled.
+      'vue/first-attribute-linebreak': 'off',
+      'vue/html-closing-bracket-newline': 'off',
+      'vue/html-closing-bracket-spacing': 'off',
+      'vue/html-indent': 'off',
+      'vue/html-quotes': 'off',
+      'vue/html-self-closing': 'off',
+      'vue/max-attributes-per-line': 'off',
+      'vue/multiline-html-element-content-newline': 'off',
+      'vue/mustache-interpolation-spacing': 'off',
+      'vue/no-multi-spaces': 'off',
+      'vue/no-spaces-around-equal-signs-in-attribute': 'off',
+      'vue/singleline-html-element-content-newline': 'off',
       // Vue compiler macros are supplied by vue-tsc and appear unresolved to typed ESLint.
       '@typescript-eslint/no-unsafe-call': 'off',
     },

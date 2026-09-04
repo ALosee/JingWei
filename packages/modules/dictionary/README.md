@@ -43,9 +43,9 @@ Dictionary 不负责：
 
 ## 数据所有权
 
-| 表 | 作用 | 关键约束 |
-| --- | --- | --- |
-| `dictionary.dictionary_type` | 字典类型 | tenant + code 唯一 |
+| 表                           | 作用       | 关键约束                          |
+| ---------------------------- | ---------- | --------------------------------- |
+| `dictionary.dictionary_type` | 字典类型   | tenant + code 唯一                |
 | `dictionary.dictionary_item` | 类型下条目 | type + code 唯一，type 删除时级联 |
 
 类型和条目都保留 created/updated actor 与时间。条目 `value` 是业务值，`label` 是展示文字；消费者应以稳定 code/value 判断，不能依赖可修改 label。

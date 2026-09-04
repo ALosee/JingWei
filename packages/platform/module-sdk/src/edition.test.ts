@@ -36,18 +36,30 @@ const feature = defineModule({
 
 describe('resolveEdition', () => {
   it('requires the default layout to remain inside the allowed layout set', () => {
-    expect(() => defineModule({ ...feature, routeDefinitions: feature.routeDefinitions.map((route) => ({
-      ...route, allowedLayouts: ['blank'] as const,
-    })) })).toThrow('default layout must be allowed')
-    expect(() => defineModule({ ...feature, routeDefinitions: feature.routeDefinitions.map((route) => ({
-      ...route, allowedLayouts: ['base', 'blank'] as const,
-    })) })).not.toThrow()
+    expect(() =>
+      defineModule({
+        ...feature,
+        routeDefinitions: feature.routeDefinitions.map((route) => ({
+          ...route,
+          allowedLayouts: ['blank'] as const,
+        })),
+      }),
+    ).toThrow('default layout must be allowed')
+    expect(() =>
+      defineModule({
+        ...feature,
+        routeDefinitions: feature.routeDefinitions.map((route) => ({
+          ...route,
+          allowedLayouts: ['base', 'blank'] as const,
+        })),
+      }),
+    ).not.toThrow()
   })
   it('adds required modules and orders dependencies first', () => {
-    const resolved = resolveEdition(
-      defineEdition({ id: 'test', modules: { feature: true } }),
-      [feature, base],
-    )
+    const resolved = resolveEdition(defineEdition({ id: 'test', modules: { feature: true } }), [
+      feature,
+      base,
+    ])
 
     expect(resolved.modules.map(({ manifest }) => manifest.id)).toEqual(['base', 'feature'])
   })

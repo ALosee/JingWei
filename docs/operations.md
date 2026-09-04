@@ -20,16 +20,16 @@ Edition 在构建前确定进入制品的模块集合。不要用同一个含全
 
 应管理的配置类别：
 
-| 类别 | 示例 | 生产要求 |
-| --- | --- | --- |
-| 运行环境 | `NODE_ENV` | 明确设置为 production |
-| 监听 | host、port | 与容器和探针对齐 |
-| 数据库 | PostgreSQL URL | 通过 Secret 注入，启用 TLS/网络隔离 |
-| 日志 | level | 默认结构化输出，不记录 Secret |
-| 会话 | Cookie 名、有效期、安全属性 | HTTPS 下启用 Secure，使用强随机令牌 |
-| Web 来源 | allowed origins | 精确白名单，不使用任意通配 |
-| 匿名启动租户 | BOOTSTRAP_TENANT_CODE | 必须指向活跃真实租户，默认 default；已登录使用 Session tenant |
-| Edition | development/full 等 | 构建和迁移使用同一值 |
+| 类别         | 示例                        | 生产要求                                                      |
+| ------------ | --------------------------- | ------------------------------------------------------------- |
+| 运行环境     | `NODE_ENV`                  | 明确设置为 production                                         |
+| 监听         | host、port                  | 与容器和探针对齐                                              |
+| 数据库       | PostgreSQL URL              | 通过 Secret 注入，启用 TLS/网络隔离                           |
+| 日志         | level                       | 默认结构化输出，不记录 Secret                                 |
+| 会话         | Cookie 名、有效期、安全属性 | HTTPS 下启用 Secure，使用强随机令牌                           |
+| Web 来源     | allowed origins             | 精确白名单，不使用任意通配                                    |
+| 匿名启动租户 | BOOTSTRAP_TENANT_CODE       | 必须指向活跃真实租户，默认 default；已登录使用 Session tenant |
+| Edition      | development/full 等         | 构建和迁移使用同一值                                          |
 
 完整变量名和默认值以 `platform/config` 的 schema 为准。部署模板引用配置时，应在 CI 中执行一次启动验证，防止拼写错误直到生产才暴露。
 

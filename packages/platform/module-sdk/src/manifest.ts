@@ -69,13 +69,22 @@ export function validateManifest(manifest: ModuleManifest): void {
     throw new Error(`Invalid module id: ${manifest.id}`)
   }
 
-  ensureUnique(`${manifest.id} capability`, manifest.capabilities.map(({ id }) => id))
-  ensureUnique(`${manifest.id} permission`, manifest.permissions.map(({ code }) => code))
-  ensureUnique(`${manifest.id} route`, manifest.routeDefinitions.map(({ key }) => key))
   ensureUnique(
-    `${manifest.id} dependency`,
-    [...manifest.dependencies, ...manifest.optionalDependencies],
+    `${manifest.id} capability`,
+    manifest.capabilities.map(({ id }) => id),
   )
+  ensureUnique(
+    `${manifest.id} permission`,
+    manifest.permissions.map(({ code }) => code),
+  )
+  ensureUnique(
+    `${manifest.id} route`,
+    manifest.routeDefinitions.map(({ key }) => key),
+  )
+  ensureUnique(`${manifest.id} dependency`, [
+    ...manifest.dependencies,
+    ...manifest.optionalDependencies,
+  ])
 
   const capabilities = new Set(manifest.capabilities.map(({ id }) => id))
   const permissions = new Set(manifest.permissions.map(({ code }) => code))
@@ -93,23 +102,13 @@ export function validateManifest(manifest: ModuleManifest): void {
     if (!route.key.startsWith(`${manifest.id}.`)) {
       throw new Error(`Route ${route.key} must be owned by module ${manifest.id}`)
     }
-    if (
-      route.requiredCapability !== undefined &&
-      !capabilities.has(route.requiredCapability)
-    ) {
-      throw new Error(
-        `Route ${route.key} requires unknown capability ${route.requiredCapability}`,
-      )
+    if (route.requiredCapability !== undefined && !capabilities.has(route.requiredCapability)) {
+      throw new Error(`Route ${route.key} requires unknown capability ${route.requiredCapability}`)
     }
     if (route.requiredPermission !== undefined && !permissions.has(route.requiredPermission)) {
-      throw new Error(
-        `Route ${route.key} requires unknown permission ${route.requiredPermission}`,
-      )
+      throw new Error(`Route ${route.key} requires unknown permission ${route.requiredPermission}`)
     }
-    if (
-      route.requiredPermission !== undefined &&
-      route.allowedAccessModes.includes('PUBLIC')
-    ) {
+    if (route.requiredPermission !== undefined && route.allowedAccessModes.includes('PUBLIC')) {
       throw new Error(`Permission route ${route.key} cannot allow PUBLIC access`)
     }
   }

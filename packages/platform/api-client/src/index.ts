@@ -41,7 +41,13 @@ export async function requestJson<TSchema extends z.ZodType>(options: {
 
   if (!response.ok) {
     const error = parseError(body)
-    throw new ApiClientError(error.code, error.message, error.requestId, response.status, error.details)
+    throw new ApiClientError(
+      error.code,
+      error.message,
+      error.requestId,
+      response.status,
+      error.details,
+    )
   }
 
   return options.schema.parse(body)
@@ -66,9 +72,7 @@ function parseError(value: unknown): {
       message: value.message,
       ...('details' in value ? { details: value.details } : {}),
       requestId:
-        'requestId' in value && typeof value.requestId === 'string'
-          ? value.requestId
-          : null,
+        'requestId' in value && typeof value.requestId === 'string' ? value.requestId : null,
     }
   }
   return { code: 'UNEXPECTED_RESPONSE', message: 'Unexpected API response', requestId: null }

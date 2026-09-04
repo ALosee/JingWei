@@ -1,5 +1,5 @@
-import type { PermissionDefinition, RouteDefinition } from './manifest.js'
 import type { ResolvedEdition } from './edition.js'
+import type { PermissionDefinition, RouteDefinition } from './manifest.js'
 
 /**
  * Read-only runtime projection of a resolved Edition.

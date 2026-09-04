@@ -1,4 +1,4 @@
-export type ErrorDetails = Readonly<Record<string, unknown>>;
+export type ErrorDetails = Readonly<Record<string, unknown>>
 
 /**
  * Expected application failure that can cross a protocol boundary.

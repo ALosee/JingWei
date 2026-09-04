@@ -12,16 +12,16 @@ Jingwei 的集中配置解析包。它把不可信的 `process.env` 转换为经
 
 返回的业务友好配置：
 
-| 字段 | 环境变量 | 默认值 |
-| --- | --- | --- |
-| `environment` | `NODE_ENV` | `development` |
-| `http.host` | `HTTP_HOST` | `127.0.0.1` |
-| `http.port` | `HTTP_PORT` | `3000` |
-| `databaseUrl` | `DATABASE_URL` | 本地 Jingwei PostgreSQL |
-| `appOrigin` | `APP_ORIGIN` | `http://localhost:5173` |
-| `bootstrapTenantCode` | `BOOTSTRAP_TENANT_CODE` | `default` |
-| `session.idleSeconds` | `SESSION_IDLE_SECONDS` | `1800` |
-| `session.absoluteSeconds` | `SESSION_ABSOLUTE_SECONDS` | `604800` |
+| 字段                      | 环境变量                   | 默认值                  |
+| ------------------------- | -------------------------- | ----------------------- |
+| `environment`             | `NODE_ENV`                 | `development`           |
+| `http.host`               | `HTTP_HOST`                | `127.0.0.1`             |
+| `http.port`               | `HTTP_PORT`                | `3000`                  |
+| `databaseUrl`             | `DATABASE_URL`             | 本地 Jingwei PostgreSQL |
+| `appOrigin`               | `APP_ORIGIN`               | `http://localhost:5173` |
+| `bootstrapTenantCode`     | `BOOTSTRAP_TENANT_CODE`    | `default`               |
+| `session.idleSeconds`     | `SESSION_IDLE_SECONDS`     | `1800`                  |
+| `session.absoluteSeconds` | `SESSION_ABSOLUTE_SECONDS` | `604800`                |
 
 额外约束：idle 有效期必须严格小于 absolute 有效期；端口必须在合法范围；数据库 URL 必须使用 PostgreSQL 协议。
 

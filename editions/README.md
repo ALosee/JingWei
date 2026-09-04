@@ -6,10 +6,10 @@ Edition 是 Jingwei 的产品组合定义：选择根模块以及可选 capabili
 
 ## 当前 Edition
 
-| 文件 | ID | 用途 | 当前根模块 |
-| --- | --- | --- | --- |
+| 文件             | ID            | 用途                   | 当前根模块                                |
+| ---------------- | ------------- | ---------------------- | ----------------------------------------- |
 | `development.ts` | `development` | 本地开发和默认质量验证 | iam、organization、navigation、dictionary |
-| `full.ts` | `full` | 当前完整产品组合 | iam、organization、navigation、dictionary |
+| `full.ts`        | `full`        | 当前完整产品组合       | iam、organization、navigation、dictionary |
 
 两个 Edition 当前内容相同是初始化阶段的结果，不表示它们应该永久同步。未来差异必须来自明确的交付场景。
 

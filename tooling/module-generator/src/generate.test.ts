@@ -1,7 +1,9 @@
 import { mkdtemp, mkdir, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+
 import { expect, it } from 'vitest'
+
 import { generateModule } from './generate.js'
 import { moduleFiles } from './templates.js'
 

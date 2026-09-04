@@ -1,7 +1,7 @@
 import type { Runtime } from '../bootstrap/runtime.js'
 import { correlateRequest } from './request-id.js'
-import { sessionSecurity } from './session-security.js'
 import { requestLogging } from './request-logging.js'
+import { sessionSecurity } from './session-security.js'
 
 /** Explicit order is a security contract: correlation -> Origin/session/CSRF -> access logging. */
 export function requestContextMiddleware(runtime: Runtime) {

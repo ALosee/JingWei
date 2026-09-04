@@ -1,5 +1,6 @@
 import type { DatabaseRuntime } from '@jingwei/database'
 import type { ModuleRegistry } from '@jingwei/module-sdk'
+
 import { PostgresIamAccess } from '../infrastructure/navigation-access.pg.js'
 import type { IamAccess } from './navigation-access.js'
 

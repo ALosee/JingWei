@@ -36,12 +36,12 @@ Organization 不负责：
 
 ## 数据所有权
 
-| 表 | 作用 | 关键约束 |
-| --- | --- | --- |
-| `organization.org_unit` | 邻接表组织树 | tenant + code 唯一；parent 自引用 |
-| `organization.position` | 某组织内岗位 | tenant + org + code 唯一 |
-| `organization.user_org` | IAM user 与组织关系 | tenant/user/org 复合主键 |
-| `organization.user_position` | IAM user 与岗位关系 | tenant/user/position 复合主键 |
+| 表                           | 作用                | 关键约束                          |
+| ---------------------------- | ------------------- | --------------------------------- |
+| `organization.org_unit`      | 邻接表组织树        | tenant + code 唯一；parent 自引用 |
+| `organization.position`      | 某组织内岗位        | tenant + org + code 唯一          |
+| `organization.user_org`      | IAM user 与组织关系 | tenant/user/org 复合主键          |
+| `organization.user_position` | IAM user 与岗位关系 | tenant/user/position 复合主键     |
 
 跨模块 user ID 不建立到 IAM 表的数据库外键。应用层通过 IAM 公共契约保证主体存在，并通过事件处理删除/禁用后的最终一致性。
 

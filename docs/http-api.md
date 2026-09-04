@@ -23,13 +23,13 @@
 
 服务端会为每个请求建立应用上下文，至少包含：
 
-| 字段 | 含义 | 来源 |
-| --- | --- | --- |
+| 字段        | 含义                     | 来源               |
+| ----------- | ------------------------ | ------------------ |
 | `requestId` | 一次 HTTP 请求的关联标识 | 请求头或服务端生成 |
-| `tenantId` | 当前租户 | 已验证会话 |
-| `userId` | 当前用户 | 已验证会话 |
-| `sessionId` | 当前会话 | 安全 Cookie |
-| `locale` | 用户语言偏好 | 当前实现使用默认值 |
+| `tenantId`  | 当前租户                 | 已验证会话         |
+| `userId`    | 当前用户                 | 已验证会话         |
+| `sessionId` | 当前会话                 | 安全 Cookie        |
+| `locale`    | 用户语言偏好             | 当前实现使用默认值 |
 
 日志、审计和异常响应应沿用同一个 `requestId`，便于跨层追踪。
 
@@ -78,23 +78,23 @@
 
 字段语义：
 
-| 字段 | 稳定性 | 说明 |
-| --- | --- | --- |
-| `code` | 稳定 | 程序判断应使用它，不要匹配 `message` |
-| `message` | 面向人 | 可本地化，不保证文字不变 |
-| `details` | 按错误定义 | 只包含可安全暴露给调用方的信息 |
-| `requestId` | 每次请求不同 | 用于日志定位和客服排障 |
+| 字段        | 稳定性       | 说明                                 |
+| ----------- | ------------ | ------------------------------------ |
+| `code`      | 稳定         | 程序判断应使用它，不要匹配 `message` |
+| `message`   | 面向人       | 可本地化，不保证文字不变             |
+| `details`   | 按错误定义   | 只包含可安全暴露给调用方的信息       |
+| `requestId` | 每次请求不同 | 用于日志定位和客服排障               |
 
 常见状态码：
 
-| HTTP 状态 | 含义 |
-| --- | --- |
-| `400` | JSON、字段或业务输入无效 |
-| `401` | 未登录、会话无效或凭据错误 |
-| `403` | 已认证但缺少权限，或 CSRF/Origin 校验失败 |
-| `404` | 资源或路由不存在 |
-| `409` | 唯一性、状态转换等业务冲突 |
-| `500` | 未预期的服务端错误；响应不得泄露堆栈和数据库细节 |
+| HTTP 状态 | 含义                                             |
+| --------- | ------------------------------------------------ |
+| `400`     | JSON、字段或业务输入无效                         |
+| `401`     | 未登录、会话无效或凭据错误                       |
+| `403`     | 已认证但缺少权限，或 CSRF/Origin 校验失败        |
+| `404`     | 资源或路由不存在                                 |
+| `409`     | 唯一性、状态转换等业务冲突                       |
+| `500`     | 未预期的服务端错误；响应不得泄露堆栈和数据库细节 |
 
 ## 4. 平台接口
 
@@ -188,24 +188,26 @@ bootstrap 和 me 共用响应结构（以下仅示例一个登录节点）：
   "publishedRevision": 1,
   "authEntryCode": "iam.login",
   "homeCode": null,
-  "nodes": [{
-    "id": "00000000-0000-7000-8000-000000000001",
-    "code": "iam.login",
-    "name": "登录",
-    "parentId": null,
-    "type": "PAGE",
-    "status": "ENABLED",
-    "routeKey": "iam.login",
-    "path": "/signin",
-    "layout": "blank",
-    "icon": null,
-    "sortOrder": 0,
-    "accessMode": "PUBLIC",
-    "href": null,
-    "externalTarget": null,
-    "params": {},
-    "query": {}
-  }]
+  "nodes": [
+    {
+      "id": "00000000-0000-7000-8000-000000000001",
+      "code": "iam.login",
+      "name": "登录",
+      "parentId": null,
+      "type": "PAGE",
+      "status": "ENABLED",
+      "routeKey": "iam.login",
+      "path": "/signin",
+      "layout": "blank",
+      "icon": null,
+      "sortOrder": 0,
+      "accessMode": "PUBLIC",
+      "href": null,
+      "externalTarget": null,
+      "params": {},
+      "query": {}
+    }
+  ]
 }
 ```
 
@@ -215,18 +217,18 @@ nodes 是扁平列表，不是嵌套树。parentId 用于菜单展示；MENU/PAG
 
 下表路径均位于 `/api/v1/navigation`，权限是**功能 Permission**，不是 navigation code。
 
-| 方法与路径 | 作用 | 功能权限 |
-| --- | --- | --- |
-| GET /admin | 当前发布指针与全部版本摘要（无 nodes） | navigation.view |
-| GET /catalog | 当前 Edition route keys、布局/访问模式范围、活跃角色 | navigation.view |
-| POST /drafts | 创建草稿，返回 201 + 完整版本 | navigation.manage |
-| GET /versions/:id | 查询完整版本 | navigation.view |
-| PUT /versions/:id | 整体保存草稿 | navigation.manage |
-| POST /versions/:id/validate | 校验已保存快照，返回 issues | navigation.view |
-| POST /versions/:id/publish | 发布草稿 | navigation.publish |
-| POST /versions/:id/rollback | 切回曾发布的版本 | navigation.publish |
-| GET /roles/:roleId/grants | 查询角色导航 code 集合 | navigation.view |
-| PUT /roles/:roleId/grants | 整组替换角色导航 code | navigation.manage + iam.role.manage |
+| 方法与路径                  | 作用                                                 | 功能权限                            |
+| --------------------------- | ---------------------------------------------------- | ----------------------------------- |
+| GET /admin                  | 当前发布指针与全部版本摘要（无 nodes）               | navigation.view                     |
+| GET /catalog                | 当前 Edition route keys、布局/访问模式范围、活跃角色 | navigation.view                     |
+| POST /drafts                | 创建草稿，返回 201 + 完整版本                        | navigation.manage                   |
+| GET /versions/:id           | 查询完整版本                                         | navigation.view                     |
+| PUT /versions/:id           | 整体保存草稿                                         | navigation.manage                   |
+| POST /versions/:id/validate | 校验已保存快照，返回 issues                          | navigation.view                     |
+| POST /versions/:id/publish  | 发布草稿                                             | navigation.publish                  |
+| POST /versions/:id/rollback | 切回曾发布的版本                                     | navigation.publish                  |
+| GET /roles/:roleId/grants   | 查询角色导航 code 集合                               | navigation.view                     |
+| PUT /roles/:roleId/grants   | 整组替换角色导航 code                                | navigation.manage + iam.role.manage |
 
 所有 POST/PUT 要求合法 Origin 与当前 Session 对应的 CSRF Cookie/Header，包括 validate。未知或其他租户的版本返回 404，不返回其内容。
 
@@ -236,17 +238,21 @@ nodes 是扁平列表，不是嵌套树。parentId 用于菜单展示；MENU/PAG
 
 ```json
 {
-  "routes": [{
-    "key": "iam.login",
-    "layout": "blank",
-    "allowedLayouts": ["blank"],
-    "allowedAccessModes": ["PUBLIC"]
-  }],
-  "roles": [{
-    "id": "00000000-0000-7000-8000-000000000200",
-    "code": "development-admin",
-    "name": "开发管理员"
-  }]
+  "routes": [
+    {
+      "key": "iam.login",
+      "layout": "blank",
+      "allowedLayouts": ["blank"],
+      "allowedAccessModes": ["PUBLIC"]
+    }
+  ],
+  "roles": [
+    {
+      "id": "00000000-0000-7000-8000-000000000200",
+      "code": "development-admin",
+      "name": "开发管理员"
+    }
+  ]
 }
 ```
 
@@ -315,18 +321,18 @@ codes 只能是当前发布版本中 PERMISSION 叶节点的 code；DIRECTORY/GR
 
 ### 6.7 错误码与客户端处理
 
-| Code | HTTP | 处理 |
-| --- | --- | --- |
-| INVALID_REQUEST | 400 | 检查 UUID、字段类型和未知字段 |
-| AUTHENTICATION_REQUIRED | 401 | 恢复登录 |
-| PERMISSION_DENIED | 403 | 检查功能角色授权，不要仅检查菜单可见性 |
-| NAVIGATION_VERSION_NOT_FOUND / NAVIGATION_NOT_FOUND / ROLE_NOT_FOUND | 404 | 刷新当前租户数据 |
-| NAVIGATION_EDIT_CONFLICT / NAVIGATION_PUBLISH_CONFLICT / NAVIGATION_GRANT_CONFLICT | 409 | 重新加载并人工合并 |
-| NAVIGATION_VERSION_IMMUTABLE / NAVIGATION_VERSION_STATE | 409 | 创建草稿或选择正确状态 |
-| NAVIGATION_VALIDATION_FAILED / NAVIGATION_GRANT_INVALID | 422 | 根据 details/字段修正 |
-| NAVIGATION_NOT_PUBLISHED | 503，grant 操作为 422 | 初始化或发布首个版本 |
-| NAVIGATION_CONFIGURATION_INVALID | 503 | 管理员修复与当前 Edition 不兼容的配置 |
-| INTERNAL_ERROR | 500 | 使用 requestId 查服务端日志，不能向用户展示 SQL |
+| Code                                                                               | HTTP                  | 处理                                            |
+| ---------------------------------------------------------------------------------- | --------------------- | ----------------------------------------------- |
+| INVALID_REQUEST                                                                    | 400                   | 检查 UUID、字段类型和未知字段                   |
+| AUTHENTICATION_REQUIRED                                                            | 401                   | 恢复登录                                        |
+| PERMISSION_DENIED                                                                  | 403                   | 检查功能角色授权，不要仅检查菜单可见性          |
+| NAVIGATION_VERSION_NOT_FOUND / NAVIGATION_NOT_FOUND / ROLE_NOT_FOUND               | 404                   | 刷新当前租户数据                                |
+| NAVIGATION_EDIT_CONFLICT / NAVIGATION_PUBLISH_CONFLICT / NAVIGATION_GRANT_CONFLICT | 409                   | 重新加载并人工合并                              |
+| NAVIGATION_VERSION_IMMUTABLE / NAVIGATION_VERSION_STATE                            | 409                   | 创建草稿或选择正确状态                          |
+| NAVIGATION_VALIDATION_FAILED / NAVIGATION_GRANT_INVALID                            | 422                   | 根据 details/字段修正                           |
+| NAVIGATION_NOT_PUBLISHED                                                           | 503，grant 操作为 422 | 初始化或发布首个版本                            |
+| NAVIGATION_CONFIGURATION_INVALID                                                   | 503                   | 管理员修复与当前 Edition 不兼容的配置           |
+| INTERNAL_ERROR                                                                     | 500                   | 使用 requestId 查服务端日志，不能向用户展示 SQL |
 
 客户端函数与上述接口一一对应，见 `@jingwei/module-navigation/client`。mutation 封装读取可读 CSRF Cookie；浏览器安全常量从 `@jingwei/auth/shared` 导入，避免把 Node 端安全实现打入 Web bundle。
 

@@ -1,4 +1,5 @@
 import type { TenantId } from '@jingwei/kernel'
+
 import type { NavigationVersion } from '../../shared/index.js'
 
 export type { NavigationConfiguration } from '../../shared/index.js'

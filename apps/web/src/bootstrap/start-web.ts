@@ -1,8 +1,13 @@
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
+
 import '@jingwei/ui/styles.css'
 import { getSessionStatus } from '@jingwei/module-iam/client'
-import { getAuthenticatedNavigation, getNavigationBootstrap } from '@jingwei/module-navigation/client'
+import {
+  getAuthenticatedNavigation,
+  getNavigationBootstrap,
+} from '@jingwei/module-navigation/client'
+
 import App from '../App.vue'
 import { initializeNavigation } from '../navigation/initialize-navigation.js'
 import { installDynamicRoutes } from '../router/dynamic-routes.js'

@@ -28,10 +28,10 @@ IAM 不负责：
 
 ### 能力
 
-| Capability | 含义 |
-| --- | --- |
+| Capability           | 含义                       |
+| -------------------- | -------------------------- |
 | `iam.authentication` | 用户认证、会话入口和账号页 |
-| `iam.authorization` | 角色与权限管理能力 |
+| `iam.authorization`  | 角色与权限管理能力         |
 
 ### 权限
 
@@ -39,24 +39,24 @@ IAM 不负责：
 
 ### 页面路由
 
-| Route key | 页面 | 访问模式 | 要求 |
-| --- | --- | --- | --- |
-| `iam.login` | `IamLogin` | `blank` / PUBLIC | `iam.authentication` |
+| Route key     | 页面         | 访问模式               | 要求                 |
+| ------------- | ------------ | ---------------------- | -------------------- |
+| `iam.login`   | `IamLogin`   | `blank` / PUBLIC       | `iam.authentication` |
 | `iam.account` | `IamAccount` | `base` / AUTHENTICATED | `iam.authentication` |
 
 IAM 没有必需业务模块依赖，因此是多个 foundation 模块的依赖根。
 
 ## 数据所有权
 
-| 表 | 用途 | 关键约束 |
-| --- | --- | --- |
-| `iam.user` | 租户用户身份 | tenant + normalized username/email 唯一 |
-| `iam.user_credential` | 密码摘要、失败次数、锁定 | user 一对一，级联删除 |
-| `iam.role` | 租户角色 | tenant + code 唯一 |
-| `iam.user_role` | 用户角色分配 | tenant/user/role 复合主键 |
-| `iam.permission_definition` | 模块 manifest 权限的运行时投影 | permission code 全局主键 |
-| `iam.role_permission` | 角色权限与 scope type | role/permission 复合主键 |
-| `iam.role_permission_org_scope` | 自定义组织范围 | role/permission/org 复合主键 |
+| 表                              | 用途                           | 关键约束                                |
+| ------------------------------- | ------------------------------ | --------------------------------------- |
+| `iam.user`                      | 租户用户身份                   | tenant + normalized username/email 唯一 |
+| `iam.user_credential`           | 密码摘要、失败次数、锁定       | user 一对一，级联删除                   |
+| `iam.role`                      | 租户角色                       | tenant + code 唯一                      |
+| `iam.user_role`                 | 用户角色分配                   | tenant/user/role 复合主键               |
+| `iam.permission_definition`     | 模块 manifest 权限的运行时投影 | permission code 全局主键                |
+| `iam.role_permission`           | 角色权限与 scope type          | role/permission 复合主键                |
+| `iam.role_permission_org_scope` | 自定义组织范围                 | role/permission/org 复合主键            |
 
 IAM 不直接拥有会话表。Organization 的 org ID 作为跨模块标识保存，不建立跨模块数据库外键，避免破坏模块独立演进。
 

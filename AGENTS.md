@@ -86,6 +86,7 @@
 - 安全、权限、审批、作废、财务、库存和关键配置操作必须审计。Audit Log append-only。
 - Bug fix 先增加可复现测试；复杂 Domain/Application 规则必须测试；Repository/API 用集成测试；关键路径使用 Playwright。不要追求无意义 100% coverage。
 - 新 dependency 必须证明标准库和现有依赖不能合理完成、维护状态可接受、长期成本值得。不得为几十行简单代码增加依赖。
+- ESLint 负责代码质量，Oxfmt 负责格式化和导入排序。保留严格 TypeScript 与 Vue 质量检查，不启用与 Oxfmt 冲突的排版规则。格式和排序以根 `.oxfmtrc.json` 为准；副作用导入保留顺序，生成文件、锁文件和构建/测试产物不手动格式化。
 - 客户差异只能通过 Edition、Module、Capability、Config 表达；禁止散落 `if (customerId === ...)`。
 - 改动只覆盖必要范围；发现旁支问题记录，而不是顺手重写无关模块。
 
@@ -96,6 +97,7 @@
 ```text
 pnpm typecheck
 pnpm lint
+pnpm format:check
 pnpm architecture:check
 pnpm test
 pnpm build

@@ -4,17 +4,18 @@ Jingwei 的质量门不只是“测试通过”。它同时验证类型、风格
 
 ## 1. 根级命令
 
-| 命令 | 验证内容 | 何时必须运行 |
-| --- | --- | --- |
-| `pnpm lint` | ESLint 规则 | TypeScript/配置变更 |
-| `pnpm typecheck` | 全工作区类型关系 | 所有代码变更 |
-| `pnpm architecture:check` | 模块边界、薄入口、装配、服务端分层和页面职责 | 导入或分层变更 |
-| `pnpm test` | Vitest 单元/集成测试 | 所有行为变更 |
-| `pnpm test:auth:real` | 对已启动 Server 和真实 PostgreSQL 执行完整认证烟雾链路 | 认证、Session、CSRF、迁移变更 |
-| `pnpm test:navigation:real` | 自动创建临时 PG 数据库，验证导航迁移、RBAC、租户、并发、回滚和事务 | 导航/授权/迁移变更 |
-| `pnpm check` | typecheck → lint → architecture:check → test → build | 提交前 |
-| `pnpm build` | Edition 生成与生产打包 | 入口、Edition、构建变更 |
-| `pnpm test:e2e` | 浏览器端关键用户路径 | UI、认证、路由变更 |
+| 命令                        | 验证内容                                                            | 何时必须运行                  |
+| --------------------------- | ------------------------------------------------------------------- | ----------------------------- |
+| `pnpm lint`                 | ESLint 规则                                                         | TypeScript/配置变更           |
+| `pnpm format:check`         | Oxfmt 排版和导入排序                                                | 手写代码、配置和文档变更      |
+| `pnpm typecheck`            | 全工作区类型关系                                                    | 所有代码变更                  |
+| `pnpm architecture:check`   | 模块边界、薄入口、装配、服务端分层和页面职责                        | 导入或分层变更                |
+| `pnpm test`                 | Vitest 单元/集成测试                                                | 所有行为变更                  |
+| `pnpm test:auth:real`       | 对已启动 Server 和真实 PostgreSQL 执行完整认证烟雾链路              | 认证、Session、CSRF、迁移变更 |
+| `pnpm test:navigation:real` | 自动创建临时 PG 数据库，验证导航迁移、RBAC、租户、并发、回滚和事务  | 导航/授权/迁移变更            |
+| `pnpm check`                | format:check → typecheck → lint → architecture:check → test → build | 提交前                        |
+| `pnpm build`                | Edition 生成与生产打包                                              | 入口、Edition、构建变更       |
+| `pnpm test:e2e`             | 浏览器端关键用户路径                                                | UI、认证、路由变更            |
 
 `pnpm check` 已包含生产构建，但不会启动产物、运行真实 PostgreSQL suite 或 E2E；应用/构建链变更还应从纯 Node 运行构建产物，另执行相关集成测试。
 
@@ -106,14 +107,14 @@ Edition 既是逻辑选择，也是物理交付边界。测试应验证：
 
 身份、权限或数据访问变化至少考虑：
 
-| 维度 | 例子 |
-| --- | --- |
-| 身份 | 匿名、有效会话、过期会话、已撤销会话 |
-| 权限 | 有权限、无权限、能力在 Edition 中不存在 |
-| 租户 | 当前租户、其他租户、未知租户 |
+| 维度 | 例子                                           |
+| ---- | ---------------------------------------------- |
+| 身份 | 匿名、有效会话、过期会话、已撤销会话           |
+| 权限 | 有权限、无权限、能力在 Edition 中不存在        |
+| 租户 | 当前租户、其他租户、未知租户                   |
 | CSRF | 正确 token、缺失、Cookie/头不一致、错误 Origin |
-| 输入 | 正常、边界、格式错误、超长、恶意内容 |
-| 并发 | 重复提交、唯一冲突、重复事件、worker 抢占 |
+| 输入 | 正常、边界、格式错误、超长、恶意内容           |
+| 并发 | 重复提交、唯一冲突、重复事件、worker 抢占      |
 
 测试数据和快照不得包含真实密码、Token 或个人敏感信息。
 
@@ -135,6 +136,8 @@ Edition 既是逻辑选择，也是物理交付边界。测试应验证：
 如果问题来自架构边界未被机器检查，应同时扩展 `architecture-check`，把一次事故转化为长期护栏。
 
 ## 8. CI 建议顺序
+
+当前 `.github/workflows/quality.yml` 在 push 和 pull request 时安装锁定依赖，并执行 `pnpm check`。格式检查不会写文件；修复方式见 [开发指南](./development-guide.md#14-lint格式化与导入排序)。真实数据库、运行产物烟雾测试和 E2E 仍按下面的变更范围另行执行，不包含在这个基础质量工作流内。
 
 推荐流水线：
 

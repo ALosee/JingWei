@@ -4,16 +4,16 @@ PostgreSQL/Kysely 的平台运行时、事务和迁移基础。它统一管理�
 
 ## 导出
 
-| API | 作用 |
-| --- | --- |
-| `DatabaseRuntime` | 持有一个进程级 `pg.Pool`，创建类型化 Kysely 视图 |
-| `TenantDirectory` | 按租户 code 查询有效租户的端口 |
-| `PostgresTenantDirectory` | `platform.tenant` 的 PostgreSQL 实现 |
-| `TransactionRunner<T>` | 以统一接口执行 Kysely 事务 |
-| `createTransactionRunner` | 从 Kysely 视图创建事务执行器 |
-| `MigrationMap` | 静态迁移名到 Kysely Migration 的映射 |
-| `StaticMigrationProvider` | 向 Kysely Migrator 提供不可变迁移集合 |
-| `./migrations` | 平台基础表迁移入口 |
+| API                       | 作用                                             |
+| ------------------------- | ------------------------------------------------ |
+| `DatabaseRuntime`         | 持有一个进程级 `pg.Pool`，创建类型化 Kysely 视图 |
+| `TenantDirectory`         | 按租户 code 查询有效租户的端口                   |
+| `PostgresTenantDirectory` | `platform.tenant` 的 PostgreSQL 实现             |
+| `TransactionRunner<T>`    | 以统一接口执行 Kysely 事务                       |
+| `createTransactionRunner` | 从 Kysely 视图创建事务执行器                     |
+| `MigrationMap`            | 静态迁移名到 Kysely Migration 的映射             |
+| `StaticMigrationProvider` | 向 Kysely Migrator 提供不可变迁移集合            |
+| `./migrations`            | 平台基础表迁移入口                               |
 
 ## `DatabaseRuntime`
 

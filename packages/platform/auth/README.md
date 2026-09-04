@@ -6,18 +6,18 @@
 
 本包拥有 `platform.auth_session` 和相应迁移，但不拥有用户表。它只使用已确认的 `TenantId`、`UserId` 创建会话。
 
-| API | 作用 |
-| --- | --- |
-| `PasswordHasher` | 密码 hash/verify 端口 |
-| `Argon2idPasswordHasher` | 固定安全参数的 Argon2id 实现 |
-| `SessionRepository` | 会话持久化端口 |
-| `PostgresSessionRepository` | PostgreSQL 实现 |
-| `SessionService` | 创建、认证、滑动过期、撤销会话 |
-| `hashOpaqueToken` | 对随机令牌生成 SHA-256 摘要 |
-| `tokenMatchesHash` | 恒定时间策略比较令牌摘要 |
-| Cookie/CSRF 常量与函数 | HTTP 安全边界共享契约 |
-| `./shared` | 浏览器安全的 session/CSRF Cookie 与 Header 名常量，不引入 Node/Argon2/PostgreSQL 实现 |
-| `./migrations` | `platform.auth_session` 迁移 |
+| API                         | 作用                                                                                  |
+| --------------------------- | ------------------------------------------------------------------------------------- |
+| `PasswordHasher`            | 密码 hash/verify 端口                                                                 |
+| `Argon2idPasswordHasher`    | 固定安全参数的 Argon2id 实现                                                          |
+| `SessionRepository`         | 会话持久化端口                                                                        |
+| `PostgresSessionRepository` | PostgreSQL 实现                                                                       |
+| `SessionService`            | 创建、认证、滑动过期、撤销会话                                                        |
+| `hashOpaqueToken`           | 对随机令牌生成 SHA-256 摘要                                                           |
+| `tokenMatchesHash`          | 恒定时间策略比较令牌摘要                                                              |
+| Cookie/CSRF 常量与函数      | HTTP 安全边界共享契约                                                                 |
+| `./shared`                  | 浏览器安全的 session/CSRF Cookie 与 Header 名常量，不引入 Node/Argon2/PostgreSQL 实现 |
+| `./migrations`              | `platform.auth_session` 迁移                                                          |
 
 ## 密码
 

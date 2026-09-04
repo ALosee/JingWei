@@ -6,9 +6,7 @@ import {
   type Clock,
 } from '@jingwei/kernel'
 
-export function createTestContext(
-  overrides: Partial<ApplicationContext> = {},
-): ApplicationContext {
+export function createTestContext(overrides: Partial<ApplicationContext> = {}): ApplicationContext {
   return {
     requestId: overrides.requestId ?? newRequestId(),
     tenantId: overrides.tenantId ?? newTenantId(),

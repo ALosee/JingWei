@@ -35,11 +35,7 @@ export async function up(database: Kysely<unknown>): Promise<void> {
     .addColumn('name', 'varchar(200)', (column) => column.notNull())
     .addColumn('status', 'varchar(20)', (column) => column.notNull())
     .addColumn('sort_order', 'integer', (column) => column.notNull().defaultTo(0))
-    .addUniqueConstraint('position_tenant_org_code_uq', [
-      'tenant_id',
-      'org_unit_id',
-      'code',
-    ])
+    .addUniqueConstraint('position_tenant_org_code_uq', ['tenant_id', 'org_unit_id', 'code'])
     .execute()
 
   await database.schema

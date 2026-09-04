@@ -6,7 +6,9 @@ import { DatabaseRuntime, StaticMigrationProvider } from '@jingwei/database'
 import { generatedMigrations } from '../../../../apps/server/src/generated/migrations.js'
 
 /** Explicit command boundary; importing this module performs no I/O. */
-export async function runMigrationCommand(environment: NodeJS.ProcessEnv = process.env): Promise<void> {
+export async function runMigrationCommand(
+  environment: NodeJS.ProcessEnv = process.env,
+): Promise<void> {
   const command = process.argv[2] ?? 'status'
   const config = loadConfig(environment)
   const runtime = new DatabaseRuntime(config.databaseUrl)
@@ -29,7 +31,9 @@ export async function runMigrationCommand(environment: NodeJS.ProcessEnv = proce
     } else if (command === 'status') {
       const migrations = await migrator.getMigrations()
       for (const migration of migrations) {
-        console.log(`${migration.executedAt === undefined ? 'PENDING' : 'EXECUTED'} ${migration.name}`)
+        console.log(
+          `${migration.executedAt === undefined ? 'PENDING' : 'EXECUTED'} ${migration.name}`,
+        )
       }
     } else {
       throw new Error(`Unknown migration command: ${command}`)

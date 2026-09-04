@@ -39,13 +39,13 @@ pnpm edition:generate full
 
 ## 生成文件
 
-| 文件 | 消费者 |
-| --- | --- |
-| `apps/server/src/generated/edition.ts` | `ModuleRegistry` |
-| `apps/server/src/generated/modules.ts` | Server 模块安装 |
-| `apps/server/src/generated/migrations.ts` | migration CLI |
-| `apps/web/src/generated/modules.ts` | 动态页面注册 |
-| `apps/web/src/generated/elegant-router.ts` | 路由页面目录 |
+| 文件                                        | 消费者                        |
+| ------------------------------------------- | ----------------------------- |
+| `apps/server/src/generated/edition.ts`      | `ModuleRegistry`              |
+| `apps/server/src/generated/modules.ts`      | Server 模块安装               |
+| `apps/server/src/generated/migrations.ts`   | migration CLI                 |
+| `apps/web/src/generated/modules.ts`         | 动态页面注册                  |
+| `apps/web/src/generated/elegant-router.ts`  | 路由页面目录                  |
 | `apps/web/src/router/_generated/imports.ts` | Elegant Router 运行前安全占位 |
 
 所有文件带 `GENERATED ... DO NOT EDIT` 头。生成器只有内容变化时才写文件，减少 watch 和构建抖动。

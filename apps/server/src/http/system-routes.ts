@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+
 import type { ServerAppEnv } from '@jingwei/module-sdk/server'
 
 export function createSystemRoutes(editionId: string) {

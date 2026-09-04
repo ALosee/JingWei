@@ -1,4 +1,5 @@
 import type { MiddlewareHandler } from 'hono'
+
 import { newRequestId, toRequestId } from '@jingwei/kernel'
 import type { ServerAppEnv } from '@jingwei/module-sdk/server'
 

@@ -17,14 +17,14 @@ Product
 
 每一层回答不同的问题：
 
-| 层级 | 回答的问题 | 发生时间 |
-|---|---|---|
-| Product | 这是哪个产品族？ | 商业与产品规划 |
-| Edition | 本次交付物包含哪些模块和能力？ | 构建时 |
-| Module | 哪个业务边界拥有代码、数据和规则？ | 设计时与运行时 |
-| Capability | 已启用模块中的哪组可选能力可用？ | 构建时/启动时 |
-| Permission | 当前用户能执行哪个动作？ | 请求运行时 |
-| Data Scope | 获得动作权限后能处理哪些数据行？ | 请求运行时 |
+| 层级       | 回答的问题                         | 发生时间       |
+| ---------- | ---------------------------------- | -------------- |
+| Product    | 这是哪个产品族？                   | 商业与产品规划 |
+| Edition    | 本次交付物包含哪些模块和能力？     | 构建时         |
+| Module     | 哪个业务边界拥有代码、数据和规则？ | 设计时与运行时 |
+| Capability | 已启用模块中的哪组可选能力可用？   | 构建时/启动时  |
+| Permission | 当前用户能执行哪个动作？           | 请求运行时     |
+| Data Scope | 获得动作权限后能处理哪些数据行？   | 请求运行时     |
 
 禁止跨层替代。例如：
 
@@ -59,12 +59,8 @@ export const manifest = defineModule({
   category: 'business',
   dependencies: ['iam'],
   optionalDependencies: [],
-  capabilities: [
-    { id: 'example.core', name: '核心能力' },
-  ],
-  permissions: [
-    { code: 'example.view', name: '查看示例', supportsDataScope: true },
-  ],
+  capabilities: [{ id: 'example.core', name: '核心能力' }],
+  permissions: [{ code: 'example.view', name: '查看示例', supportsDataScope: true }],
   routeDefinitions: [
     {
       key: 'example.list',
@@ -115,7 +111,9 @@ Capability 是 Module 内的可裁剪功能组。它适合表达“同一模块�
 Edition 可以选择模块全部 Capability：
 
 ```ts
-modules: { iam: true }
+modules: {
+  iam: true
+}
 ```
 
 也可以只选择指定 Capability：
@@ -177,13 +175,13 @@ pnpm edition:generate development
 
 生成：
 
-| 文件 | 用途 |
-|---|---|
-| `apps/server/src/generated/edition.ts` | 运行时 Resolved Edition |
-| `apps/server/src/generated/modules.ts` | Hono Server Module 装配顺序 |
-| `apps/server/src/generated/migrations.ts` | 静态 Migration Registry |
-| `apps/web/src/generated/modules.ts` | Web Module/Page Binding |
-| `apps/web/src/generated/elegant-router.ts` | Elegant Router 可扫描的 pageDir |
+| 文件                                        | 用途                                             |
+| ------------------------------------------- | ------------------------------------------------ |
+| `apps/server/src/generated/edition.ts`      | 运行时 Resolved Edition                          |
+| `apps/server/src/generated/modules.ts`      | Hono Server Module 装配顺序                      |
+| `apps/server/src/generated/migrations.ts`   | 静态 Migration Registry                          |
+| `apps/web/src/generated/modules.ts`         | Web Module/Page Binding                          |
+| `apps/web/src/generated/elegant-router.ts`  | Elegant Router 可扫描的 pageDir                  |
 | `apps/web/src/router/_generated/imports.ts` | 类型检查占位，dev/build 时由 Elegant Router 替换 |
 
 这些文件禁止人工修改。任何差异都必须追溯到 Edition、Manifest 或 Builder 本身。

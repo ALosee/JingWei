@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+
 import type { NavigationResponse } from '@jingwei/module-navigation/shared'
 
 export const useShellStore = defineStore('shell', {

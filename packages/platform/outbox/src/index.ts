@@ -1,4 +1,11 @@
-import { sql, QueryCreator, type Insertable, type Kysely, type Selectable, type QueryExecutorProvider } from 'kysely'
+import {
+  sql,
+  QueryCreator,
+  type Insertable,
+  type Kysely,
+  type Selectable,
+  type QueryExecutorProvider,
+} from 'kysely'
 
 import { newEntityId, type TenantId } from '@jingwei/kernel'
 
@@ -39,10 +46,7 @@ export interface IntegrationEvent<TPayload = unknown> {
 
 /** Appends an event using the caller's executor so it can share the business transaction. */
 export class PostgresOutboxAppender {
-  async append(
-    executor: QueryExecutorProvider,
-    event: IntegrationEvent,
-  ): Promise<void> {
+  async append(executor: QueryExecutorProvider, event: IntegrationEvent): Promise<void> {
     const row: Insertable<OutboxTable> = {
       id: newEntityId(),
       tenant_id: event.tenantId,
@@ -61,7 +65,9 @@ export class PostgresOutboxAppender {
     }
 
     await new QueryCreator<OutboxDatabase>({ executor: executor.getExecutor() })
-      .insertInto('platform.outbox').values(row).executeTakeFirstOrThrow()
+      .insertInto('platform.outbox')
+      .values(row)
+      .executeTakeFirstOrThrow()
   }
 }
 

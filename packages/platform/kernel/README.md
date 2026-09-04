@@ -4,17 +4,17 @@
 
 ## 导出
 
-| API | 作用 |
-| --- | --- |
-| `Clock` / `systemClock` | 可替换的时间来源 |
-| `ApplicationContext` | 一次操作的 request、tenant、user 上下文 |
-| `AuthContext` | 在应用上下文上增加 session 和 role 信息 |
-| `ApplicationError` | 可被 HTTP 边界稳定映射的应用失败 |
-| `DomainError` | 领域规则拒绝，默认状态 `422` |
-| `ApiErrorBody` | 服务端错误 JSON 契约 |
-| `new*Id` | 生成 UUIDv7 品牌 ID |
-| `to*Id` | 验证外部字符串并转换为品牌 ID |
-| `PageRequest` / `PageResult` | 跨模块一致的分页形状 |
+| API                          | 作用                                    |
+| ---------------------------- | --------------------------------------- |
+| `Clock` / `systemClock`      | 可替换的时间来源                        |
+| `ApplicationContext`         | 一次操作的 request、tenant、user 上下文 |
+| `AuthContext`                | 在应用上下文上增加 session 和 role 信息 |
+| `ApplicationError`           | 可被 HTTP 边界稳定映射的应用失败        |
+| `DomainError`                | 领域规则拒绝，默认状态 `422`            |
+| `ApiErrorBody`               | 服务端错误 JSON 契约                    |
+| `new*Id`                     | 生成 UUIDv7 品牌 ID                     |
+| `to*Id`                      | 验证外部字符串并转换为品牌 ID           |
+| `PageRequest` / `PageResult` | 跨模块一致的分页形状                    |
 
 ## ID 约定
 

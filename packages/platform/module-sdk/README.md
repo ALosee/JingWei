@@ -6,11 +6,11 @@ Jingwei 模块化和 Edition 机制的核心 SDK。它定义 manifest、Edition 
 
 ## 导出入口
 
-| 入口 | 内容 |
-| --- | --- |
-| `@jingwei/module-sdk` | manifest、Edition、`ModuleRegistry` |
+| 入口                         | 内容                                          |
+| ---------------------------- | --------------------------------------------- |
+| `@jingwei/module-sdk`        | manifest、Edition、`ModuleRegistry`           |
 | `@jingwei/module-sdk/server` | Hono 变量、模块上下文、Server Module 安装契约 |
-| `@jingwei/module-sdk/web` | `WebModule` 与页面绑定 |
+| `@jingwei/module-sdk/web`    | `WebModule` 与页面绑定                        |
 
 Server/Web 契约拆成子路径，避免纯 manifest/构建工具无意引入 Hono 或浏览器相关类型。
 

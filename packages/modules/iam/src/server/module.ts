@@ -2,9 +2,12 @@ import { Argon2idPasswordHasher } from '@jingwei/auth'
 import type { ServerModule } from '@jingwei/module-sdk/server'
 
 import { manifest } from '../manifest.js'
-import { AuthenticateUser } from './application/authenticate-user.js'
 import { createIamRoutes } from './api/routes.js'
-import { PostgresCredentialReader, type IamDatabase } from './infrastructure/credential-reader.pg.js'
+import { AuthenticateUser } from './application/authenticate-user.js'
+import {
+  PostgresCredentialReader,
+  type IamDatabase,
+} from './infrastructure/credential-reader.pg.js'
 
 export const serverModule: ServerModule = {
   manifest,

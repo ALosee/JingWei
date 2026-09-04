@@ -1,5 +1,6 @@
 import type { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
+
 import { ApplicationError, type ApiErrorBody } from '@jingwei/kernel'
 import type { ServerAppEnv } from '@jingwei/module-sdk/server'
 import type { AppLogger } from '@jingwei/observability'
@@ -21,15 +22,19 @@ export function installHttpErrors(app: Hono<ServerAppEnv>, logger: AppLogger): v
     const applicationError =
       error instanceof ApplicationError
         ? error
-        // Hono parses JSON before Zod's hook. Normalize parser failures without exposing its message.
-        : error instanceof HTTPException && error.status === 400
-          ? new ApplicationError({ code: 'INVALID_REQUEST', message: '请求格式不正确', status: 400 })
+        : // Hono parses JSON before Zod's hook. Normalize parser failures without exposing its message.
+          error instanceof HTTPException && error.status === 400
+          ? new ApplicationError({
+              code: 'INVALID_REQUEST',
+              message: '请求格式不正确',
+              status: 400,
+            })
           : new ApplicationError({
-            code: 'INTERNAL_ERROR',
-            message: '服务器内部错误',
-            status: 500,
-            cause: error,
-          })
+              code: 'INTERNAL_ERROR',
+              message: '服务器内部错误',
+              status: 500,
+              cause: error,
+            })
     logger.error(
       {
         requestId: context.get('requestId'),
@@ -43,9 +48,7 @@ export function installHttpErrors(app: Hono<ServerAppEnv>, logger: AppLogger): v
       code: applicationError.code,
       message: applicationError.message,
       requestId: context.get('requestId'),
-      ...(applicationError.details === undefined
-        ? {}
-        : { details: applicationError.details }),
+      ...(applicationError.details === undefined ? {} : { details: applicationError.details }),
     }
     return context.json(body, normalizeStatus(applicationError.status))
   })

@@ -2,11 +2,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-import {
-  resolveEdition,
-  type EditionDefinition,
-  type ResolvedEdition,
-} from '@jingwei/module-sdk'
+import { resolveEdition, type EditionDefinition, type ResolvedEdition } from '@jingwei/module-sdk'
 
 import { discoverModules } from './discovery.js'
 
@@ -81,9 +77,7 @@ async function writeGenerated(path: string, body: string): Promise<void> {
 }
 
 function alias(moduleId: string, suffix: string): string {
-  const identifier = moduleId.replaceAll(/-([a-z])/gu, (_, letter: string) =>
-    letter.toUpperCase(),
-  )
+  const identifier = moduleId.replaceAll(/-([a-z])/gu, (_, letter: string) => letter.toUpperCase())
   return `${identifier}${suffix}`
 }
 
@@ -123,8 +117,7 @@ function serverModulesSource(moduleIds: readonly string[]): string {
 function webModulesSource(moduleIds: readonly string[]): string {
   const imports = moduleIds
     .map(
-      (id) =>
-        `import { webModule as ${alias(id, 'WebModule')} } from '@jingwei/module-${id}/web'`,
+      (id) => `import { webModule as ${alias(id, 'WebModule')} } from '@jingwei/module-${id}/web'`,
     )
     .join('\n')
   const modules = moduleIds.map((id) => `  ${alias(id, 'WebModule')},`).join('\n')

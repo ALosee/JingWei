@@ -4,11 +4,11 @@ Jingwei 的结构化应用日志抽象和 Pino 实现。业务与模块依赖 `A
 
 ## 公共 API
 
-| API | 作用 |
-| --- | --- |
-| `LogContext` | 结构化日志字段，只读键值对象 |
-| `AppLogger` | `child/debug/info/warn/error` 的最小日志端口 |
-| `createLogger({ environment })` | 创建生产可用的 Pino 适配器 |
+| API                             | 作用                                         |
+| ------------------------------- | -------------------------------------------- |
+| `LogContext`                    | 结构化日志字段，只读键值对象                 |
+| `AppLogger`                     | `child/debug/info/warn/error` 的最小日志端口 |
+| `createLogger({ environment })` | 创建生产可用的 Pino 适配器                   |
 
 ```ts
 const requestLogger = logger.child({ requestId, module: 'iam' })

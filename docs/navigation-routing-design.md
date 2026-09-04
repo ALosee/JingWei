@@ -4,14 +4,14 @@
 
 ## 1. routeKey、code 和组件不是同一件事
 
-| 概念 | 所有者 | 示例 | 变化影响 |
-| --- | --- | --- | --- |
-| 页面组件 | Module Web | IamLogin.vue | 实现或文件可以重构 |
-| pageKey | Elegant Router 构建注册表 | IamLogin | PageBinding 映射到组件 |
-| routeKey | Module Manifest | iam.login | 稳定页面身份，不随 URL 改变 |
-| navigation code | Tenant Navigation | signin.entry | 稳定授权资源身份 |
-| path | Tenant Navigation | /signin | 当前租户对页面的 URL 编排 |
-| 功能 permission | Module Manifest / IAM grant | navigation.publish | 服务端操作权限 |
+| 概念            | 所有者                      | 示例               | 变化影响                    |
+| --------------- | --------------------------- | ------------------ | --------------------------- |
+| 页面组件        | Module Web                  | IamLogin.vue       | 实现或文件可以重构          |
+| pageKey         | Elegant Router 构建注册表   | IamLogin           | PageBinding 映射到组件      |
+| routeKey        | Module Manifest             | iam.login          | 稳定页面身份，不随 URL 改变 |
+| navigation code | Tenant Navigation           | signin.entry       | 稳定授权资源身份            |
+| path            | Tenant Navigation           | /signin            | 当前租户对页面的 URL 编排   |
+| 功能 permission | Module Manifest / IAM grant | navigation.publish | 服务端操作权限              |
 
 Elegant Router 的 views key 是组件发现结果，不直接作为数据库授权标识。保持 routeKey → PageBinding.pageKey → views 的映射，可使文件重命名不破坏租户配置和授权。
 
@@ -91,13 +91,13 @@ Version 不是前端代码版本，也不是多余的缓存编号。它保证一
 4. 发布时重新全量校验，并比较 expectedPublishedVersionId；V2 和发布指针在同一事务提交。
 5. 发现问题后回滚指针到 V1；V2 保留为历史记录。
 
-| 字段 | 职责 |
-| --- | --- |
-| schemaVersion | HTTP 响应结构的版本，目前为 2 |
-| versionId | 一个配置快照的 UUID |
+| 字段                         | 职责                                         |
+| ---------------------------- | -------------------------------------------- |
+| schemaVersion                | HTTP 响应结构的版本，目前为 2                |
+| versionId                    | 一个配置快照的 UUID                          |
 | revision / publishedRevision | 租户内配置序号；草稿创建时分配，回滚可能变小 |
-| editRevision | 同一草稿每次保存递增的乐观锁 |
-| publishedVersionId | main 导航根当前指向的快照 |
+| editRevision                 | 同一草稿每次保存递增的乐观锁                 |
+| publishedVersionId           | main 导航根当前指向的快照                    |
 
 发布把已有草稿冻结，不另生成一份重复快照。数据库 trigger 禁止修改/删除发布记录及其节点。草稿保存当前也进行全量语义校验；未完成的无效编辑只留在浏览器中。
 

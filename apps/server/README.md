@@ -79,14 +79,14 @@ Navigation 的 install 通过 IAM 公开工厂获取活跃角色/功能授权服
 
 ## 关键 API
 
-| API | 作用 |
-| --- | --- |
-| `createRuntime(environment?)` | 创建一个进程级、可释放的运行时；测试可以传入显式环境 |
-| `Runtime.dispose()` | 关闭数据库池；未来的 worker/客户端也应纳入这里 |
-| `createApp(runtime)` | 安装中间件与 Edition 模块，返回尚未监听端口的 Hono app |
-| `startServer()` | 进程边界：装配、监听、注册关闭信号，启动失败时清理 |
-| `createShutdown(dependencies)` | 返回一次性、可重复调用的关闭流程，HTTP drain 先于资源释放 |
-| `requestContextMiddleware(runtime)` | 返回 requestId → security → logging 的有序中间件元组 |
+| API                                 | 作用                                                      |
+| ----------------------------------- | --------------------------------------------------------- |
+| `createRuntime(environment?)`       | 创建一个进程级、可释放的运行时；测试可以传入显式环境      |
+| `Runtime.dispose()`                 | 关闭数据库池；未来的 worker/客户端也应纳入这里            |
+| `createApp(runtime)`                | 安装中间件与 Edition 模块，返回尚未监听端口的 Hono app    |
+| `startServer()`                     | 进程边界：装配、监听、注册关闭信号，启动失败时清理        |
+| `createShutdown(dependencies)`      | 返回一次性、可重复调用的关闭流程，HTTP drain 先于资源释放 |
+| `requestContextMiddleware(runtime)` | 返回 requestId → security → logging 的有序中间件元组      |
 
 `createApp` 不直接监听端口，因此可在 HTTP 合约测试中复用。
 

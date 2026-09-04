@@ -14,34 +14,34 @@ Navigation 拥有租户导航配置、发布版本和角色导航授权。它将
 
 所有类型共用 `navigation.navigation_node`，但有互斥字段校验。
 
-| 类型 | 展示 | 路由/目标 | 授权 |
-| --- | --- | --- | --- |
-| DIRECTORY | 可折叠目录 | 无 | 由可见后代推导 |
-| GROUP | 不折叠的分组标题 | 无 | 由可见后代推导 |
-| MENU | 侧栏菜单项 | 内部页面 | accessMode |
-| PAGE | 不出现在侧栏 | 内部页面，可直接访问 | accessMode |
-| EXTERNAL_LINK | 侧栏外链 | href | accessMode，不需要 routeKey |
+| 类型          | 展示             | 路由/目标            | 授权                        |
+| ------------- | ---------------- | -------------------- | --------------------------- |
+| DIRECTORY     | 可折叠目录       | 无                   | 由可见后代推导              |
+| GROUP         | 不折叠的分组标题 | 无                   | 由可见后代推导              |
+| MENU          | 侧栏菜单项       | 内部页面             | accessMode                  |
+| PAGE          | 不出现在侧栏     | 内部页面，可直接访问 | accessMode                  |
+| EXTERNAL_LINK | 侧栏外链         | href                 | accessMode，不需要 routeKey |
 
 共享配置 DTO 定义在 [shared/index.ts](./src/shared/index.ts)，数据库使用 snake_case，API 使用 camelCase：
 
-| 字段 | 含义与约束 |
-| --- | --- |
-| id | 当前版本中的节点 UUID；不是授权标识，克隆/保存后会重新分配 |
-| code | 稳定导航资源标识；版本内唯一，小写字母开头，支持数字、点、下划线、连字符，最长 120 |
-| name | 展示名称，1–200 字符 |
-| type | 上表五种类型 |
-| parentId | 同一版本节点 ID 或 null；表达展示归属，不表达 Vue Router 嵌套 |
-| status | ENABLED / DISABLED；禁用祖先使整个分支不可用 |
-| sortOrder | 同层排序；同值按 code 排序 |
-| icon | 展示图标 key 或 null；不能是 HTML/脚本，当前壳只映射少数内置 key |
-| routeKey | MENU/PAGE 必填；当前 Edition 的稳定页面 key |
-| path | MENU/PAGE 必填；绝对路径模板，不把 query 拼在此字段 |
-| layout | MENU/PAGE 必填；base / blank，受 manifest.allowedLayouts 约束 |
-| accessMode | MENU/PAGE/EXTERNAL_LINK 必填；PUBLIC / AUTHENTICATED / PERMISSION |
-| params | 内部路径的默认参数对象；字符串或数字，不允许表达式 |
-| query | 内部跳转的默认查询对象；标量、null 或标量数组 |
-| href | 仅外链使用；HTTPS URL，不含 username/password |
-| externalTarget | 仅外链使用；SELF / BLANK，BLANK 输出 noopener noreferrer |
+| 字段           | 含义与约束                                                                         |
+| -------------- | ---------------------------------------------------------------------------------- |
+| id             | 当前版本中的节点 UUID；不是授权标识，克隆/保存后会重新分配                         |
+| code           | 稳定导航资源标识；版本内唯一，小写字母开头，支持数字、点、下划线、连字符，最长 120 |
+| name           | 展示名称，1–200 字符                                                               |
+| type           | 上表五种类型                                                                       |
+| parentId       | 同一版本节点 ID 或 null；表达展示归属，不表达 Vue Router 嵌套                      |
+| status         | ENABLED / DISABLED；禁用祖先使整个分支不可用                                       |
+| sortOrder      | 同层排序；同值按 code 排序                                                         |
+| icon           | 展示图标 key 或 null；不能是 HTML/脚本，当前壳只映射少数内置 key                   |
+| routeKey       | MENU/PAGE 必填；当前 Edition 的稳定页面 key                                        |
+| path           | MENU/PAGE 必填；绝对路径模板，不把 query 拼在此字段                                |
+| layout         | MENU/PAGE 必填；base / blank，受 manifest.allowedLayouts 约束                      |
+| accessMode     | MENU/PAGE/EXTERNAL_LINK 必填；PUBLIC / AUTHENTICATED / PERMISSION                  |
+| params         | 内部路径的默认参数对象；字符串或数字，不允许表达式                                 |
+| query          | 内部跳转的默认查询对象；标量、null 或标量数组                                      |
+| href           | 仅外链使用；HTTPS URL，不含 username/password                                      |
+| externalTarget | 仅外链使用；SELF / BLANK，BLANK 输出 noopener noreferrer                           |
 
 DIRECTORY/GROUP 的路由、布局、外链、accessMode 必须为 null，params/query 必须为空。外链将查询串直接写入 href，不混用内部路由字段。
 
@@ -63,12 +63,12 @@ IAM 的 Public API 返回当前活跃角色并判断功能权限，Navigation �
 
 ## 数据所有权与版本
 
-| 表 | 作用 |
-| --- | --- |
-| navigation.navigation | 每租户 main 导航根与 published_version_id |
+| 表                            | 作用                                                     |
+| ----------------------------- | -------------------------------------------------------- |
+| navigation.navigation         | 每租户 main 导航根与 published_version_id                |
 | navigation.navigation_version | 草稿/已发布快照，revision、edit_revision、auth/home code |
-| navigation.navigation_node | 版本内的全部节点 |
-| navigation.role_navigation | tenant + IAM role UUID + navigation code，独立于配置版本 |
+| navigation.navigation_node    | 版本内的全部节点                                         |
+| navigation.role_navigation    | tenant + IAM role UUID + navigation code，独立于配置版本 |
 
 模块内复合外键保证 parent、version、根发布指针属于同一 tenant/version/root。role_id 不建立跨 IAM 外键。
 
@@ -91,12 +91,12 @@ Application 通过 NavigationUnitOfWork 开启事务。保存、发布、回滚�
 
 权限：
 
-| 操作 | 功能权限 |
-| --- | --- |
-| 读取管理配置、目录、角色授权；校验 | navigation.view |
-| 创建/保存草稿 | navigation.manage |
-| 发布/回滚 | navigation.publish |
-| 保存角色导航授权 | navigation.manage + iam.role.manage |
+| 操作                               | 功能权限                            |
+| ---------------------------------- | ----------------------------------- |
+| 读取管理配置、目录、角色授权；校验 | navigation.view                     |
+| 创建/保存草稿                      | navigation.manage                   |
+| 发布/回滚                          | navigation.publish                  |
+| 保存角色导航授权                   | navigation.manage + iam.role.manage |
 
 所有管理接口要求会话；修改请求还要 Origin + CSRF。功能权限由 Manifest 定义，页面授权不能绕过这些检查。
 
@@ -116,13 +116,13 @@ Application 通过 NavigationUnitOfWork 开启事务。保存、发布、回滚�
 
 `NavigationManage.vue` 只保留展示、事件绑定和 controller 组合。网络调用与状态按所有权分在模块自己的 `web/composables/`，不放到 Web 壳或通用 utils：
 
-| Composable | 职责 |
-| --- | --- |
-| `useNavigationManagement` | 装配客户端、确认框与各状态单元，执行首次加载 |
-| `useNavigationEditor` | 本地节点编辑、选中项、JSON 字段、脏状态，不请求 HTTP |
-| `useNavigationVersions` | 版本列表与发布指针，草稿保存/校验/发布/回滚流程 |
-| `useRoleNavigationGrants` | 所选/已加载角色、原始与编辑 code 集合，独立授权提交 |
-| `useNavigationFeedback` | 当前管理页的 busy、操作反馈与安全错误映射 |
+| Composable                | 职责                                                 |
+| ------------------------- | ---------------------------------------------------- |
+| `useNavigationManagement` | 装配客户端、确认框与各状态单元，执行首次加载         |
+| `useNavigationEditor`     | 本地节点编辑、选中项、JSON 字段、脏状态，不请求 HTTP |
+| `useNavigationVersions`   | 版本列表与发布指针，草稿保存/校验/发布/回滚流程      |
+| `useRoleNavigationGrants` | 所选/已加载角色、原始与编辑 code 集合，独立授权提交  |
+| `useNavigationFeedback`   | 当前管理页的 busy、操作反馈与安全错误映射            |
 
 版本保存返回新的节点 ID，必须接纳服务端快照并按 code 恢复选择。角色授权使用 `expectedCodes`，不能借用版本的 `editRevision`；回滚版本也不能重置角色授权状态。流程通过最小客户端端口注入测试，具体规则见 [代码职责与入口约束](../../../docs/code-structure.md)。
 

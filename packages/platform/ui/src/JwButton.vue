@@ -9,11 +9,7 @@ withDefaults(
 </script>
 
 <template>
-  <button
-    class="jw-button"
-    :disabled="disabled"
-    :type="type"
-  >
+  <button class="jw-button" :disabled="disabled" :type="type">
     <slot />
   </button>
 </template>

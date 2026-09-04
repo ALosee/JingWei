@@ -19,6 +19,7 @@ catalog:
   globals: 17.11.0
   hono: 4.13.5
   kysely: 0.29.5
+  oxfmt: 0.66.0
   pg: 8.23.0
   pinia: 4.0.3
   pino: 10.3.1

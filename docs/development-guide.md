@@ -29,10 +29,10 @@ pnpm dev
 
 所有环境文件都放在仓库根目录。启动命令与读取范围如下：
 
-| 命令 | Server 读取 | Web/Vite mode | 用途 |
-| --- | --- | --- | --- |
-| `pnpm dev` | `.env`、`.env.local`、`.env.development`、`.env.development.local` | `development` | 日常开发 |
-| `pnpm dev:test` | `.env.test` | `test` | 使用测试配置做本地联调 |
+| 命令            | Server 读取                                                        | Web/Vite mode | 用途                   |
+| --------------- | ------------------------------------------------------------------ | ------------- | ---------------------- |
+| `pnpm dev`      | `.env`、`.env.local`、`.env.development`、`.env.development.local` | `development` | 日常开发               |
+| `pnpm dev:test` | `.env.test`                                                        | `test`        | 使用测试配置做本地联调 |
 
 `.env.test` 不会被普通 `pnpm dev` 自动读取。这种隔离可以避免测试数据库、测试来源或更短的会话配置意外进入日常开发进程。若配置写在 `.env.test`，修改后应以 `pnpm dev:test` 重启；若希望继续使用 `pnpm dev`，则把本机覆盖项放入不提交的 `.env.development.local`。
 
@@ -40,18 +40,40 @@ pnpm dev
 
 使用 `.env.test` 的完整迁移/导航初始化命令见 [迁移工具](../tooling/migration/README.md#显式使用-envtest)。已有用户不要为了初始化导航重复 seed:dev；seed:navigation 不修改密码，只初始化开发角色/导航授权，并保留已发布配置。
 
+### 1.4 Lint、格式化与导入排序
+
+ESLint 负责严格 TypeScript、Vue 模板正确性和代码约定；Oxfmt 负责排版和导入排序。根 `.oxfmtrc.json` 是统一格式来源：两空格、单引号、无分号、允许尾逗号、参考行宽 100、LF 换行。Markdown 保留正文的手动换行。
+
+```bash
+pnpm lint          # 只检查代码质量，任何 warning 都失败
+pnpm lint:fix      # 修复可自动修复的 lint 问题
+pnpm format        # 格式化手写文件并排序导入
+pnpm format:check  # 只检查格式，供 CI 和提交前使用
+pnpm check         # 完整质量门，包含格式检查和生产构建
+```
+
+导入按 Node 内置模块、第三方包、`@jingwei/*` 工作区包、相对路径、样式导入分组，组间空一行，组内按来源升序排列。类型导入跟随来源分组，继续由 ESLint 要求使用 `import type`。副作用导入保留顺序；注释作为排序分界，不跨注释重排。不要另开编辑器的 Organize Imports 或 ESLint 导入排序规则。
+
+格式化覆盖 TS/JS、Vue、CSS、JSON、YAML、Markdown 和 HTML 等支持的手写文件。`generated`、`_generated`、`pnpm-lock.yaml`、依赖目录、构建和测试产物被排除；修改生成物应修改其来源。Oxfmt 不重排 `package.json` 字段，避免改变有序配置的含义。
+
+VS Code/Cursor 打开仓库根目录后，安装 `.vscode/extensions.json` 推荐的 ESLint、Oxc 和 Vue 扩展。仓库配置让 Oxfmt 在保存时格式化，ESLint 执行代码修复，并关闭 Oxc 扩展中的 Oxlint。其他编辑器使用项目内的 Oxfmt 和根配置，不依赖个人全局版本。`.editorconfig` 提供通用缩进和换行约定。
+
+Oxfmt 是唯一新增的格式化依赖：现有 ESLint 无法统一排版上述多种文件，Oxfmt 同时提供导入排序，无需额外排序插件。版本固定在 pnpm catalog；升级时审查格式差异并运行完整质量门。Oxfmt 当前的 Vue、HTML、Markdown 支持内部使用其捆绑的 Prettier，不需要单独安装或配置 Prettier。
+
+首次格式化与功能修改分开审查；日常修改可先运行 `pnpm lint:fix`，再运行 `pnpm format`。CI 只检查，不自动改写源码。
+
 ## 2. 先判断变更属于哪里
 
-| 变更 | 首选位置 |
-| --- | --- |
-| 用户、会话、权限、数据范围 | `modules/iam` |
-| 菜单、页面来源、路由解析 | `modules/navigation` |
-| 组织树与组织查询 | `modules/organization` |
-| 字典类型与条目 | `modules/dictionary` |
-| 跨业务复用且不含业务语义的能力 | `platform/*` |
-| 产品组合差异 | `editions/*` |
-| 进程装配、HTTP 容器和前端壳 | `apps/*` |
-| 构建、迁移、生成和架构检查 | `tooling/*` |
+| 变更                           | 首选位置               |
+| ------------------------------ | ---------------------- |
+| 用户、会话、权限、数据范围     | `modules/iam`          |
+| 菜单、页面来源、路由解析       | `modules/navigation`   |
+| 组织树与组织查询               | `modules/organization` |
+| 字典类型与条目                 | `modules/dictionary`   |
+| 跨业务复用且不含业务语义的能力 | `platform/*`           |
+| 产品组合差异                   | `editions/*`           |
+| 进程装配、HTTP 容器和前端壳    | `apps/*`               |
+| 构建、迁移、生成和架构检查     | `tooling/*`            |
 
 如果一个能力有明确业务所有者，就不应为了“复用”下沉到 platform。platform 只承载稳定、通用、没有单一业务归属的机制。
 

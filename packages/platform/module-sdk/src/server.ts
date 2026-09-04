@@ -14,7 +14,9 @@ export interface ServerAppVariables {
   requestId: RequestId
 }
 
-export interface ServerAppEnv { Variables: ServerAppVariables }
+export interface ServerAppEnv {
+  Variables: ServerAppVariables
+}
 
 export interface ServerModuleContext {
   readonly config: AppConfig
