@@ -1,0 +1,4 @@
+interface:
+  display_name: 'Jingwei UI Development'
+  short_description: 'Build Jingwei shared UI components with UnoCSS'
+  default_prompt: 'Use $jingwei-ui-development to add or adapt a shared Jingwei UI component.'

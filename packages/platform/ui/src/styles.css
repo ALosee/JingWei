@@ -10,12 +10,23 @@
     sans-serif;
   --jw-color-brand: #2855d9;
   --jw-color-brand-hover: #1f46ba;
+  --jw-color-brand-active: #193a9b;
+  --jw-color-on-brand: #ffffff;
   --jw-color-text: #152033;
   --jw-color-muted: #667085;
   --jw-color-border: #dfe4ec;
   --jw-color-surface: #ffffff;
   --jw-color-canvas: #f5f7fb;
-  --jw-radius: 10px;
+  --jw-color-subtle: #eef2f8;
+  --jw-color-subtle-hover: #e4eaf3;
+  --jw-color-subtle-active: #d8e0ec;
+  --jw-color-danger: #b42318;
+  --jw-color-danger-hover: #912018;
+  --jw-color-danger-active: #7a1b14;
+  --jw-color-on-danger: #ffffff;
+  --jw-color-focus-ring: #5c7cfa;
+  --jw-radius-md: 10px;
+  --jw-radius: var(--jw-radius-md);
   --jw-space-1: 0.25rem;
   --jw-space-2: 0.5rem;
   --jw-space-3: 0.75rem;
@@ -32,25 +43,6 @@ body {
   margin: 0;
   color: var(--jw-color-text);
   background: var(--jw-color-canvas);
-}
-
-.jw-button {
-  min-height: 2.5rem;
-  padding: 0 var(--jw-space-4);
-  border: 0;
-  border-radius: var(--jw-radius);
-  color: white;
-  background: var(--jw-color-brand);
-  cursor: pointer;
-}
-
-.jw-button:hover:not(:disabled) {
-  background: var(--jw-color-brand-hover);
-}
-
-.jw-button:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
 }
 
 .jw-page {

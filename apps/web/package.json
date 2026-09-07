@@ -28,6 +28,7 @@
     "@vitejs/plugin-vue": "catalog:",
     "elegant-router": "catalog:",
     "typescript": "catalog:",
+    "unocss": "catalog:",
     "vite": "catalog:",
     "vue-tsc": "catalog:"
   }

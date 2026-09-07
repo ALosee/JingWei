@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { PageContainer } from '@jingwei/ui'
+import { Button, PageContainer } from '@jingwei/ui'
 
 import { isContainer, isInternal, navigationNodeTypes } from '../../shared/index.js'
 import { useNavigationManagement } from '../composables/use-navigation-management.js'
@@ -47,7 +47,7 @@ const { roleId, loadedRoleId, grants, assignable, retiredCodes, loadRole, saveGr
           </option>
         </select>
       </label>
-      <button :disabled="busy" @click="newDraft">基于所选版本创建草稿</button>
+      <Button :disabled="busy" variant="outline" @click="newDraft"> 基于所选版本创建草稿 </Button>
       <a href="/">重新进入工作区</a>
     </div>
     <section v-if="version" class="panel">
@@ -56,17 +56,20 @@ const { roleId, loadedRoleId, grants, assignable, retiredCodes, loadRole, saveGr
           >V{{ version.revision }} / 编辑修订 {{ version.editRevision
           }}{{ dirty ? ' · 未保存' : '' }}</strong
         >
-        <button :disabled="readOnly" @click="save">保存草稿</button>
-        <button :disabled="busy || dirty" @click="validate">校验已保存版本</button>
-        <button :disabled="readOnly || dirty" @click="publish(false)">发布</button>
-        <button
+        <Button :disabled="readOnly" @click="save">保存草稿</Button>
+        <Button :disabled="busy || dirty" variant="outline" @click="validate">
+          校验已保存版本
+        </Button>
+        <Button :disabled="readOnly || dirty" @click="publish(false)">发布</Button>
+        <Button
           :disabled="
             busy || version.status !== 'PUBLISHED' || version.id === admin.publishedVersionId
           "
+          variant="danger"
           @click="publish(true)"
         >
           回滚到此版本
-        </button>
+        </Button>
       </div>
       <fieldset :disabled="readOnly" class="entries" @input="dirty = true" @change="dirty = true">
         <label>登录入口 code<input v-model="version.authEntryCode" /></label>
@@ -87,20 +90,24 @@ const { roleId, loadedRoleId, grants, assignable, retiredCodes, loadRole, saveGr
       <div class="editor">
         <div>
           <div class="toolbar">
-            <button :disabled="readOnly" @click="addNode">新增节点</button
-            ><button :disabled="readOnly || !selected" @click="removeNode">删除节点</button>
+            <Button :disabled="readOnly" variant="outline" @click="addNode">新增节点</Button>
+            <Button :disabled="readOnly || !selected" variant="danger" @click="removeNode">
+              删除节点
+            </Button>
           </div>
           <div class="node-list">
-            <button
+            <Button
               v-for="node in version.nodes"
               :key="node.id"
               class="node"
               :class="{ selected: node.id === selectedId }"
+              size="sm"
+              variant="ghost"
               @click="selectNode(node.id)"
             >
               <strong>{{ node.name }}</strong
               ><small>{{ node.type }} · {{ node.code }} · {{ node.status }}</small>
-            </button>
+            </Button>
           </div>
         </div>
         <fieldset
@@ -210,9 +217,9 @@ const { roleId, loadedRoleId, grants, assignable, retiredCodes, loadRole, saveGr
             </option>
           </select></label
         >
-        <button :disabled="busy || !roleId || loadedRoleId !== roleId" @click="saveGrants">
+        <Button :disabled="busy || !roleId || loadedRoleId !== roleId" @click="saveGrants">
           保存角色导航授权
-        </button>
+        </Button>
       </div>
       <div v-if="roleId && loadedRoleId === roleId" class="grants">
         <label v-for="node in assignable" :key="node.code"
@@ -260,22 +267,12 @@ label {
 }
 input,
 select,
-textarea,
-button {
+textarea {
   font: inherit;
   padding: 0.55rem 0.65rem;
   border: 1px solid #ccd5e2;
   border-radius: 0.35rem;
   max-width: 100%;
-}
-button {
-  cursor: pointer;
-  background: #f8faff;
-  color: #203b66;
-}
-button:disabled {
-  opacity: 0.45;
-  cursor: default;
 }
 fieldset {
   border: 0;

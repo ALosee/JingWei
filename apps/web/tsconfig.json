@@ -8,6 +8,7 @@
     "src/**/*.ts",
     "src/**/*.vue",
     "elegant-router.config.ts",
+    "uno.config.ts",
     "vite.config.ts",
     "playwright.config.ts",
     "e2e/**/*.ts",

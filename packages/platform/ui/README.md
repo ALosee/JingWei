@@ -6,16 +6,22 @@ Jingwei Web 的基础 UI 组件与全局设计样式入口。它提供无业务�
 
 | 入口                     | 内容                           |
 | ------------------------ | ------------------------------ |
-| `@jingwei/ui`            | `JwButton`、`PageContainer`    |
+| `@jingwei/ui`            | `Button`、`PageContainer`      |
 | `@jingwei/ui/styles.css` | 全局 token、基础元素和通用样式 |
 
 Web 壳在应用入口导入一次 `styles.css`。模块不重复加载全局样式，避免顺序依赖。
 
 ## 组件
 
-### `JwButton`
+### `Button`
 
-统一按钮视觉和基础交互。业务模块通过 props/事件表达状态，不复制按钮 CSS。危险操作仍需要业务层确认、权限和错误处理，组件本身不承担授权。
+以 `@soybeanjs/headless/button` 为无障碍交互基底，在本仓库中拥有视觉 API。当前提供
+`primary`、`secondary`、`outline`、`ghost`、`danger` 五种 variant，`sm`、`md`、`lg`
+三种尺寸以及 `loading` 状态。业务模块只从 `@jingwei/ui` 导入，不直接依赖 SoybeanUI。
+
+组件源码基于 SoybeanUI `0.30.0` 的 Button 做最小适配：保留 headless 的默认
+`type="button"`、禁用语义和事件保护，样式收敛为 Jingwei 的 token 与 UnoCSS recipe。未复制
+ButtonGroup、ButtonLink、图标等尚未使用的实现。
 
 ### `PageContainer`
 
@@ -46,3 +52,10 @@ Web 壳在应用入口导入一次 `styles.css`。模块不重复加载全局样
 - 样式通过 token 表达，不散落重复常量；
 - 至少在真实页面或组件测试中验证；
 - 破坏外观或 API 的改动要检查所有模块调用方。
+
+## 源码同步流程
+
+根 `sbean.json` 把 `ui` 输出目录指向本包，`sbean` 与 Soybean Headless 版本固定为 `0.30.0`。
+新增组件前先运行 `pnpm ui:inspect <component>` 检查依赖和文件，再只复制当前需要的
+primitive、类型和样式 recipe。生成结果是上游参考，不直接覆盖本地组件；合并时保留无前缀公共
+命名、语义 token、显式 exports 和现有测试。

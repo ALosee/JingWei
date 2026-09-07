@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { JwButton } from '@jingwei/ui'
+import { Button } from '@jingwei/ui'
 
 import { useSignIn } from '../composables/use-sign-in.js'
 
@@ -21,9 +21,9 @@ const { tenantCode, username, password, errorMessage, submitting, submit } = use
         <p v-if="errorMessage" class="error">
           {{ errorMessage }}
         </p>
-        <JwButton type="submit" :disabled="submitting">
+        <Button type="submit" :loading="submitting">
           {{ submitting ? '正在登录…' : '登录' }}
-        </JwButton>
+        </Button>
       </form>
     </section>
   </main>

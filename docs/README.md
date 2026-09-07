@@ -58,6 +58,7 @@
 | [testing-quality.md](./testing-quality.md)                             | 如何测试，CI 为什么会失败？                                  |
 | [operations.md](./operations.md)                                       | 如何配置、迁移、构建、启动和排障？                           |
 | [glossary.md](./glossary.md)                                           | 项目术语的精确定义是什么？                                   |
+| [references/soybean-ui.md](./references/soybean-ui.md)                 | SoybeanUI Skill、AI 文档和上游版本如何固定与更新？           |
 
 ## 子项目文档
 

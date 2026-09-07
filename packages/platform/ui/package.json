@@ -11,6 +11,8 @@
     "typecheck": "vue-tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
+    "@soybeanjs/cva": "catalog:",
+    "@soybeanjs/headless": "catalog:",
     "vue": "catalog:"
   },
   "devDependencies": {

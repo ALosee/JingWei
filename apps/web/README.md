@@ -2,6 +2,9 @@
 
 Jingwei 的 Vue 3 Web 壳应用。它负责启动 Pinia 和 Router、恢复导航、安装 Edition 页面并在启动失败时进入可用的恢复界面。
 
+Web 构建通过 `unocss/vite` 扫描壳与各模块页面，`src/bootstrap/start-web.ts` 统一加载生成样式。
+原子类使用 `uno.config.ts` 中映射到 `@jingwei/ui/styles.css` 的语义颜色；模块不自行建立颜色体系。
+
 ## 职责边界
 
 本应用负责：
