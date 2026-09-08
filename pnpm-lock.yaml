@@ -24,6 +24,18 @@ catalogs:
     '@soybeanjs/headless':
       specifier: 0.30.0
       version: 0.30.0
+    '@soybeanjs/theme':
+      specifier: 0.30.0
+      version: 0.30.0
+    '@soybeanjs/ui':
+      specifier: 0.30.0
+      version: 0.30.0
+    '@soybeanjs/ui-uno':
+      specifier: 0.30.0
+      version: 0.30.0
+    '@soybeanjs/unocss-preset':
+      specifier: 0.2.0
+      version: 0.2.0
     '@types/node':
       specifier: 24.13.3
       version: 24.13.3
@@ -283,6 +295,12 @@ importers:
       '@playwright/test':
         specifier: 'catalog:'
         version: 1.62.1
+      '@soybeanjs/ui-uno':
+        specifier: 'catalog:'
+        version: 0.30.0(@devframes/hub@0.9.12(crossws@0.4.12(srvx@1.0.3))(devframe@0.9.12(cac@7.0.0)(srvx@1.0.3)))(@unocss/preset-wind3@66.10.0)(cac@7.0.0)(crossws@0.4.12(srvx@1.0.3))(rolldown@1.2.6)(srvx@1.0.3)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13))
+      '@soybeanjs/unocss-preset':
+        specifier: 'catalog:'
+        version: 0.2.0(@devframes/hub@0.9.12(crossws@0.4.12(srvx@1.0.3))(devframe@0.9.12(cac@7.0.0)(srvx@1.0.3)))(cac@7.0.0)(crossws@0.4.12(srvx@1.0.3))(rolldown@1.2.6)(srvx@1.0.3)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13))
       '@types/node':
         specifier: 'catalog:'
         version: 24.13.3
@@ -643,6 +661,12 @@ importers:
         specifier: 'catalog:'
         version: 0.1.1
       '@soybeanjs/headless':
+        specifier: 'catalog:'
+        version: 0.30.0(vue-router@5.3.0(@vue/compiler-sfc@3.5.42)(esbuild@0.28.2)(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.42(typescript@5.9.3)))(rolldown@1.2.6)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13))(vue@3.5.42(typescript@5.9.3)))(vue@3.5.42(typescript@5.9.3))
+      '@soybeanjs/theme':
+        specifier: 'catalog:'
+        version: 0.30.0
+      '@soybeanjs/ui':
         specifier: 'catalog:'
         version: 0.30.0(vue-router@5.3.0(@vue/compiler-sfc@3.5.42)(esbuild@0.28.2)(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.42(typescript@5.9.3)))(rolldown@1.2.6)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13))(vue@3.5.42(typescript@5.9.3)))(vue@3.5.42(typescript@5.9.3))
       vue:
@@ -1075,6 +1099,11 @@ packages:
 
   '@iconify/utils@3.1.7':
     resolution: {integrity: sha512-JZHlwdID+dy+lTgbYC8NEC4zeugqeYsc6jewvzb4c58kHauJn+X7rNwQjxz5p2qSjqaEeQoLkCIQ9v/H4PK0/w==}
+
+  '@iconify/vue@5.0.1':
+    resolution: {integrity: sha512-aumwwooJlFJ5H5qYWB6ZTAyM0C8hpfcSVLB9/a3qnH1GGvIJ+FEbpEs4s/HfErYe/M5qZeLjwmESR5fFm3lXEw==}
+    peerDependencies:
+      vue: '>=3.0.0'
 
   '@internationalized/date@3.12.4':
     resolution: {integrity: sha512-M1dEn4c1U1HsSlaVR8upZtSqvXrTkHDfv18H01uCSJyjVLDxnBR38v/fMxecmlwXKR4i9HeZcmgQAPE6A+aGJQ==}
@@ -1549,6 +1578,9 @@ packages:
   '@soybeanjs/colord@0.7.1':
     resolution: {integrity: sha512-3hhonqmEX+cEinvU2VU9dwxlvvRQaoy+4e1evr6owfVNJTHnktzhmISZt0pVqzQHuAU3Btoe6MeY47+dT7hPAA==}
 
+  '@soybeanjs/cva@0.0.9':
+    resolution: {integrity: sha512-hzdM6sKk+xqAvmhNVqPS422UVpiqgOuoXJhOrN7UypN01Sa9kIuSklxCKJVYhftBCwXxkjK3nL1/Vj11jPZsCQ==}
+
   '@soybeanjs/cva@0.1.1':
     resolution: {integrity: sha512-fQd4iP1rrrQsktKeiINVGNr9cyLuWNAmwW8cBwkJKuw7UrElrTc9PApBb0vjUCXNVYW8T4oiTT2V7xo7fVzVtw==}
 
@@ -1575,6 +1607,36 @@ packages:
 
   '@soybeanjs/hooks@0.3.0':
     resolution: {integrity: sha512-8OpHhseUXFOs/Az3Q+eO6S+ZJy7FjyEbgEg9a54Kxmz8uMjeU/B06DdN9xDQ/JB1SJ8SSRXaJanbz/9h3hE5jw==}
+
+  '@soybeanjs/theme@0.30.0':
+    resolution: {integrity: sha512-jUtiZMOqPOmV+pL4Ig6v+Z2Lp9blKMWWcxdxFRhW3STlNHk+WQZqd62U9QOEQiWSX47kul0FJdK30yZRs3ddlA==}
+
+  '@soybeanjs/ui-uno@0.30.0':
+    resolution: {integrity: sha512-CU8orr7RTaVIH4/V6XOND9ZddMaj8YHjBGg02LcRVLjar49PTgHqjAHODVMUIWKtAaJEUUwP9DQnh/7A1Axh/Q==}
+
+  '@soybeanjs/ui@0.30.0':
+    resolution: {integrity: sha512-JhzD7k2zhGmQHwGMvdsBQrDK6NdJkzdfNTxbKVm02FAdy25ZVJrDwa5/4arMNwtcBtiYjGCCd4YWaxMQ83igHw==}
+    peerDependencies:
+      '@nuxt/kit': ^4.3.0
+      '@nuxt/schema': ^4.3.0
+      nuxt: '>=4.0.0'
+      unplugin-vue-components: ^31.0.0
+      vue: '>=3.2.0'
+      vue-router: '>=4.0.0'
+    peerDependenciesMeta:
+      '@nuxt/kit':
+        optional: true
+      '@nuxt/schema':
+        optional: true
+      nuxt:
+        optional: true
+      unplugin-vue-components:
+        optional: true
+      vue-router:
+        optional: true
+
+  '@soybeanjs/unocss-preset@0.2.0':
+    resolution: {integrity: sha512-ELjt4BKoU3NsrvzPHK7EsMMz2ZC8F4Qtpny38qeRvvrS7YzHEj5CwD6LeQF2USEo9msJRYU2uwLTIJRFOClNxA==}
 
   '@soybeanjs/utils@0.1.1':
     resolution: {integrity: sha512-Esq2pFyhtA1J6LnHvLXyS9xFGeDfVhaw80IMTabxMhVMQUwDFWMa5KAlrkT0TBmQct1hJTszRo9AvvuUCKGp0w==}
@@ -3475,6 +3537,9 @@ packages:
     resolution: {integrity: sha512-1tB5mhVo7U+ETBKNf92xT4hrQa3pm0MZ0PQvuDnWgAAGHDsfp4lPSpiS6psrSiet87wyGPh9ft6wmhOMQ0hDiw==}
     engines: {node: '>=14.16'}
 
+  tailwind-merge@3.6.0:
+    resolution: {integrity: sha512-uxL7qAVQriqRQPAyK3pj66VqskWqoZ37PW94jwOTwNfq/z9oyu1V+eqrZqtR2+fCiXdYOZe/Modt8GtvqNzu+w==}
+
   thread-stream@4.2.0:
     resolution: {integrity: sha512-e2zZ96wSChazBsbENf/Pcm/4swHt2cEKQ92rhUjkL9GCKiTDJIaTBenjE/m9DXi0QBmTMDkFDdOomUy20A1tDQ==}
     engines: {node: '>=20'}
@@ -3617,6 +3682,15 @@ packages:
   universalify@2.0.1:
     resolution: {integrity: sha512-gptHNQghINnc/vTGIk0SOFGFNXw7JVrlRUtConJRlvaw6DuX0wO5Jeko9sWrMBhh+PsYAZ7oXAiOnf/UKogyiw==}
     engines: {node: '>= 10.0.0'}
+
+  unocss-preset-animations@1.3.0:
+    resolution: {integrity: sha512-NLsBzPB98Jc8b6+t8nwLItI12ZE/48IZVccZ2uA2owLoeAvhRaDoRvs6eLcJfIUZfRycL25xxOeQoOBMo1p/aw==}
+    peerDependencies:
+      '@unocss/preset-wind3': '>=0.56.0 < 101'
+      unocss: '>=0.56.0 < 101'
+    peerDependenciesMeta:
+      '@unocss/preset-wind3':
+        optional: true
 
   unocss@66.10.0:
     resolution: {integrity: sha512-wrYXTcMT+7s6+KkrTiqDajFfttdTxXcxGwtuk6QagQwwUI6E9nyZjpHpblrV/y8jZSRbhFKQJaYWFRSjV/A3CA==}
@@ -4196,6 +4270,11 @@ snapshots:
       '@iconify/types': 2.0.0
       import-meta-resolve: 4.2.0
 
+  '@iconify/vue@5.0.1(vue@3.5.42(typescript@5.9.3))':
+    dependencies:
+      '@iconify/types': 2.0.0
+      vue: 3.5.42(typescript@5.9.3)
+
   '@internationalized/date@3.12.4':
     dependencies:
       '@swc/helpers': 0.5.23
@@ -4507,6 +4586,10 @@ snapshots:
 
   '@soybeanjs/colord@0.7.1': {}
 
+  '@soybeanjs/cva@0.0.9':
+    dependencies:
+      tailwind-merge: 3.6.0
+
   '@soybeanjs/cva@0.1.1':
     dependencies:
       cn: 0.2.6
@@ -4540,6 +4623,63 @@ snapshots:
       vue-router: 5.3.0(@vue/compiler-sfc@3.5.42)(esbuild@0.28.2)(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.42(typescript@5.9.3)))(rolldown@1.2.6)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13))(vue@3.5.42(typescript@5.9.3))
 
   '@soybeanjs/hooks@0.3.0': {}
+
+  '@soybeanjs/theme@0.30.0':
+    dependencies:
+      '@soybeanjs/colord': 0.7.1
+      '@soybeanjs/utils': 0.1.1
+      defu: 6.1.7
+
+  '@soybeanjs/ui-uno@0.30.0(@devframes/hub@0.9.12(crossws@0.4.12(srvx@1.0.3))(devframe@0.9.12(cac@7.0.0)(srvx@1.0.3)))(@unocss/preset-wind3@66.10.0)(cac@7.0.0)(crossws@0.4.12(srvx@1.0.3))(rolldown@1.2.6)(srvx@1.0.3)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13))':
+    dependencies:
+      '@soybeanjs/theme': 0.30.0
+      unocss: 66.10.0(@devframes/hub@0.9.12(crossws@0.4.12(srvx@1.0.3))(devframe@0.9.12(cac@7.0.0)(srvx@1.0.3)))(cac@7.0.0)(crossws@0.4.12(srvx@1.0.3))(rolldown@1.2.6)(srvx@1.0.3)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13))
+      unocss-preset-animations: 1.3.0(@unocss/preset-wind3@66.10.0)(unocss@66.10.0(@devframes/hub@0.9.12(crossws@0.4.12(srvx@1.0.3))(devframe@0.9.12(cac@7.0.0)(srvx@1.0.3)))(cac@7.0.0)(crossws@0.4.12(srvx@1.0.3))(rolldown@1.2.6)(srvx@1.0.3)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)))
+    transitivePeerDependencies:
+      - '@devframes/hub'
+      - '@devframes/hub-ui'
+      - '@modelcontextprotocol/client'
+      - '@unocss/astro'
+      - '@unocss/postcss'
+      - '@unocss/preset-wind3'
+      - '@unocss/webpack'
+      - cac
+      - crossws
+      - ocache
+      - rolldown
+      - rollup
+      - srvx
+      - vite
+
+  '@soybeanjs/ui@0.30.0(vue-router@5.3.0(@vue/compiler-sfc@3.5.42)(esbuild@0.28.2)(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.42(typescript@5.9.3)))(rolldown@1.2.6)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13))(vue@3.5.42(typescript@5.9.3)))(vue@3.5.42(typescript@5.9.3))':
+    dependencies:
+      '@iconify/vue': 5.0.1(vue@3.5.42(typescript@5.9.3))
+      '@soybeanjs/cva': 0.0.9
+      '@soybeanjs/headless': 0.30.0(vue-router@5.3.0(@vue/compiler-sfc@3.5.42)(esbuild@0.28.2)(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.42(typescript@5.9.3)))(rolldown@1.2.6)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13))(vue@3.5.42(typescript@5.9.3)))(vue@3.5.42(typescript@5.9.3))
+      '@soybeanjs/hooks': 0.3.0
+      '@soybeanjs/theme': 0.30.0
+      '@soybeanjs/utils': 0.1.1
+      vue: 3.5.42(typescript@5.9.3)
+    optionalDependencies:
+      vue-router: 5.3.0(@vue/compiler-sfc@3.5.42)(esbuild@0.28.2)(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.42(typescript@5.9.3)))(rolldown@1.2.6)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13))(vue@3.5.42(typescript@5.9.3))
+
+  '@soybeanjs/unocss-preset@0.2.0(@devframes/hub@0.9.12(crossws@0.4.12(srvx@1.0.3))(devframe@0.9.12(cac@7.0.0)(srvx@1.0.3)))(cac@7.0.0)(crossws@0.4.12(srvx@1.0.3))(rolldown@1.2.6)(srvx@1.0.3)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13))':
+    dependencies:
+      unocss: 66.10.0(@devframes/hub@0.9.12(crossws@0.4.12(srvx@1.0.3))(devframe@0.9.12(cac@7.0.0)(srvx@1.0.3)))(cac@7.0.0)(crossws@0.4.12(srvx@1.0.3))(rolldown@1.2.6)(srvx@1.0.3)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13))
+    transitivePeerDependencies:
+      - '@devframes/hub'
+      - '@devframes/hub-ui'
+      - '@modelcontextprotocol/client'
+      - '@unocss/astro'
+      - '@unocss/postcss'
+      - '@unocss/webpack'
+      - cac
+      - crossws
+      - ocache
+      - rolldown
+      - rollup
+      - srvx
+      - vite
 
   '@soybeanjs/utils@0.1.1': {}
 
@@ -6581,6 +6721,8 @@ snapshots:
 
   strip-json-comments@5.0.3: {}
 
+  tailwind-merge@3.6.0: {}
+
   thread-stream@4.2.0:
     dependencies:
       real-require: 1.0.0
@@ -6717,6 +6859,12 @@ snapshots:
       unist-util-visit-parents: 6.0.2
 
   universalify@2.0.1: {}
+
+  unocss-preset-animations@1.3.0(@unocss/preset-wind3@66.10.0)(unocss@66.10.0(@devframes/hub@0.9.12(crossws@0.4.12(srvx@1.0.3))(devframe@0.9.12(cac@7.0.0)(srvx@1.0.3)))(cac@7.0.0)(crossws@0.4.12(srvx@1.0.3))(rolldown@1.2.6)(srvx@1.0.3)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13))):
+    dependencies:
+      unocss: 66.10.0(@devframes/hub@0.9.12(crossws@0.4.12(srvx@1.0.3))(devframe@0.9.12(cac@7.0.0)(srvx@1.0.3)))(cac@7.0.0)(crossws@0.4.12(srvx@1.0.3))(rolldown@1.2.6)(srvx@1.0.3)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13))
+    optionalDependencies:
+      '@unocss/preset-wind3': 66.10.0
 
   unocss@66.10.0(@devframes/hub@0.9.12(crossws@0.4.12(srvx@1.0.3))(devframe@0.9.12(cac@7.0.0)(srvx@1.0.3)))(cac@7.0.0)(crossws@0.4.12(srvx@1.0.3))(rolldown@1.2.6)(srvx@1.0.3)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)):
     dependencies:

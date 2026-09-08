@@ -11,10 +11,10 @@
   min-height: 100vh;
   place-content: center;
   text-align: center;
-  color: var(--jw-color-muted);
+  color: hsl(var(--muted-foreground));
 }
 .mark {
-  color: var(--jw-color-text);
+  color: hsl(var(--foreground));
   font-size: 1.75rem;
   font-weight: 750;
 }

@@ -70,24 +70,24 @@ summary {
   padding: 0.7rem 0.85rem;
   color: inherit;
   text-decoration: none;
-  border-radius: 0.4rem;
+  border-radius: calc(var(--radius) - 2px);
   cursor: pointer;
   font-size: 0.9rem;
 }
 a:hover,
 summary:hover {
-  background: #edf1f8;
+  background: hsl(var(--sidebar-accent));
 }
 a.active {
-  color: #234fa4;
-  background: #e8effe;
+  color: hsl(var(--sidebar-primary));
+  background: hsl(var(--sidebar-primary) / 0.1);
   font-weight: 650;
 }
 .group-label {
   padding: 1rem 0.85rem 0.35rem;
   margin: 0;
   font-size: 0.75rem;
-  color: #69768a;
+  color: hsl(var(--sidebar-foreground));
   font-weight: 650;
 }
 details > .nav-tree {

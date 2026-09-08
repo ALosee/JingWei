@@ -65,7 +65,7 @@ const { roleId, loadedRoleId, grants, assignable, retiredCodes, loadRole, saveGr
           :disabled="
             busy || version.status !== 'PUBLISHED' || version.id === admin.publishedVersionId
           "
-          variant="danger"
+          color="destructive"
           @click="publish(true)"
         >
           回滚到此版本
@@ -91,7 +91,7 @@ const { roleId, loadedRoleId, grants, assignable, retiredCodes, loadRole, saveGr
         <div>
           <div class="toolbar">
             <Button :disabled="readOnly" variant="outline" @click="addNode">新增节点</Button>
-            <Button :disabled="readOnly || !selected" variant="danger" @click="removeNode">
+            <Button :disabled="readOnly || !selected" color="destructive" @click="removeNode">
               删除节点
             </Button>
           </div>
@@ -242,10 +242,11 @@ const { roleId, loadedRoleId, grants, assignable, retiredCodes, loadRole, saveGr
 
 <style scoped>
 .panel {
-  border: 1px solid var(--jw-color-border);
-  border-radius: 0.65rem;
+  border: 1px solid hsl(var(--border) / var(--border-alpha, 1));
+  border-radius: var(--radius);
   padding: 1rem;
-  background: white;
+  background: hsl(var(--card));
+  color: hsl(var(--card-foreground));
   margin-top: 1rem;
 }
 .toolbar {
@@ -263,15 +264,17 @@ label {
   display: grid;
   gap: 0.35rem;
   font-size: 0.82rem;
-  color: #42516a;
+  color: hsl(var(--muted-foreground));
 }
 input,
 select,
 textarea {
   font: inherit;
   padding: 0.55rem 0.65rem;
-  border: 1px solid #ccd5e2;
-  border-radius: 0.35rem;
+  border: 1px solid hsl(var(--input) / var(--input-alpha, 1));
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  border-radius: var(--radius);
   max-width: 100%;
 }
 fieldset {
@@ -307,8 +310,8 @@ fieldset {
   width: 100%;
 }
 .node.selected {
-  background: #e8effe;
-  border-color: #4b78c5;
+  background: hsl(var(--primary) / 0.1);
+  border-color: hsl(var(--primary));
 }
 small {
   font-size: 0.7rem;
@@ -320,11 +323,11 @@ small {
 .notice {
   white-space: pre-wrap;
   padding: 0.8rem;
-  background: #eef5ff;
-  border-radius: 0.4rem;
+  background: hsl(var(--info) / 0.1);
+  border-radius: var(--radius);
 }
 .error {
-  color: #a52323;
+  color: hsl(var(--destructive));
 }
 .grants {
   display: grid;
@@ -344,7 +347,7 @@ h2 {
 }
 p {
   font-size: 0.85rem;
-  color: #65758b;
+  color: hsl(var(--muted-foreground));
 }
 @media (max-width: 1050px) {
   .editor {

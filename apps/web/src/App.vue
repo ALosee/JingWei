@@ -1,3 +1,10 @@
+<script setup lang="ts">
+import { SConfigProvider, ThemeSettings } from '@jingwei/ui'
+</script>
+
 <template>
-  <RouterView />
+  <SConfigProvider persist-theme locale="zh-CN">
+    <RouterView />
+    <ThemeSettings />
+  </SConfigProvider>
 </template>

@@ -1,0 +1,13 @@
+@import '@soybeanjs/ui/styles.css';
+
+html {
+  color-scheme: light;
+}
+html.dark {
+  color-scheme: dark;
+}
+html,
+body,
+#app {
+  min-height: 100%;
+}

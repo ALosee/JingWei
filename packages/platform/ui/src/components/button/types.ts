@@ -1,11 +1,17 @@
 import type { ButtonEmits as HeadlessButtonEmits } from '@soybeanjs/headless/button'
 import type { ClassValue } from '@soybeanjs/headless/types'
+import type { ThemeColor, ThemeSize } from '@soybeanjs/theme'
 
-import type { ButtonSize, ButtonVariant } from './button.variants.js'
+import type { ButtonVariant } from './button.variants.js'
+
+export type ButtonColor = ThemeColor
+export type ButtonSize = ThemeSize
 
 export interface ButtonProps {
   /** Additional utility classes merged after the component recipe. */
   class?: ClassValue
+  /** Selects a semantic color from the Soybean theme. */
+  color?: ButtonColor
   /** Prevents pointer and keyboard activation. */
   disabled?: boolean
   /** Prevents interaction and exposes the busy state to assistive technology. */
@@ -19,4 +25,4 @@ export interface ButtonProps {
 }
 
 export type ButtonEmits = HeadlessButtonEmits
-export type { ButtonSize, ButtonVariant }
+export type { ButtonVariant }

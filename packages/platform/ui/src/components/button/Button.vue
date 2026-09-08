@@ -6,17 +6,18 @@ import { buttonVariants } from './button.variants.js'
 import type { ButtonEmits, ButtonProps } from './types.js'
 
 const props = withDefaults(defineProps<ButtonProps>(), {
+  color: 'primary',
   disabled: false,
   loading: false,
   size: 'md',
   type: 'button',
-  variant: 'primary',
+  variant: 'solid',
 })
 const emit = defineEmits<ButtonEmits>()
 
 const disabled = computed(() => props.disabled || props.loading)
 const classes = computed(() =>
-  buttonVariants({ size: props.size, variant: props.variant }, props.class),
+  buttonVariants({ color: props.color, size: props.size, variant: props.variant }, props.class),
 )
 </script>
 

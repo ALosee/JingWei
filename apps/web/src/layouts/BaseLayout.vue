@@ -27,24 +27,24 @@ header {
   justify-content: space-between;
   min-height: 4rem;
   padding: 0 1.5rem;
-  border-bottom: 1px solid var(--jw-color-border);
-  background: white;
+  border-bottom: 1px solid hsl(var(--border) / var(--border-alpha, 1));
+  background: hsl(var(--card));
 }
 .brand {
   display: flex;
   gap: 0.65rem;
   align-items: baseline;
-  color: var(--jw-color-text);
+  color: hsl(var(--foreground));
   text-decoration: none;
   font-weight: 750;
 }
 .brand small {
-  color: var(--jw-color-brand);
+  color: hsl(var(--primary));
   font-size: 0.65rem;
   letter-spacing: 0.16em;
 }
 .edition {
-  color: var(--jw-color-muted);
+  color: hsl(var(--muted-foreground));
   font-size: 0.8rem;
 }
 .workspace {
@@ -53,9 +53,10 @@ header {
   min-height: calc(100vh - 4rem);
 }
 aside {
-  border-right: 1px solid var(--jw-color-border);
+  border-right: 1px solid hsl(var(--sidebar-border) / var(--sidebar-border-alpha, 1));
   padding: 0.65rem;
-  background: #fafbfe;
+  background: hsl(var(--sidebar));
+  color: hsl(var(--sidebar-foreground));
 }
 main {
   min-width: 0;
@@ -67,7 +68,7 @@ main {
   }
   aside {
     border-right: 0;
-    border-bottom: 1px solid var(--jw-color-border);
+    border-bottom: 1px solid hsl(var(--border) / var(--border-alpha, 1));
   }
 }
 </style>

@@ -35,18 +35,21 @@ const { tenantCode, username, password, errorMessage, submitting, submit } = use
   min-height: 100vh;
   place-items: center;
   padding: 1rem;
-  background: radial-gradient(circle at 20% 10%, #e7edff, transparent 35%), var(--jw-color-canvas);
+  background:
+    radial-gradient(circle at 20% 10%, hsl(var(--primary) / 0.12), transparent 35%),
+    hsl(var(--background));
 }
 .login-card {
   width: min(26rem, calc(100vw - 2rem));
   padding: 2rem;
-  border: 1px solid var(--jw-color-border);
-  border-radius: 1rem;
-  background: white;
-  box-shadow: 0 1.5rem 4rem rgb(25 45 90 / 10%);
+  border: 1px solid hsl(var(--border) / var(--border-alpha, 1));
+  border-radius: var(--radius);
+  background: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+  box-shadow: 0 1.5rem 4rem hsl(var(--foreground) / 0.1);
 }
 .eyebrow {
-  color: var(--jw-color-brand);
+  color: hsl(var(--primary));
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.2em;
@@ -56,7 +59,7 @@ h1 {
 }
 .intro {
   margin: 0 0 1.5rem;
-  color: var(--jw-color-muted);
+  color: hsl(var(--muted-foreground));
 }
 form,
 label {
@@ -73,12 +76,14 @@ label {
 input {
   min-height: 2.75rem;
   padding: 0 0.75rem;
-  border: 1px solid var(--jw-color-border);
-  border-radius: 0.625rem;
+  border: 1px solid hsl(var(--input) / var(--input-alpha, 1));
+  background: hsl(var(--background));
+  color: hsl(var(--foreground));
+  border-radius: var(--radius);
   font: inherit;
 }
 .error {
   margin: 0;
-  color: #b42318;
+  color: hsl(var(--destructive));
 }
 </style>

@@ -11,6 +11,10 @@ catalog:
   '@playwright/test': 1.62.1
   '@soybeanjs/cva': 0.1.1
   '@soybeanjs/headless': 0.30.0
+  '@soybeanjs/theme': 0.30.0
+  '@soybeanjs/ui': 0.30.0
+  '@soybeanjs/ui-uno': 0.30.0
+  '@soybeanjs/unocss-preset': 0.2.0
   '@types/node': 24.13.3
   '@types/pg': 8.23.1
   '@vitejs/plugin-vue': 6.0.8

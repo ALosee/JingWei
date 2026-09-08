@@ -1,7 +1,7 @@
 # SoybeanUI 上游参考
 
-本项目使用 SoybeanUI 的公开资料辅助建设 `@jingwei/ui`。SoybeanUI 是上游源码与
-headless 行为参考，Jingwei 自己拥有最终组件 API、设计 token 和 UnoCSS 视觉实现。
+本项目使用 SoybeanUI 的公开资料辅助建设 `@jingwei/ui`。SoybeanUI 提供上游组件源码、
+headless 行为和主题系统，Jingwei 拥有最终组件 API、组合方式与必要的样式调整。
 
 ## 固定版本
 
@@ -15,9 +15,9 @@ headless 行为参考，Jingwei 自己拥有最终组件 API、设计 token 和 
 | 引入日期       | 2026-09-07                                                       |
 | 本地使用者知识 | `.agents/skills/soybean-headless/`、`.agents/skills/soybean-ui/` |
 
-Skill 快照与当前 npm 最新稳定版本 `@soybeanjs/headless@0.30.0` 对齐。这里只固定了
-AI 使用的知识文件；运行时依赖、UnoCSS 和 `sbean` CLI 将在设计系统实施时单独引入并
-记录版本。
+Skill 快照与项目固定的 SoybeanUI `0.30.0` 依赖对齐。当前使用
+`@soybeanjs/ui`、`@soybeanjs/headless`、`@soybeanjs/theme`、`@soybeanjs/ui-uno`、`@soybeanjs/cva` 和
+`sbean`；所有包通过根 catalog 固定为 `0.30.0` 或同版本配套版本。
 
 上游生成内容中的 6 个站点相对链接在项目本地无法解析。本地快照只对这些链接做了
 修正，将它们改为 `ui.soybeanjs.cn` 的绝对地址；其余上游 Skill 内容保持不变。
@@ -41,7 +41,9 @@ AI 使用的知识文件；运行时依赖、UnoCSS 和 `sbean` CLI 将在设计
 - 业务模块只从 `@jingwei/ui` 导入共享组件；
 - `@soybeanjs/headless` 只作为 `@jingwei/ui` 内部实现依赖；
 - 从 SoybeanUI 复制 styled wrapper 和样式 recipe 后，改为无前缀的 Jingwei 公共组件名；
-- 设计 token、主题语义和 UnoCSS 配置由 Jingwei 定义；
+- 全局主题由根 `sbean.json`、`@soybeanjs/ui-uno` 的 `presetSbean()` 和
+  `@soybeanjs/theme` 生成，组件直接使用 Soybean 的语义 token，不建立平行的项目变量层；
+- Jingwei 可通过 Soybean 的主题 seed 与 override API 定制品牌主题；
 - 不引入上游 `.agents/skills/soybean-ui-component-development`，因为它约束的是
   SoybeanUI 仓库自身的目录、生成和发布流程。
 
@@ -58,3 +60,11 @@ AI 使用的知识文件；运行时依赖、UnoCSS 和 `sbean` CLI 将在设计
 
 不要单独更新 `soybean-headless` Skill。它的组件索引引用
 `soybean-ui/components/*.md`，两份消费者 Skill 必须保持相同版本。
+
+## 运行时主题基础设施
+
+`@soybeanjs/ui` 的 SConfigProvider、useTheme 与 SThemeCustomizer 直接复用，主题上下文
+不复制、不另建 store。普通组件继续采用本地源码方式。此处保留 Provider 的 S 前缀。
+`presetSbean()` 只负责构建回退主题；运行时配置由 Provider 管理。
+Playground 参考：本地 `/Users/jack/code/soybean-ui/apps/playground` 的 App.vue、theme.ts
+和 theme-configurator.vue。本地 checkout 为 0.31.0，实际依赖仍固定在已发布的 0.30.0。

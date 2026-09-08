@@ -5,9 +5,9 @@ description: Build or adapt shared Vue UI components in @jingwei/ui with UnoCSS 
 
 # Jingwei UI Development
 
-Build a Jingwei-owned design system in `packages/platform/ui`. Treat SoybeanUI as an
-upstream source and headless implementation, while keeping Jingwei's public API and visual
-language independent.
+Build Jingwei's shared components in `packages/platform/ui`. Treat SoybeanUI as the upstream
+component source, headless implementation, and theme system, while keeping Jingwei's public
+component API independent.
 
 ## Read first
 
@@ -22,6 +22,8 @@ language independent.
 
 - Application and module code imports shared components only from `@jingwei/ui`.
 - Keep direct `@soybeanjs/headless` imports inside `packages/platform/ui`.
+- Reuse upstream `SConfigProvider`, `useTheme`, and `SThemeCustomizer` as theme infrastructure.
+  Keep the provider name explicit; this is the exception to the component naming convention.
 - Export concise component names such as `Button`, `Dialog`, and `Select`; the package name is
   already the namespace. Do not add `Jw` or preserve upstream `S` prefixes.
 - Add a shared wrapper only when it owns Jingwei styling, variants, composition, or behavior.
@@ -33,7 +35,7 @@ language independent.
 - Let `@soybeanjs/headless` own ARIA semantics, keyboard interaction, focus management, and
   controlled or uncontrolled state.
 - Let local components own DOM composition, public props and slots, UnoCSS classes, variants,
-  loading presentation, and design tokens.
+  and loading presentation. Use `@soybeanjs/theme` for the shared theme vocabulary.
 - Prefer the upstream primitive parts when custom structure is required. Use a Compact component
   only when its data-driven structure matches the desired public API.
 - Keep the headless package as a pinned dependency. Copy headless internals only for a verified
@@ -45,16 +47,22 @@ language independent.
 - Use a repository-pinned `sbean` version once the CLI is configured. Before then, copy from the
   tag and commit recorded in `docs/references/soybean-ui.md`; do not fetch mutable `main` or invoke
   an unpinned `latest` CLI.
-- Review every copied file and dependency. Remove upstream theme, locale, icon, and auto-import
-  assumptions that Jingwei does not adopt.
+- Review every copied file and dependency. Preserve upstream theme token semantics; remove locale,
+  icon, and auto-import assumptions that Jingwei does not adopt.
 - Preserve source provenance so a later upstream diff can distinguish local design decisions from
   upstream fixes.
 
 ## UnoCSS language
 
 - Express component styling with UnoCSS utilities and statically discoverable variant recipes.
-- Define runtime theme values with Jingwei semantic CSS variables, then map UnoCSS utilities to
-  those variables. Do not expose upstream token names as Jingwei's public contract.
+- Mount one `SConfigProvider` at the application root with `persistTheme`. Runtime theme changes
+  go through its `useTheme()` context; do not create another theme store. Explicit theme props override
+  stored preferences, so never pass editable defaults as permanent overrides.
+- Generate the build-time fallback theme through root `sbean.json`, `presetSbean()` from
+  `@soybeanjs/ui-uno`, and `@soybeanjs/theme`. Components consume Soybean semantic utilities such
+  as `bg-background`, `text-foreground`, `border-border`, and `bg-primary`.
+- Do not create a parallel project-prefixed theme variable layer. Customize theme seeds or use the
+  Soybean theme override API when the built-in semantic vocabulary is insufficient.
 - Avoid dynamically interpolated class fragments. Use complete class strings in variant maps,
   shortcuts, or an intentional safelist.
 - Keep global CSS limited to reset, fonts, theme variables, shared keyframes, and behavior-critical
@@ -68,3 +76,6 @@ language independent.
   class lists in tests.
 - Update explicit package exports and the UI package README when the public surface changes.
 - Run the repository completion commands required by `AGENTS.md` before delivery.
+
+Verify switching, persistence, system mode changes, reset, and mobile settings in a real browser.
+Build-time token generation alone does not complete the theme system.

@@ -1,8 +1,8 @@
 import { createPinia } from 'pinia'
 import { createApp } from 'vue'
 
+import '@jingwei/ui/theme.css'
 import 'virtual:uno.css'
-import '@jingwei/ui/styles.css'
 import { getSessionStatus } from '@jingwei/module-iam/client'
 import {
   getAuthenticatedNavigation,
