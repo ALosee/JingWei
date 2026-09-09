@@ -108,7 +108,7 @@ Application 通过 NavigationUnitOfWork 开启事务。保存、发布、回滚�
 
 `@jingwei/module-navigation/server/public` 导出 NavigationSource 端口、纯初始化模板 createDefaultConfiguration 和受控装配工厂 createNavigationManagement。工厂封装 PostgreSQL store、IAM public service 和事务适配器；用于初始化工具，不允许普通调用方借此绕过 AuthContext/功能权限。
 
-`@jingwei/module-navigation/client` 封装所有 HTTP 调用、Zod 响应验证和修改请求的 CSRF 头。管理页面不自行拼装 Cookie 或 SQL。
+`@jingwei/module-navigation/client` 使用模块 OpenAPI 生成类型封装所有 HTTP 调用，并以模块 Zod schema 验证响应。修改请求的 CSRF 头由 `@jingwei/api-client` 统一添加；管理页面不自行拼装 URL、Cookie 或 SQL。
 
 ## 页面与初始化
 

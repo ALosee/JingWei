@@ -4,12 +4,17 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./vue": "./src/vue.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@jingwei/auth": "workspace:*",
+    "@jingwei/http-contract": "workspace:*",
+    "@soybeanjs/fetch": "catalog:",
+    "vue": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {

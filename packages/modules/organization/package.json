@@ -18,7 +18,6 @@
   "dependencies": {
     "@jingwei/module-sdk": "workspace:*",
     "@jingwei/ui": "workspace:*",
-    "hono": "catalog:",
     "kysely": "catalog:",
     "vue": "catalog:"
   },

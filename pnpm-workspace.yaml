@@ -7,9 +7,10 @@ packages:
 catalog:
   '@eslint/js': 10.0.1
   '@hono/node-server': 2.1.1
-  '@hono/zod-validator': 0.9.1
+  '@hono/zod-openapi': 1.6.3
   '@playwright/test': 1.62.1
   '@soybeanjs/cva': 0.1.1
+  '@soybeanjs/fetch': 0.1.0
   '@soybeanjs/headless': 0.30.0
   '@soybeanjs/theme': 0.30.0
   '@soybeanjs/ui': 0.30.0
@@ -19,6 +20,7 @@ catalog:
   '@types/pg': 8.23.1
   '@vitejs/plugin-vue': 6.0.8
   '@vue/test-utils': 2.5.0
+  '@scalar/hono-api-reference': 0.12.1
   argon2: 0.45.1
   elegant-router: 1.4.0-beta.1
   eslint: 10.9.1
@@ -28,6 +30,7 @@ catalog:
   hono: 4.13.5
   kysely: 0.29.5
   oxfmt: 0.66.0
+  openapi-typescript: 7.13.0
   pg: 8.23.0
   pinia: 4.0.3
   pino: 10.3.1

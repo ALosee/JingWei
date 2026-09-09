@@ -165,11 +165,19 @@ IAM 的 `getSessionStatus()` typed client 使用一个允许匿名的 `200` 状�
 
 ## 10. `@jingwei/api-client`
 
-### `requestJson({ input, init, schema })`
+### `createModuleApiClient<paths, prefix>(prefix)`
 
-统一发起 JSON 请求、携带凭据、用 Zod schema 验证成功结果，并把非成功响应转换为 `ApiClientError`。模块 Web 客户端应封装具体 URL 和返回类型，不要让页面组件散落 `fetch`。
+基于模块生成的 OpenAPI `paths` 创建 typed client，URL、path/query 参数、JSON body 和返回类型由 contract 推断。默认 `client` 基于 `toFlatTypedClient`，通过 `toApiResult()` 返回 `{ data, error }` 并将失败转换为 `ApiClientError`；`throwingClient` 仅用于应用启动等明确 fail-fast 流程。模块调用仍必须传入自己拥有的 Zod response schema，TypeScript 生成类型不替代运行时验证。
 
-返回类型从 schema 推导，因此远端 JSON 会被运行时验证。当前 helper 假设成功和失败响应都有 JSON；`204`、流或文件下载应使用专用客户端。
+平台实例统一处理 Cookie、CSRF Header、`Accept`、30 秒默认超时、浏览器 `no-store` 与零自动重试。`@jingwei/api-client/vue` 的 `useApiRequestState()` 将 Fetch `onLoadingChange` 转为并发安全的只读 Vue loading；业务流程传递其 `options`，不得手工切换请求 loading。平台同时汇总 `onGlobalLoadingChange`。内置 cache/dedupe/Bearer refresh 默认关闭；模块页面需要 server-state 缓存时在 composable 上层单独设计。
+
+### `ApiClientError`
+
+服务端结构化失败保留 `code`、`message`、`requestId`、`status` 与可选 `details`。网络、超时、取消和响应 schema 失配使用稳定客户端 code；没有收到 HTTP 响应时 `status` 为 `null`。
+
+### OpenAPI 生成
+
+`pnpm api:generate` 从模块 route contract 生成模块自有 `paths`，`pnpm api:check` 验证生成物未漂移。运行时契约位于 `/openapi/v1.json`，Scalar UI 位于 `/docs`。
 
 ## 11. 模块 Public API
 

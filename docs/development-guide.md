@@ -191,8 +191,9 @@ permission 回答“当前主体是否被允许执行某项动作”。服务端
 
 ### 客户端
 
-- 每个模块在自己的 `client/` 封装 typed API；
-- 页面组件通过模块 `web/composables/` 调用 API；URL、Cookie 与错误协议留在 client，提交状态和流程留在 composable；
+- 每个模块在自己的 `server/api/openapi.ts` 定义 route contract，并在 `client/` 使用生成的 module-scoped typed API；
+- 页面组件通过模块 `web/composables/` 调用 API；URL 与 response schema 留在 module client，Cookie、CSRF 与错误协议由 platform api-client 统一处理，提交状态和流程留在 composable；
+- contract 变更后运行 `pnpm api:generate`；`pnpm api:check` 会阻止生成类型漂移；
 - 导航结果决定展示，不替代服务端授权；
 - 登录恢复完成前应有明确 loading 状态，避免闪现受保护页面。
 

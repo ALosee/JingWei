@@ -137,6 +137,6 @@ Web 的 Vite `envDir` 指向仓库根目录。`dev` 使用 `development` mode，
 
 - 服务端返回的导航是展示模型，不是接口授权凭证；
 - Cookie 由浏览器携带，前端不读取会话原始令牌；
-- 修改请求必须使用平台 CSRF 头名和 Cookie；
+- 修改请求必须通过平台 API client 自动附加 CSRF Cookie/Header，不在页面或模块 client 重复读取 Cookie；
 - 页面错误不得展示内部堆栈或敏感响应；
 - 恢复页应始终能在模块初始化失败时加载。

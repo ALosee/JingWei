@@ -1,9 +1,10 @@
+import { OpenAPIHono } from '@hono/zod-openapi'
 import type { Hono } from 'hono'
 
 import type { SessionService } from '@jingwei/auth'
 import type { AppConfig } from '@jingwei/config'
 import type { DatabaseRuntime, TenantDirectory } from '@jingwei/database'
-import type { AuthContext, RequestId } from '@jingwei/kernel'
+import { ApplicationError, type AuthContext, type RequestId } from '@jingwei/kernel'
 import type { AppLogger } from '@jingwei/observability'
 
 import type { ModuleManifest } from './manifest.js'
@@ -16,6 +17,20 @@ export interface ServerAppVariables {
 
 export interface ServerAppEnv {
   Variables: ServerAppVariables
+}
+
+/** Creates a module-owned OpenAPI router with the platform validation error contract. */
+export function createApiRouter(): OpenAPIHono<ServerAppEnv> {
+  return new OpenAPIHono<ServerAppEnv>({
+    defaultHook(result) {
+      if (!result.success)
+        throw new ApplicationError({
+          code: 'INVALID_REQUEST',
+          message: '请求参数格式不正确',
+          status: 400,
+        })
+    },
+  })
 }
 
 export interface ServerModuleContext {

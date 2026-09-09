@@ -1,32 +1,53 @@
 import { expect, it, vi } from 'vitest'
 
+import type { ApiRequestOptions } from '@jingwei/api-client'
+
+import type { LoginInput } from '../../shared/index.js'
 import { useSignIn } from './use-sign-in.js'
 
-it('enters the workspace only after login completes', async () => {
-  const login = vi.fn(() =>
-    Promise.resolve({
-      user: { id: 'user', tenantId: 'tenant', displayName: 'Test' },
-      csrfToken: 'test',
-    }),
+it('derives submitting state from the HTTP request lifecycle', async () => {
+  let finishLogin = () => undefined
+  const login = vi.fn(
+    (_input: LoginInput, options: ApiRequestOptions): Promise<{ error: null }> => {
+      options.onLoadingChange?.(true)
+      return new Promise((resolve) => {
+        finishLogin = () => {
+          options.onLoadingChange?.(false)
+          resolve({ error: null })
+        }
+      })
+    },
   )
   const enterWorkspace = vi.fn()
   const form = useSignIn({ login, enterWorkspace })
   form.username.value = 'admin'
   form.password.value = 'test-password'
+  const submission = form.submit()
+
+  expect(form.submitting.value).toBe(true)
   await form.submit()
-  expect(login).toHaveBeenCalledWith({
+  expect(login).toHaveBeenCalledOnce()
+  expect(login.mock.calls[0]?.[0]).toEqual({
     tenantCode: 'default',
     login: 'admin',
     password: 'test-password',
   })
+  expect(typeof login.mock.calls[0]?.[1].onLoadingChange).toBe('function')
+  finishLogin()
+  await submission
+
   expect(enterWorkspace).toHaveBeenCalledOnce()
   expect(form.submitting.value).toBe(false)
 })
 
-it('retains a readable error and resets submitting on authentication failure', async () => {
+it('renders a flat login error without exception control flow', async () => {
   const enterWorkspace = vi.fn()
   const form = useSignIn({
-    login: () => Promise.reject(new Error('Invalid credentials')),
+    login: (_input, options) => {
+      options.onLoadingChange?.(true)
+      options.onLoadingChange?.(false)
+      return Promise.resolve({ error: new Error('Invalid credentials') })
+    },
     enterWorkspace,
   })
   await form.submit()

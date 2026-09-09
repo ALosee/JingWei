@@ -1,56 +1,79 @@
 # `@jingwei/api-client`
 
-Web 模块共享的安全 JSON 请求边界。它统一携带 Cookie、验证成功响应，并把服务端错误转换为稳定异常。
+Web 模块共享的 HTTP transport composition boundary。内部使用 `@soybeanjs/fetch`，对模块暴露稳定的扁平 OpenAPI client、显式 fail-fast client、请求状态适配器和错误类型。
 
 ## 公共 API
 
-### `requestJson({ input, init, schema })`
+### `createModuleApiClient<paths, prefix>(prefix)`
 
-行为：
+接收模块自己的 OpenAPI 生成 `paths` 与固定前缀，返回：
 
-1. 默认发送 `Accept: application/json`；
-2. 使用 `credentials: 'include'` 携带同源/允许的会话 Cookie；
-3. 解析 JSON；
-4. 非 2xx 响应转换为 `ApiClientError`；
-5. 成功响应通过传入的 Zod schema 做运行时验证；
-6. 返回 `z.infer<typeof schema>`。
+- `client`：基于 `toFlatTypedClient` 的默认客户端，URL、参数、body 和响应均由 OpenAPI 推断；永不抛出 HTTP 请求错误；
+- `throwingClient`：需要失败立即中止流程时使用的显式客户端。
 
 ```ts
-const session = await requestJson({
-  input: '/api/v1/iam/session',
-  schema: sessionStatusSchema,
-})
+import { createModuleApiClient, toApiResult } from '@jingwei/api-client'
+
+import { sessionStatusSchema } from '../shared/index.js'
+import type { paths } from './generated/openapi.js'
+
+const api = createModuleApiClient<paths, '/api/v1/iam'>('/api/v1/iam')
+
+export const getSessionStatus = () =>
+  toApiResult(api.client.get('/session', { schema: sessionStatusSchema }))
 ```
 
-与单纯 `fetch<T>` 不同，这里的泛型来自实际 schema，因此服务端返回不兼容 JSON 会在边界立即失败。
+每个调用都应传入模块拥有的 Zod response schema。OpenAPI 生成类型约束编译期调用，Zod 在不可信 JSON 进入应用前执行运行时验证。
+
+### 扁平结果与请求状态
+
+`toApiResult()` 保持 Soybean Fetch 的 never-throwing 控制流，并将错误规范化为 `ApiClientError`：
+
+```ts
+const { data, error } = await login(input, requestState.options)
+if (error) {
+  showError(error.message)
+  return
+}
+enterWorkspace(data)
+```
+
+Vue composable 使用 `@jingwei/api-client/vue`：
+
+```ts
+import { useApiRequestState } from '@jingwei/api-client/vue'
+
+const requestState = useApiRequestState()
+const submitting = requestState.loading
+```
+
+把 `requestState.options` 传给模块 client 后，`loading` 由 Soybean Fetch 的 `onLoadingChange` 自动驱动。适配器使用 pending count，多个并发请求不会因为其中一个先结束而错误地提前变为 `false`。业务 composable 不再围绕请求手写 `loading.value = true/false`。
 
 ### `ApiClientError`
 
-包含：
+| 字段        | 说明                                                                     |
+| ----------- | ------------------------------------------------------------------------ |
+| `code`      | 服务端稳定错误码，或平台客户端错误码                                     |
+| `message`   | 安全的用户消息，可由页面进一步本地化                                     |
+| `requestId` | 服务端响应或 Header 中的关联 ID；未收到响应时为 `null`                   |
+| `status`    | HTTP 状态；网络、超时、取消等未形成 HTTP 响应的失败为 `null`             |
+| `details`   | 通过统一错误 envelope 校验后的可选内容；模块使用前仍应按专用 schema 校验 |
 
-- `code`：稳定服务端错误码或 `UNEXPECTED_RESPONSE`；
-- `message`：可展示/进一步本地化的消息；
-- `requestId`：排障关联 ID，响应缺失时为 `null`；
-- `status`：HTTP 状态。
-- `details`：可选 unknown，由具体模块再次校验后使用；例如导航配置的 issues，不直接断言为可信结构。
+客户端 code 包括 `NETWORK_ERROR`、`REQUEST_TIMEOUT`、`REQUEST_ABORTED`、`INVALID_API_RESPONSE`、`UNEXPECTED_API_ERROR` 与 `UNEXPECTED_CLIENT_ERROR`。页面按 `code` 或 `status` 决定流程，不匹配 `message` 文本。
 
-页面根据 `code` 或 `status` 决定流程，不匹配 message 文本。向用户展示未知错误时可同时提供 requestId。
+## 平台默认值
 
-## 模块客户端约定
+- `credentials: 'include'`；
+- `Accept: application/json`；
+- 浏览器 `cache: 'no-store'`；
+- 30 秒超时；
+- 自动重试为 0；
+- POST/PUT/PATCH/DELETE 自动从 `jingwei_csrf` Cookie 添加 `x-csrf-token`；
+- 所有请求通过 `onGlobalLoadingChange` 汇总全局 loading；操作级状态使用 `useApiRequestState()`；
+- Soybean Fetch 的 response cache、dedupe、Bearer auth refresh 默认不启用。
 
-页面不应直接调用 `requestJson` 拼业务 URL。每个业务模块在自己的 `src/client` 中：
+幂等查询若确需重试，可以在模块调用点显式设置并记录原因。不得透明重试修改请求。页面级缓存、失效、预取属于 server-state 层，不放进 transport；有明确需求时再引入 Pinia Colada。
 
-- 定义响应 schema；
-- 封装 URL、method、body 和 CSRF 头；
-- 导出业务语义函数，例如 `getCurrentSession()`；
-- 在返回前完成协议到页面模型的转换。
+## 模块边界
 
-这样 HTTP 版本变更不会散落在组件中。
-
-## 边界和限制
-
-- 当前实现假设所有响应都有 JSON；`204` 或文件下载需要专用客户端函数；
-- JSON 解析失败会抛原生异常，不伪装成业务错误；
-- 本包不负责自动刷新会话或重试修改请求；
-- CSRF token 仍需模块客户端按平台常量显式加入；
-- 不对非幂等请求做透明重试，避免重复副作用。
+页面 SFC 不直接导入本包或拼 API URL。每个模块在自己的 `src/client` 中封装 typed 调用与 schema；模块 composable 调用业务语义函数，并可从 `@jingwei/api-client/vue` 获取统一请求状态。模块生成类型位于 `src/client/generated/openapi.ts`，由 `pnpm api:generate` 生成，禁止人工编辑。

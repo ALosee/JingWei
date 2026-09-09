@@ -112,7 +112,7 @@ password ────> PasswordHasher.verify
 
 用户名不存在、密码错误、用户不可用等情况必须使用一致的外部错误，避免账号枚举。原始密码、密码摘要和 session token 不得进入日志/审计/事件。
 
-Web 登录页只调用 `useSignIn()` 绑定字段和提交事件。该 composable 管理 loading、安全错误和成功后的工作区跳转；`login` 与 `enterWorkspace` 以最小端口注入，测试不用建立真实 Cookie 或浏览器全局对象。HTTP/Zod/CSRF 细节仍由 module client 负责，页面不得直接调用 client。结构规则见 [代码职责与入口约束](../../../docs/code-structure.md)。
+Web 登录页只调用 `useSignIn()` 绑定字段和提交事件。登录 client 使用 Soybean Fetch 扁平结果，composable 显式判断 `error`，无需异常控制流；`submitting` 由共享 `useApiRequestState()` 订阅 Fetch lifecycle 自动产生，不手工切换。`login` 与 `enterWorkspace` 以最小端口注入，测试不用建立真实 Cookie 或浏览器全局对象。HTTP/OpenAPI/Zod 细节由 module client 负责，Cookie、CSRF 与请求状态由平台请求边界负责，页面不得直接调用 client。结构规则见 [代码职责与入口约束](../../../docs/code-structure.md)。
 
 ## Public API
 

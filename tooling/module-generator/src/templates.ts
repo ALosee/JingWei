@@ -10,6 +10,7 @@ export function moduleFiles(moduleId: string): Readonly<Record<string, string>> 
       './shared': './src/shared/index.ts',
       './server': './src/server/index.ts',
       './server/public': './src/server/public/index.ts',
+      './openapi': './src/server/api/openapi.ts',
       './client': './src/client/index.ts',
       './web': './src/web/index.ts',
       './migrations': './migrations/index.ts',
@@ -17,7 +18,6 @@ export function moduleFiles(moduleId: string): Readonly<Record<string, string>> 
     scripts: { typecheck: 'tsc -p tsconfig.json' },
     dependencies: {
       '@jingwei/module-sdk': 'workspace:*',
-      hono: 'catalog:',
     },
     devDependencies: {
       '@types/node': 'catalog:',
@@ -27,9 +27,7 @@ export function moduleFiles(moduleId: string): Readonly<Record<string, string>> 
 
   const manifest = `import { defineModule } from '@jingwei/module-sdk'\n\nexport const manifest = defineModule({\n  id: '${moduleId}',\n  name: '${moduleId}',\n  category: 'business',\n  dependencies: [],\n  optionalDependencies: [],\n  capabilities: [],\n  permissions: [],\n  routeDefinitions: [],\n})\n`
 
-  const serverModule = `import { Hono } from 'hono'
-
-import type { ServerAppEnv, ServerModule } from '@jingwei/module-sdk/server'
+  const serverModule = `import { createApiRouter, type ServerModule } from '@jingwei/module-sdk/server'
 
 import { manifest } from '../manifest.js'
 
@@ -39,10 +37,18 @@ export const serverModule: ServerModule = {
     return Promise.resolve({
       id: manifest.id,
       basePath: '/${moduleId}',
-      routes: new Hono<ServerAppEnv>(),
+      routes: createApiRouter(),
     })
   },
 }
+`
+
+  const openApi = `export const openApiContract = {
+  id: '${moduleId}',
+  title: '${moduleId}',
+  basePath: '/${moduleId}',
+  routes: [],
+} as const
 `
 
   const webModule = `import type { WebModule } from '@jingwei/module-sdk/web'
@@ -69,6 +75,7 @@ export const webModule: WebModule = {
     'src/manifest.ts': manifest,
     'src/shared/index.ts': 'export {}\n',
     'src/server/public/index.ts': 'export {}\n',
+    'src/server/api/openapi.ts': openApi,
     'src/server/index.ts': "export { serverModule } from './module.js'\n",
     'src/server/module.ts': serverModule,
     'src/client/index.ts': 'export {}\n',
@@ -107,7 +114,7 @@ server/module.ts 只装配依赖与路由；HTTP handler 放在 server/api，规
 
 ## HTTP 与 Client API
 
-列出每个端点、输入、输出、认证/权限要求、稳定错误码和对应 typed client。没有端点时明确写“无”。
+在 server/api/openapi.ts 中列出每个端点、输入、输出、认证/权限要求和稳定错误码；运行 pnpm api:generate 后在 module client 使用生成的 typed client。没有端点时明确写“无”。
 
 ## Public API 与事件
 

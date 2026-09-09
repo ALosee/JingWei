@@ -1,32 +1,54 @@
 import { ref } from 'vue'
 
+import type { ApiRequestOptions } from '@jingwei/api-client'
+import { useApiRequestState } from '@jingwei/api-client/vue'
+
 import { login } from '../../client/index.js'
+import type { LoginInput } from '../../shared/index.js'
+
+interface SignInDependencies {
+  login: (input: LoginInput, options: ApiRequestOptions) => Promise<{ error: Error | null }>
+  enterWorkspace: () => void
+}
 
 /** Owns sign-in form submission; the page renders fields and binds actions. */
 export function useSignIn(
-  dependencies = { login, enterWorkspace: () => window.location.assign('/') },
+  dependencies: SignInDependencies = {
+    login,
+    enterWorkspace: () => window.location.assign('/'),
+  },
 ) {
   const tenantCode = ref('default')
   const username = ref('')
   const password = ref('')
   const errorMessage = ref('')
-  const submitting = ref(false)
+  const requestState = useApiRequestState()
 
   async function submit(): Promise<void> {
-    submitting.value = true
+    if (requestState.loading.value) return
     errorMessage.value = ''
-    try {
-      await dependencies.login({
+    const { error } = await dependencies.login(
+      {
         tenantCode: tenantCode.value,
         login: username.value,
         password: password.value,
-      })
-      dependencies.enterWorkspace()
-    } catch (error) {
-      errorMessage.value = error instanceof Error ? error.message : '登录失败'
-    } finally {
-      submitting.value = false
+      },
+      requestState.options,
+    )
+    if (error !== null) {
+      errorMessage.value = error.message
+      return
     }
+
+    dependencies.enterWorkspace()
   }
-  return { tenantCode, username, password, errorMessage, submitting, submit }
+
+  return {
+    tenantCode,
+    username,
+    password,
+    errorMessage,
+    submitting: requestState.loading,
+    submit,
+  }
 }

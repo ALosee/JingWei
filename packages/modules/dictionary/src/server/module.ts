@@ -1,6 +1,4 @@
-import { Hono } from 'hono'
-
-import type { ServerAppEnv, ServerModule } from '@jingwei/module-sdk/server'
+import { createApiRouter, type ServerModule } from '@jingwei/module-sdk/server'
 
 import { manifest } from '../manifest.js'
 
@@ -10,7 +8,7 @@ export const serverModule: ServerModule = {
     return Promise.resolve({
       id: manifest.id,
       basePath: '/dictionary',
-      routes: new Hono<ServerAppEnv>(),
+      routes: createApiRouter(),
     })
   },
 }

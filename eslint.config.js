@@ -11,7 +11,7 @@ export default tseslint.config(
       '**/playwright-report/**',
       '**/test-results/**',
       '**/node_modules/**',
-      '**/src/generated/**',
+      '**/generated/**',
       '**/src/router/_generated/**',
       '**/*.d.ts',
     ],

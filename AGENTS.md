@@ -5,7 +5,7 @@
 ## 1. 架构基线
 
 - 项目是 pnpm Monorepo 中的 Modular Monolith。先保持严格模块边界，只有 ADR 证明存在独立扩容、故障域、安全域、团队或技术差异时才允许服务化。
-- 固定技术栈：Vue 3、TypeScript、Vite、Vue Router、Pinia、Elegant Router；Node.js 24 LTS、Hono、`@hono/node-server`；PostgreSQL 18、Kysely、`pg`；Zod；Vitest、Playwright；开发使用 `tsx`，服务端生产构建使用 `tsdown`。
+- 固定技术栈：Vue 3、TypeScript、Vite、Vue Router、Pinia、Elegant Router；Node.js 24 LTS、Hono、`@hono/node-server`、`@hono/zod-openapi`；PostgreSQL 18、Kysely、`pg`；Zod；`@soybeanjs/fetch`、OpenAPI 3.1、Scalar；Vitest、Playwright；开发使用 `tsx`，服务端生产构建使用 `tsdown`。
 - 未经 ADR 禁止引入 NestJS、Spring Boot、Prisma、TypeORM、Drizzle、Redis、Kafka、RabbitMQ、Elasticsearch、Kubernetes、微服务框架或 Decorator DI Container。
 - 本阶段只建设 Platform Foundation。不得开发 CRM、销售、合同、项目、产品、采购、仓库、生产、财务、HR、资产、工作流、表单设计器、大屏设计器等具体业务。
 
@@ -75,7 +75,8 @@
 
 - 所有外部 body/query/params 必须使用 Zod Runtime Validation。TypeScript 类型不能替代运行时校验。
 - 共享的是 API Schema/Contract，不是 Database Row 或可变 Domain Entity。
-- Hono RPC 采用 module-scoped typed client；禁止覆盖整个平台的 Mega AppType。
+- API contract 由 Module 自有的 Zod OpenAPI route 定义；使用 `openapi-typescript` 生成 Module 自有 `paths`，再通过 `@soybeanjs/fetch/openapi` 建立 module-scoped typed client。禁止覆盖整个平台的 Mega AppType，禁止把生成类型当作运行时验证。
+- 交互式 HTTP 操作默认使用 Soybean Fetch 扁平客户端并返回 `{ data, error }`；只有应用启动等明确 fail-fast 的流程才使用显式 throwing client。请求 loading 必须由 Fetch lifecycle callback 经共享 Vue 状态适配器驱动，禁止在页面或业务 composable 中围绕 HTTP Promise 手工切换 loading。
 - API 使用 `/api/v1/...`；业务动作允许明确的 action endpoint。
 - 对外错误统一包含稳定 `code`、安全 `message`、`requestId` 和可选 `details`。禁止返回 stack、SQL/driver error 或内部异常。
 - strict TypeScript 必须开启。禁止以 `any`、`@ts-ignore`、`eslint-disable`、`as unknown as` 逃避类型系统；确有第三方边界例外时需最小范围并说明理由。
@@ -98,6 +99,7 @@
 pnpm typecheck
 pnpm lint
 pnpm format:check
+pnpm api:check
 pnpm architecture:check
 pnpm test
 pnpm build

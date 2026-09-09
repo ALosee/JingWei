@@ -6,11 +6,11 @@ Jingwei 模块化和 Edition 机制的核心 SDK。它定义 manifest、Edition 
 
 ## 导出入口
 
-| 入口                         | 内容                                          |
-| ---------------------------- | --------------------------------------------- |
-| `@jingwei/module-sdk`        | manifest、Edition、`ModuleRegistry`           |
-| `@jingwei/module-sdk/server` | Hono 变量、模块上下文、Server Module 安装契约 |
-| `@jingwei/module-sdk/web`    | `WebModule` 与页面绑定                        |
+| 入口                         | 内容                                                           |
+| ---------------------------- | -------------------------------------------------------------- |
+| `@jingwei/module-sdk`        | manifest、Edition、`ModuleRegistry`                            |
+| `@jingwei/module-sdk/server` | Hono 变量、OpenAPI Router、模块上下文与 Server Module 安装契约 |
+| `@jingwei/module-sdk/web`    | `WebModule` 与页面绑定                                         |
 
 Server/Web 契约拆成子路径，避免纯 manifest/构建工具无意引入 Hono 或浏览器相关类型。
 
@@ -57,6 +57,8 @@ RouteDefinition.requiredPermission 保留功能权限的静态关联和注册校
 - `basePath`：挂在 `/api/v1` 下的模块路径；
 - `routes`：模块自己的 Hono 路由；
 - 可选 `dispose`：模块级后台资源的释放函数。
+
+有 HTTP endpoint 的模块使用 `createApiRouter()` 建立带统一 Zod validation error 语义的 `OpenAPIHono`，route contract 位于模块 `server/api/openapi.ts`。空模块也不得在 `server/module.ts` 内联 handler。
 
 安装函数可以创建仓储和用例，但导入 manifest 本身必须无副作用。模块不能监听端口或关闭共享数据库池。
 

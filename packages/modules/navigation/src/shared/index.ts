@@ -32,6 +32,7 @@ export const navigationNodeSchema = z
     query: querySchema,
   })
   .strict()
+  .meta({ id: 'NavigationNode' })
 
 export const configurationSchema = z
   .object({
@@ -40,59 +41,76 @@ export const configurationSchema = z
     nodes: z.array(navigationNodeSchema).max(1_000),
   })
   .strict()
+  .meta({ id: 'NavigationConfiguration' })
 
-export const versionSchema = configurationSchema.extend({
-  id: z.uuid(),
-  revision: z.number().int().positive(),
-  editRevision: z.number().int().nonnegative(),
-  status: z.enum(['DRAFT', 'PUBLISHED']),
-  publishedAt: z.string().nullable(),
-})
-export const navigationResponseSchema = z.object({
-  schemaVersion: z.literal(2),
-  versionId: z.uuid(),
-  publishedRevision: z.number().int().positive(),
-  authEntryCode: codeSchema,
-  homeCode: codeSchema.nullable(),
-  nodes: z.array(navigationNodeSchema),
-})
-export const adminNavigationSchema = z.object({
-  publishedVersionId: z.uuid().nullable(),
-  versions: z.array(versionSchema.omit({ nodes: true })),
-})
-export const saveDraftSchema = configurationSchema.extend({
-  expectedEditRevision: z.number().int().nonnegative(),
-})
+export const versionSchema = configurationSchema
+  .extend({
+    id: z.uuid(),
+    revision: z.number().int().positive(),
+    editRevision: z.number().int().nonnegative(),
+    status: z.enum(['DRAFT', 'PUBLISHED']),
+    publishedAt: z.string().nullable(),
+  })
+  .meta({ id: 'NavigationVersion' })
+export const navigationResponseSchema = z
+  .object({
+    schemaVersion: z.literal(2),
+    versionId: z.uuid(),
+    publishedRevision: z.number().int().positive(),
+    authEntryCode: codeSchema,
+    homeCode: codeSchema.nullable(),
+    nodes: z.array(navigationNodeSchema),
+  })
+  .meta({ id: 'NavigationResponse' })
+export const adminNavigationSchema = z
+  .object({
+    publishedVersionId: z.uuid().nullable(),
+    versions: z.array(versionSchema.omit({ nodes: true })),
+  })
+  .meta({ id: 'NavigationAdminOverview' })
+export const saveDraftSchema = configurationSchema
+  .extend({
+    expectedEditRevision: z.number().int().nonnegative(),
+  })
+  .meta({ id: 'NavigationSaveDraftInput' })
 export const publishSchema = z
   .object({
     expectedEditRevision: z.number().int().nonnegative(),
     expectedPublishedVersionId: z.uuid().nullable(),
   })
   .strict()
+  .meta({ id: 'NavigationPublishInput' })
 export const roleGrantsSchema = z
   .object({
     codes: z.array(codeSchema).max(1_000),
   })
   .strict()
-export const saveRoleGrantsSchema = roleGrantsSchema.extend({
-  expectedCodes: z.array(codeSchema).max(1_000),
-})
-export const validationResultSchema = z.object({
-  issues: z.array(
-    z.object({ code: z.string(), nodeId: z.string().optional(), message: z.string() }),
-  ),
-})
-export const catalogSchema = z.object({
-  routes: z.array(
-    z.object({
-      key: z.string(),
-      layout: z.enum(['base', 'blank']),
-      allowedLayouts: z.array(z.enum(['base', 'blank'])),
-      allowedAccessModes: z.array(z.enum(navigationAccessModes)),
-    }),
-  ),
-  roles: z.array(z.object({ id: z.uuid(), code: z.string(), name: z.string() })),
-})
+  .meta({ id: 'NavigationRoleGrants' })
+export const saveRoleGrantsSchema = roleGrantsSchema
+  .extend({
+    expectedCodes: z.array(codeSchema).max(1_000),
+  })
+  .meta({ id: 'NavigationSaveRoleGrantsInput' })
+export const validationResultSchema = z
+  .object({
+    issues: z.array(
+      z.object({ code: z.string(), nodeId: z.string().optional(), message: z.string() }),
+    ),
+  })
+  .meta({ id: 'NavigationValidationResult' })
+export const catalogSchema = z
+  .object({
+    routes: z.array(
+      z.object({
+        key: z.string(),
+        layout: z.enum(['base', 'blank']),
+        allowedLayouts: z.array(z.enum(['base', 'blank'])),
+        allowedAccessModes: z.array(z.enum(navigationAccessModes)),
+      }),
+    ),
+    roles: z.array(z.object({ id: z.uuid(), code: z.string(), name: z.string() })),
+  })
+  .meta({ id: 'NavigationCatalog' })
 
 export type NavigationNode = z.infer<typeof navigationNodeSchema>
 export type NavigationNodeType = NavigationNode['type']

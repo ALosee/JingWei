@@ -1,7 +1,4 @@
-import type { z } from 'zod'
-
-import { ApiClientError, requestJson } from '@jingwei/api-client'
-import { csrfCookieName, csrfHeaderName } from '@jingwei/auth/shared'
+import { ApiClientError, createModuleApiClient, executeApiRequest } from '@jingwei/api-client'
 
 import {
   adminNavigationSchema,
@@ -14,18 +11,25 @@ import {
   type SaveDraft,
   type SaveRoleGrants,
 } from '../shared/index.js'
+import type { paths } from './generated/openapi.js'
+
+const api = createModuleApiClient<paths, '/api/v1/navigation'>('/api/v1/navigation')
 
 export function getNavigationBootstrap(tenantCode?: string) {
-  return requestJson({
-    input:
-      '/api/v1/navigation/bootstrap' +
-      (tenantCode ? '?tenantCode=' + encodeURIComponent(tenantCode) : ''),
-    schema: navigationResponseSchema,
-  })
+  return executeApiRequest(() =>
+    api.throwingClient.get('/bootstrap', {
+      ...(tenantCode === undefined ? {} : { query: { tenantCode } }),
+      schema: navigationResponseSchema,
+    }),
+  )
 }
+
 export function getMyNavigation() {
-  return requestJson({ input: '/api/v1/navigation/me', schema: navigationResponseSchema })
+  return executeApiRequest(() =>
+    api.throwingClient.get('/me', { schema: navigationResponseSchema }),
+  )
 }
+
 export async function getAuthenticatedNavigation() {
   try {
     return await getMyNavigation()
@@ -34,45 +38,76 @@ export async function getAuthenticatedNavigation() {
     throw error
   }
 }
-function mutation<T extends z.ZodType>(path: string, method: string, body: unknown, schema: T) {
-  const cookie = document.cookie.split('; ').find((item) => item.startsWith(csrfCookieName + '='))
-  const token = cookie?.slice(csrfCookieName.length + 1) ?? ''
-  return requestJson({
-    input: '/api/v1/navigation' + path,
-    schema,
-    init: {
-      method,
-      headers: { 'content-type': 'application/json', [csrfHeaderName]: decodeURIComponent(token) },
-      body: JSON.stringify(body),
-    },
-  })
-}
+
 export const getNavigationAdmin = () =>
-  requestJson({ input: '/api/v1/navigation/admin', schema: adminNavigationSchema })
+  executeApiRequest(() => api.throwingClient.get('/admin', { schema: adminNavigationSchema }))
+
 export const getNavigationCatalog = () =>
-  requestJson({ input: '/api/v1/navigation/catalog', schema: catalogSchema })
+  executeApiRequest(() => api.throwingClient.get('/catalog', { schema: catalogSchema }))
+
 export const getNavigationVersion = (id: string) =>
-  requestJson({
-    input: '/api/v1/navigation/versions/' + encodeURIComponent(id),
-    schema: versionSchema,
-  })
-export const createNavigationDraft = (sourceVersionId: string | null) =>
-  mutation('/drafts', 'POST', { sourceVersionId }, versionSchema)
-export const saveNavigationDraft = (id: string, input: SaveDraft) =>
-  mutation('/versions/' + encodeURIComponent(id), 'PUT', input, versionSchema)
-export const validateNavigationVersion = (id: string) =>
-  mutation('/versions/' + encodeURIComponent(id) + '/validate', 'POST', {}, validationResultSchema)
-export const publishNavigationVersion = (id: string, input: PublishNavigation, rollback = false) =>
-  mutation(
-    '/versions/' + encodeURIComponent(id) + (rollback ? '/rollback' : '/publish'),
-    'POST',
-    input,
-    versionSchema,
+  executeApiRequest(() =>
+    api.throwingClient.get('/versions/{id}', {
+      pathParams: { id },
+      schema: versionSchema,
+    }),
   )
+
+export const createNavigationDraft = (sourceVersionId: string | null) =>
+  executeApiRequest(() =>
+    api.throwingClient.post('/drafts', {
+      body: { sourceVersionId },
+      schema: versionSchema,
+    }),
+  )
+
+export const saveNavigationDraft = (id: string, input: SaveDraft) =>
+  executeApiRequest(() =>
+    api.throwingClient.put('/versions/{id}', {
+      pathParams: { id },
+      body: input,
+      schema: versionSchema,
+    }),
+  )
+
+export const validateNavigationVersion = (id: string) =>
+  executeApiRequest(() =>
+    api.throwingClient.post('/versions/{id}/validate', {
+      pathParams: { id },
+      schema: validationResultSchema,
+    }),
+  )
+
+export const publishNavigationVersion = (id: string, input: PublishNavigation, rollback = false) =>
+  rollback
+    ? executeApiRequest(() =>
+        api.throwingClient.post('/versions/{id}/rollback', {
+          pathParams: { id },
+          body: input,
+          schema: versionSchema,
+        }),
+      )
+    : executeApiRequest(() =>
+        api.throwingClient.post('/versions/{id}/publish', {
+          pathParams: { id },
+          body: input,
+          schema: versionSchema,
+        }),
+      )
+
 export const getRoleNavigation = (roleId: string) =>
-  requestJson({
-    input: '/api/v1/navigation/roles/' + encodeURIComponent(roleId) + '/grants',
-    schema: roleGrantsSchema,
-  })
+  executeApiRequest(() =>
+    api.throwingClient.get('/roles/{roleId}/grants', {
+      pathParams: { roleId },
+      schema: roleGrantsSchema,
+    }),
+  )
+
 export const saveRoleNavigation = (roleId: string, input: SaveRoleGrants) =>
-  mutation('/roles/' + encodeURIComponent(roleId) + '/grants', 'PUT', input, roleGrantsSchema)
+  executeApiRequest(() =>
+    api.throwingClient.put('/roles/{roleId}/grants', {
+      pathParams: { roleId },
+      body: input,
+      schema: roleGrantsSchema,
+    }),
+  )

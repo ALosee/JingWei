@@ -12,6 +12,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@hono/zod-openapi": "catalog:",
     "@jingwei/auth": "workspace:*",
     "@jingwei/config": "workspace:*",
     "@jingwei/database": "workspace:*",

@@ -9,7 +9,9 @@
 
 ## Decision
 
-Node.js 24 LTS 上使用 Hono 与 `@hono/node-server`。Hono 仅作为 HTTP adapter，模块使用 sub-app，生产由 tsdown 构建，开发由 tsx 运行；依赖注入显式完成。RPC client 按 Module 拆分。
+Node.js 24 LTS 上使用 Hono 与 `@hono/node-server`。Hono 仅作为 HTTP adapter，模块使用 sub-app，生产由 tsdown 构建，开发由 tsx 运行；依赖注入显式完成。客户端按 Module 拆分。
+
+最初计划使用 Hono RPC client；API contract、文档和客户端生成方式已由 [ADR 0009](./0009-openapi-contract-and-soybean-fetch.md) 修订。
 
 ## Alternatives
 

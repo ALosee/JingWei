@@ -15,6 +15,9 @@ it('separates deterministic templates from filesystem work and never overwrites 
     await generateModule(root, 'sample')
     const index = join(root, 'packages/modules/sample/src/server/index.ts')
     expect(await readFile(index, 'utf8')).toBe("export { serverModule } from './module.js'\n")
+    expect(
+      await readFile(join(root, 'packages/modules/sample/src/server/api/openapi.ts'), 'utf8'),
+    ).toContain("basePath: '/sample'")
     await expect(generateModule(root, 'sample')).rejects.toThrow()
     expect(await readFile(index, 'utf8')).toBe(moduleFiles('sample')['src/server/index.ts'])
     await expect(generateModule(root, '../escape')).rejects.toThrow('Usage')

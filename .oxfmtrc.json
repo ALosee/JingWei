@@ -34,6 +34,7 @@
     "**/test-results/**",
     "**/generated/**",
     "**/_generated/**",
+    ".agents/skills/fetch-*/**",
     ".agents/skills/soybean-headless/**",
     ".agents/skills/soybean-ui/**",
     "pnpm-lock.yaml"

@@ -8,6 +8,7 @@
     "./shared": "./src/shared/index.ts",
     "./server": "./src/server/index.ts",
     "./server/public": "./src/server/public/index.ts",
+    "./openapi": "./src/server/api/openapi.ts",
     "./client": "./src/client/index.ts",
     "./web": "./src/web/index.ts",
     "./migrations": "./migrations/index.ts"
@@ -16,10 +17,11 @@
     "typecheck": "vue-tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
-    "@hono/zod-validator": "catalog:",
+    "@hono/zod-openapi": "catalog:",
     "@jingwei/audit": "workspace:*",
     "@jingwei/auth": "workspace:*",
     "@jingwei/database": "workspace:*",
+    "@jingwei/http-contract": "workspace:*",
     "@jingwei/outbox": "workspace:*",
     "@jingwei/api-client": "workspace:*",
     "@jingwei/kernel": "workspace:*",

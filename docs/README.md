@@ -88,7 +88,8 @@
 | database      | [README](../packages/platform/database/README.md)      | PostgreSQL 运行时、事务、迁移、租户目录 |
 | module-sdk    | [README](../packages/platform/module-sdk/README.md)    | Manifest、Edition、Registry、模块契约   |
 | auth          | [README](../packages/platform/auth/README.md)          | 密码、会话、Origin 与 CSRF              |
-| api-client    | [README](../packages/platform/api-client/README.md)    | Zod 验证的 JSON 客户端                  |
+| api-client    | [README](../packages/platform/api-client/README.md)    | Soybean Fetch + OpenAPI 模块客户端      |
+| http-contract | [README](../packages/platform/http-contract/README.md) | 平台 HTTP 错误与安全方案契约            |
 | audit         | [README](../packages/platform/audit/README.md)         | 审计写入                                |
 | observability | [README](../packages/platform/observability/README.md) | 结构化日志                              |
 | outbox        | [README](../packages/platform/outbox/README.md)        | 事务发件箱与 worker                     |
@@ -102,6 +103,7 @@
 | ------------------ | --------------------------------------------------------------------- |
 | Architecture Check | [tooling/architecture-check](../tooling/architecture-check/README.md) |
 | Edition Builder    | [tooling/edition-builder](../tooling/edition-builder/README.md)       |
+| OpenAPI Tooling    | [tooling/openapi](../tooling/openapi/README.md)                       |
 | Migration CLI      | [tooling/migration](../tooling/migration/README.md)                   |
 | Module Generator   | [tooling/module-generator](../tooling/module-generator/README.md)     |
 
@@ -127,3 +129,4 @@
 - 0006：限制 Elegant Router 为构建期页面注册表
 - [0007](./adr/0007-unified-navigation-and-role-grants.md)：统一五类导航节点、数据库布局配置与角色 navigation code 授权
 - [0008](./adr/0008-thin-entrypoints-and-owned-workflows.md)：调用式入口、装配与功能流程分离、状态所有权和自动职责检查
+- [0009](./adr/0009-openapi-contract-and-soybean-fetch.md)：Zod OpenAPI 单一契约、Scalar 文档与 Soybean Fetch 模块客户端
