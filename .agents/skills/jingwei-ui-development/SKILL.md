@@ -22,8 +22,9 @@ component API independent.
 
 - Application and module code imports shared components only from `@jingwei/ui`.
 - Keep direct `@soybeanjs/headless` imports inside `packages/platform/ui`.
-- Reuse upstream `SConfigProvider`, `useTheme`, and `SThemeCustomizer` as theme infrastructure.
-  Keep the provider name explicit; this is the exception to the component naming convention.
+- Keep `ConfigProvider`, `useTheme`, provider components, and the reusable theme settings panel
+  source-owned in `@jingwei/ui`. Keep app-specific launchers, placement, and copy in the Web shell.
+  Do not import or add the styled `@soybeanjs/ui` package.
 - Export concise component names such as `Button`, `Dialog`, and `Select`; the package name is
   already the namespace. Do not add `Jw` or preserve upstream `S` prefixes.
 - Add a shared wrapper only when it owns Jingwei styling, variants, composition, or behavior.
@@ -43,10 +44,12 @@ component API independent.
 
 ## Source adaptation
 
-- Import only the components required by current product work.
-- Use a repository-pinned `sbean` version once the CLI is configured. Before then, copy from the
-  tag and commit recorded in `docs/references/soybean-ui.md`; do not fetch mutable `main` or invoke
-  an unpinned `latest` CLI.
+- Generate only the components required by current product work with `pnpm ui:inspect <name>` and
+  `pnpm ui:add <name>`. The pinned CLI runs with `packages/platform/ui` as cwd and writes its native
+  component family, styles, theme, and dependencies directly into that package.
+- Keep generated lowercase paths and internal `S*` names intact for clean upstream diffs. Alias
+  them to concise public names only in `src/index.ts`; put Jingwei-authored compositions in
+  `src/patterns` so later generation does not overwrite them.
 - Review every copied file and dependency. Preserve upstream theme token semantics; remove locale,
   icon, and auto-import assumptions that Jingwei does not adopt.
 - Preserve source provenance so a later upstream diff can distinguish local design decisions from
@@ -55,10 +58,10 @@ component API independent.
 ## UnoCSS language
 
 - Express component styling with UnoCSS utilities and statically discoverable variant recipes.
-- Mount one `SConfigProvider` at the application root with `persistTheme`. Runtime theme changes
+- Mount one local `ConfigProvider` at the application root with `persistTheme`. Runtime theme changes
   go through its `useTheme()` context; do not create another theme store. Explicit theme props override
   stored preferences, so never pass editable defaults as permanent overrides.
-- Generate the build-time fallback theme through root `sbean.json`, `presetSbean()` from
+- Generate the build-time fallback theme through `packages/platform/ui/sbean.json`, `presetSbean()` from
   `@soybeanjs/ui-uno`, and `@soybeanjs/theme`. Components consume Soybean semantic utilities such
   as `bg-background`, `text-foreground`, `border-border`, and `bg-primary`.
 - Do not create a parallel project-prefixed theme variable layer. Customize theme seeds or use the

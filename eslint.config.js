@@ -64,4 +64,11 @@ export default tseslint.config(
       '@typescript-eslint/no-unsafe-call': 'off',
     },
   },
+  {
+    files: ['packages/platform/ui/src/components/**/*.vue'],
+    rules: {
+      // Generic headless DOM props intentionally retain standards-based aria-* names.
+      'vue/prop-name-casing': 'off',
+    },
+  },
 )

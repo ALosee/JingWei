@@ -1,0 +1,400 @@
+import { useContext } from '@soybeanjs/headless/composables'
+import type {
+  ColorValue,
+  DarkSelectorValue,
+  ThemeMode,
+  ThemeModePreference,
+  ThemeOptions,
+  ThemeOverrides,
+  ThemePreset,
+  ThemeRadiusValue,
+  ThemeSizeValue,
+  BaseColorKey,
+  PrimaryColorKey,
+} from '@soybeanjs/theme'
+import { isServerRuntime } from '@soybeanjs/theme/ssr'
+import {
+  getStoredThemeConfig,
+  getStoredThemePresets,
+  removeStoredThemePreset,
+  setStoredThemeConfig,
+  setStoredThemePreset,
+} from '@soybeanjs/theme/storage'
+import type {
+  CustomThemeColorPreset,
+  StoredThemePreset,
+  ThemeConfigState,
+  ThemePresetInput,
+} from '@soybeanjs/theme/storage'
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue'
+
+import type { ConfigProviderThemeContext, ThemeContext } from './theme-context'
+import type { ConfigProviderProps } from './types'
+
+const DEFAULT_BASE: BaseColorKey = 'zinc'
+const DEFAULT_PRIMARY: PrimaryColorKey = 'indigo'
+const DEFAULT_RADIUS: ThemeRadiusValue = 'md'
+const DEFAULT_SIZE: ThemeSizeValue = 'md'
+const DEFAULT_MODE: ThemeModePreference = 'light'
+
+/** the localStorage key carrying the currently applied custom preset name */
+const APPLIED_PRESET_KEY = '__SOYBEAN_THEME_APPLIED_PRESET'
+
+export const [provideThemeContext, useTheme] = useContext<ThemeContext>('UiThemeContext')
+
+/**
+ * resolve the dark mode class name from a `darkSelector` value.
+ *
+ * - 'class' → 'dark'
+ * - 'media' → `null` (media queries follow the OS preference, no class toggled)
+ * - any other string is a custom class selector used verbatim (dot stripped).
+ */
+const getDarkClass = (selector: DarkSelectorValue): string | null => {
+  if (selector === 'media') {
+    return null
+  }
+
+  if (selector === 'class') {
+    return 'dark'
+  }
+
+  return selector.replace(/^\./, '')
+}
+
+/**
+ * whether a preset input is an inline color preset (mode-split, carries
+ * `light`). A reference-only input carries just `name` and no `light`.
+ */
+const isInlineColorPreset = (preset: ThemePresetInput | undefined): preset is ThemePreset =>
+  !!preset && 'light' in preset
+
+/**
+ * Create the theme context for a `SConfigProvider` instance.
+ *
+ * The persistable theme state is initialized once from the persisted source
+ * (the injected `themeConfig` on the server, localStorage on the client) and
+ * kept in sync on every change, so the theme survives across refreshes and
+ * matches between server and client rendering.
+ */
+export function createThemeContext(props: ConfigProviderProps): ConfigProviderThemeContext {
+  const isServer = props.isServer ?? isServerRuntime()
+
+  // —— 初始主题状态：persistTheme 关闭时不读任何存储；开启时优先注入的
+  //    themeConfig（SSR），否则客户端从 localStorage 解析。服务端没有
+  //    localStorage，首帧由内联脚本（createThemeInitScript）在客户端应用 ——
+  let persisted: ThemeConfigState | null = null
+
+  if (props.persistTheme) {
+    if (props.themeConfig) {
+      // 显式注入的 themeConfig（SSR）优先，避免读取 localStorage
+      persisted = props.themeConfig
+    } else if (!isServer) {
+      persisted = getStoredThemeConfig()
+    }
+  }
+
+  const themeState = reactive<ThemeConfigState>({
+    ...persisted,
+    base: persisted?.base ?? DEFAULT_BASE,
+    primary: persisted?.primary ?? DEFAULT_PRIMARY,
+    radius: persisted?.radius ?? DEFAULT_RADIUS,
+    size: persisted?.size ?? DEFAULT_SIZE,
+    mode: persisted?.mode ?? DEFAULT_MODE,
+  })
+
+  const base = computed<BaseColorKey>({
+    get: () => themeState.base ?? DEFAULT_BASE,
+    set: (value) => {
+      themeState.base = value
+    },
+  })
+  const primary = computed<PrimaryColorKey>({
+    get: () => themeState.primary ?? DEFAULT_PRIMARY,
+    set: (value) => {
+      themeState.primary = value
+    },
+  })
+  const radius = computed<ThemeRadiusValue>({
+    get: () => themeState.radius ?? DEFAULT_RADIUS,
+    set: (value) => {
+      themeState.radius = value
+    },
+  })
+  const size = computed<ThemeSizeValue>({
+    get: () => themeState.size ?? DEFAULT_SIZE,
+    set: (value) => {
+      themeState.size = value
+    },
+  })
+  const mode = computed<ThemeModePreference>({
+    get: () => themeState.mode ?? DEFAULT_MODE,
+    set: (value) => {
+      themeState.mode = value
+    },
+  })
+
+  // —— auto 模式的系统偏好解析：跟踪 `prefers-color-scheme`，SSR 下无
+  //    matchMedia 时回退为 light，首帧由 createThemeInitScript 在浏览器处理 ——
+  const systemDark = ref(false)
+  let mql: MediaQueryList | undefined
+
+  if (!isServer && typeof window !== 'undefined' && typeof window.matchMedia === 'function') {
+    mql = window.matchMedia('(prefers-color-scheme: dark)')
+    systemDark.value = mql.matches
+  }
+
+  const onSystemColorChange = (event: MediaQueryListEvent): void => {
+    systemDark.value = event.matches
+  }
+
+  mql?.addEventListener('change', onSystemColorChange)
+
+  onUnmounted(() => {
+    mql?.removeEventListener('change', onSystemColorChange)
+  })
+
+  /** `auto` 解析为系统偏好；显式 `light` / `dark` 原样返回 */
+  const effectiveMode = computed<ThemeMode>(() =>
+    mode.value === 'auto' ? (systemDark.value ? 'dark' : 'light') : mode.value,
+  )
+
+  // —— 持久化：state 变化时写 localStorage，保证刷新后主题一致 ——
+  watch(
+    themeState,
+    (value) => {
+      if (!props.persistTheme) {
+        return
+      }
+
+      setStoredThemeConfig(value)
+    },
+    { deep: true },
+  )
+
+  // —— 暗色模式 class 同步（首帧前由 createThemeInitScript 应用，此处幂等并负责运行中切换）——
+  // class 名与新的 darkSelector 机制保持一致：'media' 不切换任何 class。
+  //
+  // 切换时临时禁用 CSS 过渡（复刻 @vueuse/core useColorMode 的 disableTransition
+  // 手法）：注入 `*{transition:none!important}` → 切换 class → 强制 reflow → 移除。
+  // 否则带 `transition-all` 的组件（如按钮）会相对无过渡的页面背景延迟 150ms 才变色。
+  //
+  // 监听 `effectiveMode`（而非偏好 `mode`）：`auto` 会解析为系统 `prefers-color-scheme`，
+  // 且系统偏好变化时 computed 重新求值，从而在 `auto` 下也能随 OS 明暗切换同步 class。
+  watch(
+    effectiveMode,
+    (value) => {
+      if (typeof document === 'undefined') {
+        return
+      }
+
+      const darkClass = getDarkClass(props.theme?.darkSelector ?? 'class')
+
+      if (!darkClass) {
+        return
+      }
+
+      const disableTransitionsStyle = document.createElement('style')
+      disableTransitionsStyle.appendChild(
+        document.createTextNode(
+          '*,*::before,*::after{-webkit-transition:none!important;-moz-transition:none!important;-o-transition:none!important;-ms-transition:none!important;transition:none!important}',
+        ),
+      )
+      document.head.appendChild(disableTransitionsStyle)
+
+      document.documentElement.classList.toggle(darkClass, value === 'dark')
+
+      // 强制浏览器同步重算样式，确保禁用过渡的规则在 class 切换前生效
+      disableTransitionsStyle.getBoundingClientRect()
+      document.head.removeChild(disableTransitionsStyle)
+    },
+    { immediate: true },
+  )
+
+  // —— 自定义 preset ——
+  const customPresets = ref<Record<string, StoredThemePreset>>({})
+  const appliedPresetName = ref<string | null>(
+    typeof document !== 'undefined' ? localStorage.getItem(APPLIED_PRESET_KEY) : null,
+  )
+
+  const refreshPresets = (): void => {
+    customPresets.value = getStoredThemePresets()?.presets ?? {}
+  }
+
+  /**
+   * 跨标签页同步：另开标签页写入 stored theme 后，重读并同步到内存状态，
+   * 更新响应式状态以触发主题重派生。`themeConfig` 注入（SSR）时不重读 localStorage。
+   */
+  const refreshThemeConfig = (): void => {
+    if (!props.persistTheme || props.themeConfig) {
+      return
+    }
+
+    const stored = getStoredThemeConfig()
+
+    if (stored) {
+      Object.assign(themeState, stored)
+    }
+  }
+
+  onMounted(refreshPresets)
+
+  const setAppliedPreset = (name: string | null): void => {
+    appliedPresetName.value = name
+
+    if (typeof document === 'undefined') {
+      return
+    }
+
+    if (name) {
+      localStorage.setItem(APPLIED_PRESET_KEY, name)
+    } else {
+      localStorage.removeItem(APPLIED_PRESET_KEY)
+    }
+  }
+
+  const savePreset = (name: string): boolean => {
+    const preset: StoredThemePreset = {
+      name,
+      version: '1.0.0',
+      light: {
+        primary: `${primary.value}.600` as ColorValue,
+        ring: `${primary.value}.500` as ColorValue,
+      },
+      dark: {
+        primary: `${primary.value}.400` as ColorValue,
+        ring: `${primary.value}.300` as ColorValue,
+      },
+    }
+
+    const saved = setStoredThemePreset(preset)
+
+    if (saved) {
+      refreshPresets()
+    }
+
+    return saved
+  }
+
+  const removePreset = (name: string): boolean => {
+    const removed = removeStoredThemePreset(name)
+
+    if (removed) {
+      refreshPresets()
+      if (appliedPresetName.value === name) {
+        setAppliedPreset(null)
+      }
+    }
+
+    return removed
+  }
+
+  const applyPreset = (name: string): void => {
+    setAppliedPreset(name)
+  }
+
+  const resetPreset = (): void => {
+    setAppliedPreset(null)
+  }
+
+  // —— 有效主题：显式 theme prop 覆盖内部状态 ——
+  const resolvePreset = (): CustomThemeColorPreset | undefined => {
+    const input = props.theme?.preset
+
+    // 内联 mode-split preset（自定义颜色）直接使用，不受 persistTheme 限制
+    if (isInlineColorPreset(input)) {
+      return input
+    }
+
+    // 具名 preset 引用（{ name }，复用引擎 ThemePreset.name）或当前应用的 preset
+    const presetName = input?.name ?? appliedPresetName.value
+
+    if (!presetName) {
+      return undefined
+    }
+
+    if (!props.persistTheme) {
+      return undefined
+    }
+
+    // SSR：走注入的 presetProvider（应用层注册表）；客户端：读本地 presets 表。
+    const preset = isServer
+      ? (props.presetProvider?.(presetName) ?? undefined)
+      : customPresets.value[presetName]
+
+    if (!preset && isServer) {
+      console.warn(
+        `[SConfigProvider] theme preset "${presetName}" not found, falling back to built-in colors.`,
+      )
+    }
+
+    return preset
+  }
+
+  const theme = computed<ThemeOptions>(() => {
+    const t = props.theme ?? {}
+
+    // 内联颜色预设（原 preset 内联部分）→ overrides；具名 preset 引用在
+    // resolvePreset 中已解析为颜色。显式 `overrides` 优先于解析出的 preset。
+    const colorPreset = resolvePreset()
+
+    const overrides: ThemeOverrides | undefined =
+      t.overrides ??
+      themeState.overrides ??
+      (colorPreset
+        ? {
+            light: colorPreset.light,
+            ...(colorPreset.dark ? { dark: colorPreset.dark } : {}),
+          }
+        : undefined)
+
+    return {
+      base: t.base ?? themeState.base ?? DEFAULT_BASE,
+      primary: t.primary ?? themeState.primary ?? DEFAULT_PRIMARY,
+      feedback: t.feedback ?? themeState.feedback,
+      chart: t.chart ?? themeState.chart,
+      sidebar: t.sidebar ?? themeState.sidebar,
+      sidebarDerive: t.sidebarDerive ?? themeState.sidebarDerive,
+      overrides,
+      // size/radius 作为顶层 base tokens 传入，与新的 createTheme 签名保持一致：
+      // 来源为持久化状态。
+      size: t.size ?? themeState.size ?? DEFAULT_SIZE,
+      radius: t.radius ?? themeState.radius ?? DEFAULT_RADIUS,
+      format: t.format ?? themeState.format,
+      lightLevel: t.lightLevel ?? themeState.lightLevel,
+      darkLevel: t.darkLevel ?? themeState.darkLevel,
+      borderOpacity: t.borderOpacity ?? themeState.borderOpacity,
+      styleTarget: t.styleTarget,
+      darkSelector: t.darkSelector,
+    }
+  })
+
+  return {
+    base,
+    primary,
+    radius,
+    size,
+    mode,
+    effectiveMode,
+    setRadius: (value) => {
+      radius.value = value
+    },
+    setSize: (value) => {
+      size.value = value
+    },
+    setMode: (value) => {
+      mode.value = value
+    },
+    customPresets,
+    appliedPresetName,
+    savePreset,
+    removePreset,
+    applyPreset,
+    resetPreset,
+    theme,
+    setThemeState: (config: ThemeConfigState) => {
+      Object.assign(themeState, config)
+    },
+    refreshThemeConfig,
+    refreshPresetsSnapshot: refreshPresets,
+  }
+}

@@ -3,16 +3,17 @@
 Jingwei 的 Vue 3 Web 壳应用。它负责启动 Pinia 和 Router、恢复导航、安装 Edition 页面并在启动失败时进入可用的恢复界面。
 
 Web 构建通过 `unocss/vite` 扫描壳与各模块页面，`src/bootstrap/start-web.ts` 统一加载生成样式。
-`uno.config.ts` 使用 `@soybeanjs/ui-uno` 的 `presetSbean()` 读取根 `sbean.json`，并由
+`uno.config.ts` 使用 `@soybeanjs/ui-uno` 的 `presetSbean()` 读取 `packages/platform/ui/sbean.json`，并由
 `@soybeanjs/theme` 生成亮色、暗色、语义颜色、圆角和尺寸变量。组件和页面直接使用 Soybean
 主题语义，不另建一套 CSS 变量。
 
-`App.vue` 挂载上游 `SConfigProvider`，负责运行时主题和本地持久化；`ThemeSettings`
-在所有路由提供统一设置入口。Vite 将上游 `createThemeInitScript()` 注入 HTML head，
+`App.vue` 挂载 `@jingwei/ui` 源码拥有的 `ConfigProvider`，负责运行时主题和本地持久化；Web 壳的
+`AppThemeSettings` 组合 `ThemeSettingsPanel`，在所有路由提供统一设置入口。Vite 将
+`createThemeInitScript()` 注入 HTML head，
 在应用加载前恢复明暗模式。完整颜色和尺寸在 Provider 挂载时恢复。
-UnoCSS 同时扫描上游已发布组件中的工具类，并使用 `presetSoybean` 补齐布局快捷类。
-SoybeanUI 0.30.0 缺少 JS 副作用声明，构建对其 dist JS 做限定的 tree shaking；CSS 保留，
-设置器单独分包按需加载。升级时必须复核此规则和主题浏览器测试。
+UnoCSS 扫描 `@jingwei/ui` 的本地 Vue/TS 源码，并使用 `presetSoybean` 补齐布局快捷类。
+Web 不依赖 `@soybeanjs/ui` styled 包。升级生成源码时必须复核
+组件 diff 和主题浏览器测试。
 
 ## 职责边界
 

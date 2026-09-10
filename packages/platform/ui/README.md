@@ -1,82 +1,87 @@
 # `@jingwei/ui`
 
-Jingwei Web 的基础 UI 组件包。它提供无业务归属的视觉原语，业务页面仍由各模块拥有。
+Jingwei Web 的源码级 UI 基础。它使用 Soybean 的 headless、theme、UnoCSS recipe 和生成器，
+但不依赖 `@soybeanjs/ui` styled 包；组件实现、样式、Provider 和公开 API 都由本仓库控制。
 
-## 导出
+## 目录与所有权
 
-| 入口          | 内容                      |
-| ------------- | ------------------------- |
-| `@jingwei/ui` | `Button`、`PageContainer` |
+```text
+src/
+├── components/                 # sbean 管理的无业务基础组件及其依赖
+│   └── <component>/            # 上游原生小写目录、完整组件族、types/context/index
+├── styles/                     # sbean 生成的组件 recipe
+├── theme/                      # 本地主题状态、Provider 配套与首屏恢复
+├── patterns/                   # Jingwei 自有的跨模块通用组合组件
+│   ├── page-container/
+│   └── theme-settings-panel/
+├── index.ts                    # 唯一公共入口，向业务导出无 S 前缀名称
+└── theme.css                   # 浏览器级全局样式
+```
 
-全局默认主题由 Web 壳的 UnoCSS 配置生成，运行时主题由根 SConfigProvider 更新。
-本包的 theme.css 加载上游组件样式，不维护另一份 CSS 变量。
+组件归属按语义而不是按“是否可复用一次”判断：
 
-## 组件
+- 无业务词汇、跨模块共享的基础组件放 `@jingwei/ui/src/components`；
+- 组合多个基础组件形成的跨模块通用模式放 `@jingwei/ui/src/patterns`；
+- “组织选择器”“角色授权面板”等业务组件放所有者模块的 `src/web/components`；
+- 只属于应用外壳的导航树、顶栏等放 `apps/web/src/components`。
 
-### `Button`
+业务模块只能从 `@jingwei/ui` 公共入口导入共享 UI，不能跨包引用其 `src`。模块业务组件
+可以直接引用本模块的 composable/client，但网络流程仍应由 composable/controller 拥有。
 
-以 `@soybeanjs/headless/button` 为无障碍交互基底，在本仓库中拥有视觉 API。`color`
-采用 Soybean 的 `primary`、`secondary`、`accent`、`destructive`、`success`、`warning`、
-`info`、`carbon` 语义，`variant` 提供 `solid`、`outline`、`soft`、`ghost`，`size` 与
-Soybean 主题的 `xs` 到 `2xl` 对齐，并支持 `loading` 状态。业务模块只从 `@jingwei/ui`
-导入，不直接依赖 SoybeanUI。
+## 公开 API
 
-组件源码基于 SoybeanUI `0.30.0` 的 Button 做最小适配：保留 headless 的默认
-`type="button"`、禁用语义和事件保护，样式 recipe 直接消费 Soybean theme token。未复制
-ButtonGroup、ButtonLink、图标等尚未使用的实现。
+`components` 内保留 sbean 生成的 `SButton`、`SInput` 等上游命名，以便升级时直接比较；
+`src/index.ts` 在包边界导出 `Button`、`ButtonLoading`、`Input`、`Dialog`、`ConfigProvider`
+等简洁名称。不要为了改名去修改生成文件，也不要在业务代码中使用内部 `S*` 名称。
 
-### `PageContainer`
+`PageContainer` 与 `ThemeSettingsPanel` 是本地 `patterns`，不由 sbean 管理。后者只提供主题
+编辑内容；固定入口、弹窗容器和工作区文案由 Web 壳拥有。新增公开组件时同步更新显式
+export、README 和相应契约测试。
 
-工作区页面的统一内容边界，用于标题、间距和内容布局。页面组件把业务区块放入容器，不直接修改应用壳布局。
+## 新增或更新组件
 
-## 设计边界
+在仓库根执行：
 
-适合加入本包：
+```bash
+pnpm ui:inspect input
+pnpm ui:add input
+pnpm ui:diff input
+```
 
-- 多个模块重复使用的无业务组件；
-- 基于 Soybean theme token 的共享视觉约定；
-- 可访问性和交互一致性的基础行为；
-- 通用布局原语。
+- `ui:inspect` 只预览将写入的文件和依赖；
+- `ui:add` 将组件族及缺少的依赖直接生成到本包的原生目录；
+- `ui:diff` 用于组件已存在时比较本地源码与当前固定版本模板。
 
-不适合加入：
+配置位于本包的 `sbean.json`，CLI 的 cwd 也固定到本包，因此不需要再移动文件、改 alias
+或手工拼接依赖。生成结果属于本仓库源码：提交前要 review diff，保留有意的本地修改，
+并为可回归的交互补测试。当前 sbean 0.30.0 可能输出 `ui/theme` registry warning；只要
+预览/生成的目标均位于本包且质量门禁通过，该警告不要求人工重排目录。
 
-- “组织选择器”“角色授权面板”等有明确模块所有权的组件；
-- 直接请求 API 的组件；
-- 依赖某个 Edition 或权限 code 的组件；
-- 为单个页面定制的样式。
+生成代码使用 `#ui/*` 私有 alias。它只在本包 `package.json#imports` 和 tsconfig 中解析，
+不会成为对外 export。为兼容上游 Vue prop spread 的可选属性表达，本包局部关闭
+`exactOptionalPropertyTypes`；`strict` 与仓库其他严格检查仍保持开启。不要在生成文件中
+通过 `any`、`@ts-ignore`、`eslint-disable` 或 `as unknown as` 规避类型问题。
+包的 `types` export 指向稳定的 `public.d.ts` 门面，避免业务包用自己的编译选项重复检查
+UI 实现；每个新增公共组件都必须同步补齐该门面，防止运行时 export 与消费者类型漂移。
 
-## 新增组件要求
+## Headless 与主题边界
 
-- 使用语义化 HTML 和键盘可操作交互；
-- 明确 props、events、slots 和受控/非受控状态；
-- 支持 loading、disabled、focus 和错误状态；
-- 不在组件内部读取全局业务 store；
-- 样式通过 token 表达，不散落重复常量；
-- 至少在真实页面或组件测试中验证；
-- 破坏外观或 API 的改动要检查所有模块调用方。
+- `@soybeanjs/headless` 负责 ARIA、键盘、焦点和受控状态；
+- 本地 styled 源码负责 DOM 组合、API、UnoCSS recipe 和视觉表现；
+- `@soybeanjs/theme` 提供语义 token、主题生成、持久化与首屏脚本；
+- `@soybeanjs/ui-uno` 在 Web 构建时生成默认 token 和 reset；
+- `@soybeanjs/ui` 是禁止依赖，`pnpm architecture:check` 会拦截 package dependency 和源码 import。
 
-## 源码同步流程
+Web 根节点挂载本地 `ConfigProvider` 并启用 `persist-theme`。Provider 同时装配本地 Toast、
+Dialog 和 Progress provider；`useTheme()` 复用同一个上下文，不另建 Pinia 主题 store。
+`ThemeSettingsPanel` 提供浅色/深色/跟随系统、中性色、品牌色、圆角、尺寸和恢复默认，设置
+保存在当前浏览器；Web 壳决定如何呈现设置入口。`@jingwei/ui/theme-init` 在应用加载前恢复
+明暗模式，避免首屏闪烁。
 
-根 `sbean.json` 把 `ui` 输出目录指向本包，`sbean` 与 Soybean Headless 版本固定为 `0.30.0`。
-新增组件前先运行 `pnpm ui:inspect <component>` 检查依赖和文件，再只复制当前需要的
-primitive、类型和样式 recipe。生成结果是上游参考，不直接覆盖本地组件；合并时保留无前缀公共
-命名、Soybean 主题语义、显式 exports 和现有测试。
+## 组件完成要求
 
-## 运行时主题
-
-根 `App.vue` 使用从本包导出的上游 `SConfigProvider`，开启 `persist-theme` 并设置
-`locale="zh-CN"`。Provider 是运行时主题状态的唯一所有者，`useTheme()` 和
-`SThemeCustomizer` 共享同一个上游上下文，不另建 Pinia 主题 store。
-
-`ThemeSettings` 是本地拥有的设置入口和弹窗容器，内部按需加载上游 `SThemeCustomizer`。
-支持浅色/深色/跟随系统、基础色、主色、圆角、全局尺寸、配色方案、token 覆盖与重置。
-设置保存在当前浏览器，由 Provider 负责恢复和跨标签页同步；它不是租户级服务端配置。
-登录、工作区及恢复页都处于同一个 Provider 下。
-
-`@jingwei/ui/theme.css` 加载上游组件 CSS 和浏览器 color-scheme。
-`@jingwei/ui/theme-init` 提供上游首屏初始化脚本，在 HTML head 提前恢复明暗模式；完整
-配色由 Provider 挂载时恢复。构建默认主题来自 `sbean.json`，当前与上游 zinc/indigo/md
-默认值一致。不要把可编辑默认值固定传入 Provider 的 `theme` prop，否则会覆盖用户设置。
-
-Provider 和主题设置器作为上游基础设施依赖 `@soybeanjs/ui@0.30.0`；Button 等业务使用的
-基础组件仍保留本地源码。此基础设施例外保留 `SConfigProvider` 原名以明确实现来源。
+- 使用语义化 HTML，并验证标签、键盘、焦点、disabled/loading/error 等相关状态；
+- props、events、slots 与受控/非受控状态清晰，基础组件不读取业务 store 或调用 API；
+- 样式使用语义 token 和可静态扫描的完整 UnoCSS class；
+- 不为单一页面样式过早加入平台层，不建立 `common`/`misc` 垃圾桶；
+- 运行仓库 `AGENTS.md` 要求的完整质量门禁。

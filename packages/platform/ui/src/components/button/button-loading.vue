@@ -1,0 +1,117 @@
+<script setup lang="ts">
+import { useOmitProps } from '@soybeanjs/headless/composables'
+import { computed, ref, useAttrs, watchEffect } from 'vue'
+
+import Icon from '../icon/icon.vue'
+import Button from './button.vue'
+import type { ButtonLoadingProps } from './types'
+
+defineOptions({
+  name: 'SButtonLoading',
+  inheritAttrs: false,
+})
+
+const props = withDefaults(defineProps<ButtonLoadingProps>(), {
+  loadingIcon: 'svg-spinners:270-ring',
+  loadingPosition: 'start',
+})
+
+const attrs = useAttrs()
+
+const internalLoading = ref(false)
+
+const disabled = computed(() => props.disabled || internalLoading.value)
+
+// Announce the busy state to assistive tech; the loading icon itself is decorative
+// (aria-hidden) because `aria-busy` already conveys the state.
+const ariaBusy = computed(() => (internalLoading.value ? true : undefined))
+
+type ClickHandler = (event: MouseEvent) => unknown
+
+const isClickHandler = (value: unknown): value is ClickHandler => typeof value === 'function'
+
+const onClick = async (event: MouseEvent) => {
+  const handlerValue: unknown = attrs.onClick
+  const handlers: readonly unknown[] = Array.isArray(handlerValue) ? handlerValue : [handlerValue]
+  const clickHandlers = handlers.filter(isClickHandler)
+
+  if (!props.autoLoading) {
+    clickHandlers.forEach((handler) => handler(event))
+    return
+  }
+
+  internalLoading.value = true
+
+  try {
+    await Promise.all(clickHandlers.map((handler) => handler(event)))
+  } finally {
+    if (props.loadingDuration) {
+      await new Promise((resolve) => {
+        setTimeout(resolve, props.loadingDuration)
+      })
+    }
+    internalLoading.value = false
+  }
+}
+
+const forwardedAttrs = computed(() =>
+  Object.fromEntries(Object.entries(attrs).filter(([name]) => name !== 'onClick')),
+)
+
+const forwardedProps = useOmitProps(
+  props,
+  [
+    'loading',
+    'loadingText',
+    'loadingDuration',
+    'autoLoading',
+    'loadingIcon',
+    'loadingIconProps',
+    'loadingPosition',
+  ],
+  forwardedAttrs,
+)
+
+watchEffect(() => {
+  internalLoading.value = props.loading
+})
+</script>
+
+<template>
+  <Button
+    v-bind="forwardedProps"
+    class="relative"
+    :disabled="disabled"
+    :aria-busy="ariaBusy"
+    @click="onClick"
+  >
+    <template #leading>
+      <Icon
+        v-if="internalLoading && loadingPosition === 'start'"
+        :icon="loadingIcon"
+        :aria-hidden="true"
+        v-bind="loadingIconProps"
+      />
+      <slot v-else name="leading" />
+    </template>
+    <span v-if="internalLoading && loadingPosition === 'center'" class="contents">
+      <span class="absolute inset-0 z-1 flex items-center justify-center gap-1">
+        <Icon :icon="loadingIcon" :aria-hidden="true" v-bind="loadingIconProps" />
+        <span v-if="loadingText">{{ loadingText }}</span>
+      </span>
+      <span class="invisible contents">
+        <slot :loading="internalLoading" />
+      </span>
+    </span>
+    <slot v-else :loading="internalLoading" />
+    <template #trailing>
+      <Icon
+        v-if="internalLoading && loadingPosition === 'end'"
+        :icon="loadingIcon"
+        :aria-hidden="true"
+        v-bind="loadingIconProps"
+      />
+      <slot v-else name="trailing" />
+    </template>
+  </Button>
+</template>

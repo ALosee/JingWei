@@ -13,6 +13,9 @@
     "forceConsistentCasingInFileNames": true,
     "skipLibCheck": true,
     "noEmit": true,
+    "paths": {
+      "#ui/*": ["./packages/platform/ui/src/*"]
+    },
     "types": ["node"]
   }
 }

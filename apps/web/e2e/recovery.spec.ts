@@ -239,7 +239,7 @@ test('editor saves a complete typed draft with CSRF', async ({ page, context }) 
     }
     return route.fulfill({
       status: 403,
-      json: { code: 'PERMISSION_DENIED', message: '没有功能权限' },
+      json: { code: 'PERMISSION_DENIED', message: '没有功能权限', requestId: id(999) },
     })
   })
   await page.goto('/navigation/manage')

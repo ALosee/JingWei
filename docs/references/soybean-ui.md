@@ -15,9 +15,10 @@ headless 行为和主题系统，Jingwei 拥有最终组件 API、组合方式�
 | 引入日期       | 2026-09-07                                                       |
 | 本地使用者知识 | `.agents/skills/soybean-headless/`、`.agents/skills/soybean-ui/` |
 
-Skill 快照与项目固定的 SoybeanUI `0.30.0` 依赖对齐。当前使用
-`@soybeanjs/ui`、`@soybeanjs/headless`、`@soybeanjs/theme`、`@soybeanjs/ui-uno`、`@soybeanjs/cva` 和
-`sbean`；所有包通过根 catalog 固定为 `0.30.0` 或同版本配套版本。
+Skill 快照与项目固定的 SoybeanUI `0.30.0` 源码模板对齐。当前使用
+`@soybeanjs/headless`、`@soybeanjs/theme`、`@soybeanjs/ui-uno`、`@soybeanjs/cva` 和 `sbean`；
+所有包通过根 catalog 固定为 `0.30.0` 或同版本配套版本。styled `@soybeanjs/ui` 不作为依赖，
+所需 styled wrapper 由 sbean 生成并归仓库所有。
 
 上游生成内容中的 6 个站点相对链接在项目本地无法解析。本地快照只对这些链接做了
 修正，将它们改为 `ui.soybeanjs.cn` 的绝对地址；其余上游 Skill 内容保持不变。
@@ -40,8 +41,8 @@ Skill 快照与项目固定的 SoybeanUI `0.30.0` 依赖对齐。当前使用
 
 - 业务模块只从 `@jingwei/ui` 导入共享组件；
 - `@soybeanjs/headless` 只作为 `@jingwei/ui` 内部实现依赖；
-- 从 SoybeanUI 复制 styled wrapper 和样式 recipe 后，改为无前缀的 Jingwei 公共组件名；
-- 全局主题由根 `sbean.json`、`@soybeanjs/ui-uno` 的 `presetSbean()` 和
+- sbean 生成文件保持上游目录及 `S*` 内部名，只在 `@jingwei/ui` 公共入口映射无前缀名称；
+- 全局主题由 `packages/platform/ui/sbean.json`、`@soybeanjs/ui-uno` 的 `presetSbean()` 和
   `@soybeanjs/theme` 生成，组件直接使用 Soybean 的语义 token，不建立平行的项目变量层；
 - Jingwei 可通过 Soybean 的主题 seed 与 override API 定制品牌主题；
 - 不引入上游 `.agents/skills/soybean-ui-component-development`，因为它约束的是
@@ -63,8 +64,11 @@ Skill 快照与项目固定的 SoybeanUI `0.30.0` 依赖对齐。当前使用
 
 ## 运行时主题基础设施
 
-`@soybeanjs/ui` 的 SConfigProvider、useTheme 与 SThemeCustomizer 直接复用，主题上下文
-不复制、不另建 store。普通组件继续采用本地源码方式。此处保留 Provider 的 S 前缀。
-`presetSbean()` 只负责构建回退主题；运行时配置由 Provider 管理。
-Playground 参考：本地 `/Users/jack/code/soybean-ui/apps/playground` 的 App.vue、theme.ts
-和 theme-configurator.vue。本地 checkout 为 0.31.0，实际依赖仍固定在已发布的 0.30.0。
+`ConfigProvider`、`useTheme`、Toast/Dialog/Progress Provider 与主题设置面板均由
+`@jingwei/ui` 源码拥有，不依赖上游 styled 包，也不另建 Pinia 主题 store。内部文件保留
+sbean 的 `SConfigProvider` 名，公共入口导出 `ConfigProvider`。Web 壳拥有主题设置入口与
+弹窗容器。`presetSbean()` 负责构建回退主题，运行时配置与持久化由本地 Provider 管理。
+
+Playground 只作为实现参考：本地 `/Users/jack/code/soybean-ui/apps/playground` 的 App.vue、
+theme.ts 和 theme-configurator.vue。本地 checkout 为 0.31.0，实际生成模板与依赖仍固定在
+已发布的 0.30.0。

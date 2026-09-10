@@ -1,28 +1,157 @@
-import type { ButtonEmits as HeadlessButtonEmits } from '@soybeanjs/headless/button'
-import type { ClassValue } from '@soybeanjs/headless/types'
-import type { ThemeColor, ThemeSize } from '@soybeanjs/theme'
+import type { ButtonShadow, ButtonShape, ButtonVariant } from '#ui/styles/button'
+import type { ThemeColor, ThemeSize } from '#ui/theme'
+import type {
+  ButtonEmits,
+  ButtonGroupProps as _ButtonGroupProps,
+  ButtonProps as _ButtonProps,
+} from '@soybeanjs/headless/button'
+import type { Align, ClassValue, PropsToContext } from '@soybeanjs/headless/types'
 
-import type { ButtonVariant } from './button.variants.js'
+import type { IconValue, IconProps } from '../icon/types'
+import type { LinkProps } from '../link/types'
 
-export type ButtonColor = ThemeColor
-export type ButtonSize = ThemeSize
-
-export interface ButtonProps {
-  /** Additional utility classes merged after the component recipe. */
+/**
+ * Properties for the Button component.
+ */
+export interface ButtonProps extends _ButtonProps {
+  /**
+   * Additional class names applied to the root element.
+   */
   class?: ClassValue
-  /** Selects a semantic color from the Soybean theme. */
-  color?: ButtonColor
-  /** Prevents pointer and keyboard activation. */
-  disabled?: boolean
-  /** Prevents interaction and exposes the busy state to assistive technology. */
-  loading?: boolean
-  /** Controls the button height, padding and text size. */
-  size?: ButtonSize
-  /** Native button type; defaults to `button` to avoid accidental form submission. */
-  type?: 'button' | 'reset' | 'submit'
-  /** Controls the semantic visual treatment. */
+  /**
+   * Theme color of the component.
+   */
+  color?: ThemeColor
+  /**
+   * Visual size of the component.
+   */
+  size?: ThemeSize
+  /**
+   * Visual variant of the component.
+   */
   variant?: ButtonVariant
+  /**
+   * Shape of the component.
+   */
+  shape?: ButtonShape
+  /**
+   * Shadow style of the component.
+   */
+  shadow?: ButtonShadow
+  /**
+   * Whether the component should fit its content width.
+   */
+  fitContent?: boolean
 }
 
-export type ButtonEmits = HeadlessButtonEmits
-export type { ButtonVariant }
+/**
+ * Properties for the ButtonIcon component.
+ */
+export interface ButtonIconProps extends ButtonProps {
+  /** The icon value of iconify. */
+  icon: IconValue
+  /**
+   * The class of the icon.
+   */
+  iconClass?: ClassValue
+  /** The props of the icon. */
+  iconProps?: Partial<IconProps>
+}
+
+/**
+ * Properties for the ButtonLoading component.
+ */
+export interface ButtonLoadingProps extends ButtonProps {
+  /**
+   * Whether the button is loading.
+   *
+   * @default false
+   */
+  loading?: boolean
+  /**
+   * The text to display when the button is loading.
+   *
+   * It will be displayed when the loading position is center.
+   */
+  loadingText?: string
+  /**
+   * The duration of the loading state in milliseconds.
+   *
+   * @default 150 ms
+   */
+  loadingDuration?: number
+  /**
+   * Whether to automatically handle loading state during click event. When true, the button will show loading state
+   * during click event execution. When false, you need to manually control the loading state.
+   *
+   * @default false
+   */
+  autoLoading?: boolean
+  /**
+   * The icon name of iconify to display when the button is loading.
+   *
+   * @default 'svg-spinners:270-ring'
+   */
+  loadingIcon?: IconValue
+  /** The props of the loading icon. */
+  loadingIconProps?: Partial<IconProps>
+  /**
+   * The position of the loading icon.
+   *
+   * @default 'start'
+   */
+  loadingPosition?: Align
+}
+
+/**
+ * Properties for the ButtonLink component.
+ */
+export type ButtonLinkProps = ButtonProps & LinkProps
+
+/**
+ * Properties for the ButtonGroup component.
+ */
+export interface ButtonGroupProps extends _ButtonGroupProps {
+  /**
+   * Additional class names applied to the root element.
+   */
+  class?: ClassValue
+  /**
+   * Theme color of the component.
+   */
+  color?: ThemeColor
+  /**
+   * Visual size of the component.
+   */
+  size?: ThemeSize
+  /**
+   * Visual variant of the component.
+   */
+  variant?: ButtonVariant
+  /**
+   * Shape of the component.
+   */
+  shape?: ButtonShape
+  /**
+   * Shadow style of the component.
+   */
+  shadow?: ButtonShadow
+  /**
+   * Whether the component should fit its content width.
+   */
+  fitContent?: boolean
+  /**
+   * Whether all descendant buttons are disabled.
+   */
+  disabled?: boolean
+}
+
+/**
+ * Context for the ButtonGroup component.
+ */
+export type ButtonGroupContext = PropsToContext<
+  ButtonGroupProps,
+  'color' | 'size' | 'variant' | 'shape' | 'shadow' | 'disabled' | 'fitContent'
+>
+
+export type { ButtonEmits, ButtonVariant, ButtonShape, ButtonShadow }

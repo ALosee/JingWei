@@ -1,8 +1,12 @@
 {
   "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
+    "exactOptionalPropertyTypes": false,
     "lib": ["ES2024", "DOM"],
-    "rootDir": "src"
+    "rootDir": "src",
+    "paths": {
+      "#ui/*": ["./src/*"]
+    }
   },
   "include": ["src/**/*.ts", "src/**/*.vue"]
 }

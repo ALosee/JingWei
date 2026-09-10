@@ -59,6 +59,15 @@ export function inspectSourceResponsibilities(
     const target = specifier.startsWith('.')
       ? posix.normalize(posix.join(posix.dirname(file), specifier))
       : specifier
+    if (specifier === '@soybeanjs/ui' || specifier.startsWith('@soybeanjs/ui/')) {
+      report(
+        'source-controlled-ui',
+        'Import local components from @jingwei/ui; the styled @soybeanjs/ui package is forbidden',
+      )
+    }
+    if (specifier.startsWith('#ui/') && !file.startsWith('packages/platform/ui/')) {
+      report('ui-private-import', 'The #ui alias is private to packages/platform/ui')
+    }
     if (
       (domain || application || api) &&
       ((technicalImports.test(specifier) &&

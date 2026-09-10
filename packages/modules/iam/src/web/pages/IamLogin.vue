@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Button } from '@jingwei/ui'
+import { ButtonLoading, Input } from '@jingwei/ui'
 
 import { useSignIn } from '../composables/use-sign-in.js'
 
@@ -13,17 +13,17 @@ const { tenantCode, username, password, errorMessage, submitting, submit } = use
       <h1>经纬企业平台</h1>
       <p class="intro">使用租户账号进入工作空间。</p>
       <form @submit.prevent="submit">
-        <label>租户代码<input v-model="tenantCode" autocomplete="organization" /></label>
-        <label>账号<input v-model="username" autocomplete="username" /></label>
+        <label>租户代码<Input v-model="tenantCode" autocomplete="organization" /></label>
+        <label>账号<Input v-model="username" autocomplete="username" /></label>
         <label
-          >密码<input v-model="password" type="password" autocomplete="current-password"
+          >密码<Input v-model="password" type="password" autocomplete="current-password"
         /></label>
         <p v-if="errorMessage" class="error">
           {{ errorMessage }}
         </p>
-        <Button type="submit" :loading="submitting">
+        <ButtonLoading type="submit" :loading="submitting">
           {{ submitting ? '正在登录…' : '登录' }}
-        </Button>
+        </ButtonLoading>
       </form>
     </section>
   </main>
@@ -72,15 +72,6 @@ form {
 label {
   font-size: 0.875rem;
   font-weight: 600;
-}
-input {
-  min-height: 2.75rem;
-  padding: 0 0.75rem;
-  border: 1px solid hsl(var(--input) / var(--input-alpha, 1));
-  background: hsl(var(--background));
-  color: hsl(var(--foreground));
-  border-radius: var(--radius);
-  font: inherit;
 }
 .error {
   margin: 0;

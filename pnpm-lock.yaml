@@ -15,6 +15,9 @@ catalogs:
     '@hono/zod-openapi':
       specifier: 1.6.3
       version: 1.6.3
+    '@iconify/vue':
+      specifier: 5.0.1
+      version: 5.0.1
     '@playwright/test':
       specifier: 1.62.1
       version: 1.62.1
@@ -33,15 +36,15 @@ catalogs:
     '@soybeanjs/theme':
       specifier: 0.30.0
       version: 0.30.0
-    '@soybeanjs/ui':
-      specifier: 0.30.0
-      version: 0.30.0
     '@soybeanjs/ui-uno':
       specifier: 0.30.0
       version: 0.30.0
     '@soybeanjs/unocss-preset':
       specifier: 0.2.0
       version: 0.2.0
+    '@soybeanjs/utils':
+      specifier: 0.1.1
+      version: 0.1.1
     '@types/node':
       specifier: 24.13.3
       version: 24.13.3
@@ -54,6 +57,9 @@ catalogs:
     '@vue/test-utils':
       specifier: 2.5.0
       version: 2.5.0
+    '@vueuse/core':
+      specifier: 14.4.0
+      version: 14.4.0
     argon2:
       specifier: 0.45.1
       version: 0.45.1
@@ -700,6 +706,9 @@ importers:
 
   packages/platform/ui:
     dependencies:
+      '@iconify/vue':
+        specifier: 'catalog:'
+        version: 5.0.1(vue@3.5.42(typescript@5.9.3))
       '@soybeanjs/cva':
         specifier: 'catalog:'
         version: 0.1.1
@@ -709,9 +718,12 @@ importers:
       '@soybeanjs/theme':
         specifier: 'catalog:'
         version: 0.30.0
-      '@soybeanjs/ui':
+      '@soybeanjs/utils':
         specifier: 'catalog:'
-        version: 0.30.0(vue-router@5.3.0(@vue/compiler-sfc@3.5.42)(esbuild@0.28.2)(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.42(typescript@5.9.3)))(rolldown@1.2.6)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))(vue@3.5.42(typescript@5.9.3)))(vue@3.5.42(typescript@5.9.3))
+        version: 0.1.1
+      '@vueuse/core':
+        specifier: 'catalog:'
+        version: 14.4.0(vue@3.5.42(typescript@5.9.3))
       vue:
         specifier: 'catalog:'
         version: 3.5.42(typescript@5.9.3)
@@ -1701,9 +1713,6 @@ packages:
   '@soybeanjs/colord@0.7.1':
     resolution: {integrity: sha512-3hhonqmEX+cEinvU2VU9dwxlvvRQaoy+4e1evr6owfVNJTHnktzhmISZt0pVqzQHuAU3Btoe6MeY47+dT7hPAA==}
 
-  '@soybeanjs/cva@0.0.9':
-    resolution: {integrity: sha512-hzdM6sKk+xqAvmhNVqPS422UVpiqgOuoXJhOrN7UypN01Sa9kIuSklxCKJVYhftBCwXxkjK3nL1/Vj11jPZsCQ==}
-
   '@soybeanjs/cva@0.1.1':
     resolution: {integrity: sha512-fQd4iP1rrrQsktKeiINVGNr9cyLuWNAmwW8cBwkJKuw7UrElrTc9PApBb0vjUCXNVYW8T4oiTT2V7xo7fVzVtw==}
 
@@ -1739,27 +1748,6 @@ packages:
 
   '@soybeanjs/ui-uno@0.30.0':
     resolution: {integrity: sha512-CU8orr7RTaVIH4/V6XOND9ZddMaj8YHjBGg02LcRVLjar49PTgHqjAHODVMUIWKtAaJEUUwP9DQnh/7A1Axh/Q==}
-
-  '@soybeanjs/ui@0.30.0':
-    resolution: {integrity: sha512-JhzD7k2zhGmQHwGMvdsBQrDK6NdJkzdfNTxbKVm02FAdy25ZVJrDwa5/4arMNwtcBtiYjGCCd4YWaxMQ83igHw==}
-    peerDependencies:
-      '@nuxt/kit': ^4.3.0
-      '@nuxt/schema': ^4.3.0
-      nuxt: '>=4.0.0'
-      unplugin-vue-components: ^31.0.0
-      vue: '>=3.2.0'
-      vue-router: '>=4.0.0'
-    peerDependenciesMeta:
-      '@nuxt/kit':
-        optional: true
-      '@nuxt/schema':
-        optional: true
-      nuxt:
-        optional: true
-      unplugin-vue-components:
-        optional: true
-      vue-router:
-        optional: true
 
   '@soybeanjs/unocss-preset@0.2.0':
     resolution: {integrity: sha512-ELjt4BKoU3NsrvzPHK7EsMMz2ZC8F4Qtpny38qeRvvrS7YzHEj5CwD6LeQF2USEo9msJRYU2uwLTIJRFOClNxA==}
@@ -3735,9 +3723,6 @@ packages:
     resolution: {integrity: sha512-yEFYrVhod+hdNyx7g5Bnkkb0G6si8HJurOoOEgC8B/O0uXLHlaey/65KRv6cuWBNhBgHKAROVpc7QyYqE5gFng==}
     engines: {node: '>=20'}
 
-  tailwind-merge@3.6.0:
-    resolution: {integrity: sha512-uxL7qAVQriqRQPAyK3pj66VqskWqoZ37PW94jwOTwNfq/z9oyu1V+eqrZqtR2+fCiXdYOZe/Modt8GtvqNzu+w==}
-
   thread-stream@4.2.0:
     resolution: {integrity: sha512-e2zZ96wSChazBsbENf/Pcm/4swHt2cEKQ92rhUjkL9GCKiTDJIaTBenjE/m9DXi0QBmTMDkFDdOomUy20A1tDQ==}
     engines: {node: '>=20'}
@@ -4876,10 +4861,6 @@ snapshots:
 
   '@soybeanjs/colord@0.7.1': {}
 
-  '@soybeanjs/cva@0.0.9':
-    dependencies:
-      tailwind-merge: 3.6.0
-
   '@soybeanjs/cva@0.1.1':
     dependencies:
       cn: 0.2.6
@@ -4942,18 +4923,6 @@ snapshots:
       - rollup
       - srvx
       - vite
-
-  '@soybeanjs/ui@0.30.0(vue-router@5.3.0(@vue/compiler-sfc@3.5.42)(esbuild@0.28.2)(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.42(typescript@5.9.3)))(rolldown@1.2.6)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))(vue@3.5.42(typescript@5.9.3)))(vue@3.5.42(typescript@5.9.3))':
-    dependencies:
-      '@iconify/vue': 5.0.1(vue@3.5.42(typescript@5.9.3))
-      '@soybeanjs/cva': 0.0.9
-      '@soybeanjs/headless': 0.30.0(vue-router@5.3.0(@vue/compiler-sfc@3.5.42)(esbuild@0.28.2)(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.42(typescript@5.9.3)))(rolldown@1.2.6)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))(vue@3.5.42(typescript@5.9.3)))(vue@3.5.42(typescript@5.9.3))
-      '@soybeanjs/hooks': 0.3.0
-      '@soybeanjs/theme': 0.30.0
-      '@soybeanjs/utils': 0.1.1
-      vue: 3.5.42(typescript@5.9.3)
-    optionalDependencies:
-      vue-router: 5.3.0(@vue/compiler-sfc@3.5.42)(esbuild@0.28.2)(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.42(typescript@5.9.3)))(rolldown@1.2.6)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))(vue@3.5.42(typescript@5.9.3))
 
   '@soybeanjs/unocss-preset@0.2.0(@devframes/hub@0.9.12(crossws@0.4.12(srvx@1.0.3))(devframe@0.9.12(cac@7.0.0)(srvx@1.0.3)))(cac@7.0.0)(crossws@0.4.12(srvx@1.0.3))(rolldown@1.2.6)(srvx@1.0.3)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))':
     dependencies:
@@ -7077,8 +7046,6 @@ snapshots:
   supports-color@10.2.2: {}
 
   tagged-tag@1.0.0: {}
-
-  tailwind-merge@3.6.0: {}
 
   thread-stream@4.2.0:
     dependencies:

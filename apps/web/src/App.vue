@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { SConfigProvider, ThemeSettings } from '@jingwei/ui'
+import { ConfigProvider } from '@jingwei/ui'
+
+import AppThemeSettings from './components/app-theme-settings.vue'
 </script>
 
 <template>
-  <SConfigProvider persist-theme locale="zh-CN">
+  <ConfigProvider persist-theme locale="zh-CN">
     <RouterView />
-    <ThemeSettings />
-  </SConfigProvider>
+    <AppThemeSettings />
+  </ConfigProvider>
 </template>

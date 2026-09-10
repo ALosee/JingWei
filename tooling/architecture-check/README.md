@@ -30,6 +30,8 @@ pnpm architecture:check
 | `page-workflow-boundary`           | 模块 pages 直接导入 module client 或 api-client                                                 |
 | `workflow-outside-boundary`        | 页面或装配直接执行 fetch / 已识别的 module client 调用                                          |
 | `module-no-process-env`            | 模块自行读取 process.env，而非接收显式配置                                                      |
+| `source-controlled-ui`             | package dependency 或 authored source 引入 `@soybeanjs/ui` styled 包                            |
+| `ui-private-import`                | `#ui/*` 生成器 alias 被 `@jingwei/ui` 之外的源码导入                                            |
 
 检查前还会把全部模块组成临时 Edition，由 `resolveEdition` 发现同步依赖环。
 
@@ -42,7 +44,7 @@ pnpm architecture:check
 
 ## 实现职责
 
-`cli.ts` 只调用 `commands/check.ts` 的 `runArchitectureCommand()`。命令处理仓库路径、输出和退出状态；`index.ts` 编排发现与规则，不实现每一项策略。`rules/module-boundaries.ts` 保留模块边界规则，`rules/source-responsibilities.ts` 使用 TypeScript AST 检查职责，`source-files.ts` 负责文件扫描。导入实现不会自动执行检查或设置退出码。
+`cli.ts` 只调用 `commands/check.ts` 的 `runArchitectureCommand()`。命令处理仓库路径、输出和退出状态；`index.ts` 编排发现与规则，不实现每一项策略。`rules/module-boundaries.ts` 保留模块边界规则，`rules/source-responsibilities.ts` 使用 TypeScript AST 检查职责，`rules/ui-foundation.ts` 检查 UI package dependency，`source-files.ts` 负责文件扫描。导入实现不会自动执行检查或设置退出码。
 
 ## 检查范围和限制
 

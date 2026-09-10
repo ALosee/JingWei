@@ -110,7 +110,7 @@ export const webModule: WebModule = {
 
 解释 domain、application、infrastructure、api、public、client、web 中的关键入口。
 
-server/module.ts 只装配依赖与路由；HTTP handler 放在 server/api，规则与事务放在 application/domain，SQL 放在 infrastructure。web/pages 负责展示和绑定，网络流程与提交状态放在模块自有 web/composables，不直接调用 client。避免导入时自动执行 I/O，参照仓库 docs/code-structure.md 与 ADR 0008。
+server/module.ts 只装配依赖与路由；HTTP handler 放在 server/api，规则与事务放在 application/domain，SQL 放在 infrastructure。web/pages 负责展示和绑定，网络流程与提交状态放在模块自有 web/composables，不直接调用 client。具有本模块业务词汇的组件放 web/components；无业务基础组件从 @jingwei/ui 导入，不把业务组件下沉到平台 UI。避免导入时自动执行 I/O，参照仓库 docs/code-structure.md、ADR 0008 与 ADR 0010。
 
 ## HTTP 与 Client API
 

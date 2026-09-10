@@ -4,20 +4,20 @@ import { presetSbean } from '@soybeanjs/ui-uno'
 import { presetSoybean } from '@soybeanjs/unocss-preset'
 import { defineConfig } from 'unocss'
 
-const workspaceRoot = fileURLToPath(new URL('../..', import.meta.url))
+const uiRoot = fileURLToPath(new URL('../../packages/platform/ui/', import.meta.url))
 
 export default defineConfig({
   content: {
     pipeline: {
       include: [/\.(vue|[jt]sx?)($|\?)/],
-      exclude: [/node_modules\/(?!.*@soybeanjs\/ui\/dist\/)/, /\.git\//],
+      exclude: [/node_modules\//, /\.git\//],
     },
-    filesystem: [`${workspaceRoot}packages/platform/ui/node_modules/@soybeanjs/ui/dist/**/*.js`],
+    filesystem: [`${uiRoot}src/**/*.{vue,ts,tsx}`],
   },
   presets: [
     presetSoybean(),
     presetSbean({
-      cwd: workspaceRoot,
+      cwd: uiRoot,
       overrides: {
         globalCSS: true,
         resetCSS: true,

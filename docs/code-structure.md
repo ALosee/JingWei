@@ -67,6 +67,21 @@ start-server 负责进程边界，建立监听并注册信号；shutdown 负责�
 
 IAM 登录页使用 useSignIn 管理提交状态和成功后的跳转。页面仍可以拥有纯展示 computed、DOM 交互和简单绑定，不要求把每个变量拆到新文件。
 
+### 4.1 Web 组件归属
+
+```text
+packages/platform/ui/src/components/          # sbean 管理的无业务基础组件
+packages/platform/ui/src/patterns/            # 跨模块通用组合模式
+packages/modules/<id>/src/web/components/     # 模块业务组件
+apps/web/src/components/                      # 仅属于应用壳的组件
+```
+
+`@jingwei/ui` 源码拥有 styled layer，只以 `@soybeanjs/headless` 和 theme/recipe 包为底层；
+业务与应用代码禁止导入 `@soybeanjs/ui`。模块组件的判断标准是业务语义和变化所有权，不是
+文件大小：OrganizationPicker 属于 Organization，即使多个模块使用也应通过该模块公开的
+Web 契约演进；Button、Input、Dialog 等无业务词汇的原语才属于平台 UI。页面专用的小组件
+可以紧邻页面，形成稳定复用后再移入模块 `web/components`，不预设万能 common 目录。
+
 ## 5. 工具入口
 
 现有命令路径不变，例如 seed-dev.ts 仍是脚本入口，但只调用 commands/seed-dev.ts 的具名函数。argv/env、日志、退出状态和资源生命周期属于该命令边界，导入实现文件不会立即连库或执行种子。
@@ -88,6 +103,8 @@ commands 是有明确目的的运维流程，不是把一般业务规则搬出 M
 | page-workflow-boundary          | 模块 Vue pages 不直接导入 client/api-client                                          |
 | workflow-outside-boundary       | 页面/装配不直接调用 fetch 或已识别模块 client                                        |
 | module-no-process-env           | 模块通过注入获得配置，不读取 process.env                                             |
+| source-controlled-ui            | package 与 authored source 不引入 `@soybeanjs/ui` styled 包                          |
+| ui-private-import               | `#ui/*` 私有 alias 不泄漏到 `@jingwei/ui` 之外                                       |
 
 检查 authored TS/Vue script，排除测试、generated、dist 和 node_modules。TypeScript AST 避免将模板文本、注释或普通字符串误认为代码。Application/API 可 type-only 引用明确的 TenantDirectory/TenantSnapshot/AppConfig 契约，但不能因此导入 DatabaseRuntime/Kysely 实现。
 

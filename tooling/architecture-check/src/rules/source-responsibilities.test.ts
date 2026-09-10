@@ -6,6 +6,29 @@ const codes = (file: string, source: string, entrypoint = false) =>
   inspectSourceResponsibilities(file, source, { entrypoint }).map((violation) => violation.rule)
 
 describe('source responsibility guardrails', () => {
+  it('rejects the upstream styled UI package in authored source', () => {
+    expect(
+      codes(
+        'apps/web/src/App.vue',
+        `<script setup lang="ts">import { SConfigProvider } from '@soybeanjs/ui'</script>`,
+      ),
+    ).toContain('source-controlled-ui')
+
+    expect(
+      codes(
+        'apps/web/src/App.vue',
+        `<script setup lang="ts">import { ConfigProvider } from '@jingwei/ui'</script>`,
+      ),
+    ).not.toContain('source-controlled-ui')
+
+    expect(
+      codes(
+        'packages/modules/iam/src/web/components/SignInForm.vue',
+        `<script setup lang="ts">import Button from '#ui/components/button/button.vue'</script>`,
+      ),
+    ).toContain('ui-private-import')
+  })
+
   it('accepts thin Web/Server/CLI entries but rejects inline workflow and callback wrappers', () => {
     expect(
       codes(

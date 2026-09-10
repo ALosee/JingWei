@@ -30,7 +30,9 @@
     "seed:navigation": "tsx tooling/migration/src/seed-navigation.ts",
     "test:auth:real": "tsx tooling/migration/src/smoke-auth.ts",
     "test:navigation:real": "tsx tooling/migration/src/test-navigation-real.ts",
-    "ui:inspect": "sbean add --dry-run",
+    "ui:add": "sbean add --cwd packages/platform/ui",
+    "ui:inspect": "sbean add --dry-run --cwd packages/platform/ui",
+    "ui:diff": "sbean add --dry-run --diff --cwd packages/platform/ui",
     "module:create": "tsx tooling/module-generator/src/cli.ts",
     "check": "pnpm format:check && pnpm api:check && pnpm typecheck && pnpm lint && pnpm architecture:check && pnpm test && pnpm build"
   },
