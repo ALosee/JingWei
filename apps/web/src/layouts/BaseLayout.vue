@@ -34,7 +34,7 @@ const layoutUi = {
   rail: 'hidden',
   header: 'border-b border-border bg-card',
   tab: 'bg-card',
-  content: 'min-w-0 overscroll-contain p-6',
+  content: 'min-w-0 overscroll-contain p-4',
 } as const
 </script>
 
