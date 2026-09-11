@@ -4,20 +4,20 @@
 
 ## 包边界
 
-本包拥有 `platform.auth_session` 和相应迁移，但不拥有用户表。它只使用已确认的 `TenantId`、`UserId` 创建会话。
+本包拥有 `platform.auth_session`、`platform.auth_refresh_token` 和相应迁移，但不拥有用户表。它只使用已确认的 `TenantId`、`UserId` 创建 token family。
 
 | API                         | 作用                                                                                  |
 | --------------------------- | ------------------------------------------------------------------------------------- |
 | `PasswordHasher`            | 密码 hash/verify 端口                                                                 |
 | `Argon2idPasswordHasher`    | 固定安全参数的 Argon2id 实现                                                          |
-| `SessionRepository`         | 会话持久化端口                                                                        |
+| `SessionRepository`         | Token family 持久化与原子轮换端口                                                     |
 | `PostgresSessionRepository` | PostgreSQL 实现                                                                       |
-| `SessionService`            | 创建、认证、滑动过期、撤销会话                                                        |
+| `SessionService`            | 创建、Access 认证、Refresh 轮换、滑动过期与撤销                                       |
 | `hashOpaqueToken`           | 对随机令牌生成 SHA-256 摘要                                                           |
 | `tokenMatchesHash`          | 恒定时间策略比较令牌摘要                                                              |
 | Cookie/CSRF 常量与函数      | HTTP 安全边界共享契约                                                                 |
 | `./shared`                  | 浏览器安全的 session/CSRF Cookie 与 Header 名常量，不引入 Node/Argon2/PostgreSQL 实现 |
-| `./migrations`              | `platform.auth_session` 迁移                                                          |
+| `./migrations`              | `platform.auth_session` / `platform.auth_refresh_token` 迁移                          |
 
 ## 密码
 
@@ -27,18 +27,21 @@ const hash = await hasher.hash(password)
 const valid = await hasher.verify(hash, candidate)
 ```
 
-数据库只保存 Argon2 编码摘要。认证失败时，IAM 路由使用统一结果，避免暴露“用户不存在”还是“密码错误”。算法参数升级应支持登录时 rehash 或受控批次，不直接破坏历史摘要。
+数据库只保存 Argon2 编码摘要。认证失败时，IAM 使用统一结果并为未知账号执行 dummy verification，避免暴露“用户不存在”还是“密码错误”；失败计数和临时锁定属于 IAM 凭据状态。算法参数升级应支持登录时 rehash 或受控批次，不直接破坏历史摘要。
 
-## 会话
+## Token Family
 
-`SessionService.create` 生成两个 256-bit 随机值：
+`SessionService.create` 生成三个彼此独立的 256-bit 随机值：
 
-- session token：浏览器证明会话；
+- access token：短期日常请求凭据；
+- refresh token：单次使用的续期凭据；
 - CSRF token：修改型请求的双提交令牌。
 
-数据库只保存二者的 SHA-256 摘要。返回的 `CreatedSession` 是唯一包含原始 token 的短生命周期对象，只能由登录路由写入 Cookie，禁止日志记录或长期缓存。
+数据库只保存三者的 SHA-256 摘要。返回的 `CreatedSession` 是唯一包含原始 token 的短生命周期对象，只能由登录/刷新路由写入 Cookie，禁止日志记录或长期缓存。
 
-`authenticate` 同时检查：token 摘要、未撤销、idle 未过期、absolute 未过期。成功后延长 idle 时间，但永远不超过 absolute 时间。
+`authenticateAccess` 同时检查：当前 access 摘要、access 未过期、family 未撤销、idle 未过期、absolute 未过期。成功后延长 idle 时间，但永远不超过 absolute 时间。
+
+`refresh` 先验证 refresh hash 所属 family 和 CSRF，再在一个 PostgreSQL Transaction 中消费当前 generation、创建下一 generation 并替换 access hash。消费记录不会删除：同一 refresh 在 5 秒并发窗口内再次出现返回冲突供客户端重试，超过窗口则认定复用并撤销整个 family。
 
 `revoke` 撤销单个会话；`revokeUser` 可用于密码重置、账户禁用或安全事件后撤销用户全部会话。
 
@@ -54,8 +57,8 @@ Origin 校验发生在请求中间件最前部；已认证的修改请求还要�
 ## 安全不变量
 
 - 原始密码和令牌不进入数据库、日志、审计和 outbox；
-- 会话 Cookie 使用 HttpOnly；CSRF Cookie 必须允许前端读取；
-- 生产 HTTPS 启用 Secure，并核对 SameSite/Domain/Path；
+- Access/Refresh Cookie 使用 HttpOnly；CSRF Cookie 必须允许前端读取；
+- 生产 HTTPS 启用 Secure，认证 Cookie 使用 SameSite=Strict 且不设置 Domain；Refresh Path 只匹配刷新端点；
 - 所有有效期依赖注入的 `Clock`；
 - 撤销和过期在查询条件中生效，不只靠调用方检查；
 - 令牌比较不使用普通字符串直接比较摘要。

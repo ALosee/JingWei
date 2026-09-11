@@ -14,6 +14,7 @@ export const apiErrorSchema = z
 export type ApiError = z.infer<typeof apiErrorSchema>
 
 export const openApiSecurityNames = {
-  sessionCookie: 'sessionCookie',
+  accessTokenCookie: 'accessTokenCookie',
+  refreshTokenCookie: 'refreshTokenCookie',
   csrfHeader: 'csrfHeader',
 } as const

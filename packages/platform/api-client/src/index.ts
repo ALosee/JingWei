@@ -1,16 +1,34 @@
-import { createRequest, FetchError, type FetchRequestConfig } from '@soybeanjs/fetch'
+import {
+  createRequest,
+  FetchError,
+  type FetchAdapter,
+  type FetchAdapterInit,
+  type FetchRequestConfig,
+} from '@soybeanjs/fetch'
 import { createTypedClient, toFlatTypedClient } from '@soybeanjs/fetch/openapi'
 
-import { csrfCookieName, csrfHeaderName } from '@jingwei/auth/shared'
+import { csrfCookieName, csrfHeaderName, refreshTokenCookiePath } from '@jingwei/auth/shared'
 import { apiErrorSchema } from '@jingwei/http-contract'
 
 const safeMethods = new Set(['GET', 'HEAD', 'OPTIONS'])
 const globalLoadingListeners = new Set<(loading: boolean) => void>()
 let globalLoading = false
+let refreshPromise: Promise<boolean> | null = null
+
+const cookieAuthenticationAdapter: FetchAdapter = async (url, init) => {
+  const response = await globalThis.fetch(url, init)
+  if (!shouldAttemptRefresh(url, init, response)) return response
+
+  const refreshed = await refreshCookieSession()
+  if (!refreshed) return response
+  await discardResponseBody(response)
+  return globalThis.fetch(url, init)
+}
 
 const request = createRequest<unknown, unknown>(
   {
     credentials: 'include',
+    adapter: cookieAuthenticationAdapter,
     requestCache: 'no-store',
     retry: { retries: 0 },
     timeout: 30_000,
@@ -107,6 +125,26 @@ export function subscribeGlobalApiLoading(listener: (loading: boolean) => void):
   return () => globalLoadingListeners.delete(listener)
 }
 
+/**
+ * Refreshes the HttpOnly-cookie session without exposing either credential to JavaScript.
+ *
+ * The readable CSRF cookie is a prerequisite for refresh, so anonymous browsers fail fast without
+ * acquiring a cross-tab lock or issuing a redundant session probe. Concurrent calls in one page
+ * share a single promise. Browsers that implement Web Locks also serialize refreshes across tabs;
+ * after acquiring the lock, a tab first checks whether another tab has already restored the access
+ * cookie.
+ */
+export function refreshCookieSession(): Promise<boolean> {
+  if (refreshPromise !== null) return refreshPromise
+  if (readCookie(csrfCookieName) === null) return Promise.resolve(false)
+  refreshPromise = coordinateCookieRefresh()
+    .catch(() => false)
+    .finally(() => {
+      refreshPromise = null
+    })
+  return refreshPromise
+}
+
 export async function executeApiRequest<T>(operation: () => Promise<T>): Promise<T> {
   try {
     return await operation()
@@ -180,5 +218,107 @@ function readCookie(name: string): string | null {
     return decodeURIComponent(encoded)
   } catch {
     return null
+  }
+}
+
+async function coordinateCookieRefresh(): Promise<boolean> {
+  const lockManager = cookieRefreshLockManager()
+  if (lockManager !== null) {
+    return lockManager.request('jingwei-auth-refresh', { mode: 'exclusive' }, async () => {
+      if (await hasAuthenticatedAccessCookie()) return true
+      return requestCookieRefresh()
+    })
+  }
+  return requestCookieRefresh()
+}
+
+interface CookieRefreshLockManager {
+  request(
+    name: string,
+    options: { readonly mode: 'exclusive' },
+    callback: () => Promise<boolean>,
+  ): Promise<boolean>
+}
+
+function cookieRefreshLockManager(): CookieRefreshLockManager | null {
+  const browserNavigator: unknown = Reflect.get(globalThis, 'navigator')
+  if (typeof browserNavigator !== 'object' || browserNavigator === null) return null
+  const candidate: unknown = Reflect.get(browserNavigator, 'locks')
+  if (typeof candidate !== 'object' || candidate === null || !('request' in candidate)) return null
+  return typeof candidate.request === 'function' ? (candidate as CookieRefreshLockManager) : null
+}
+
+async function hasAuthenticatedAccessCookie(): Promise<boolean> {
+  try {
+    const response = await globalThis.fetch('/api/v1/iam/session', {
+      method: 'GET',
+      credentials: 'include',
+      cache: 'no-store',
+      headers: { accept: 'application/json' },
+    })
+    if (!response.ok) return false
+    const body: unknown = await response.json()
+    return (
+      typeof body === 'object' &&
+      body !== null &&
+      'authenticated' in body &&
+      body.authenticated === true
+    )
+  } catch {
+    return false
+  }
+}
+
+async function requestCookieRefresh(): Promise<boolean> {
+  const csrfToken = readCookie(csrfCookieName)
+  if (csrfToken === null) return false
+  try {
+    const response = await globalThis.fetch(refreshTokenCookiePath, {
+      method: 'POST',
+      credentials: 'include',
+      cache: 'no-store',
+      headers: {
+        accept: 'application/json',
+        [csrfHeaderName]: csrfToken,
+      },
+    })
+    if (response.ok) return true
+    if (response.status !== 409) return false
+
+    // A non-Web-Locks browser may race another tab. The winning response publishes the new
+    // cookies; a short yield lets the shared cookie jar observe them before the original retry.
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 25)
+    })
+    return await hasAuthenticatedAccessCookie()
+  } catch {
+    return false
+  }
+}
+
+function shouldAttemptRefresh(url: string, init: FetchAdapterInit, response: Response): boolean {
+  if (response.status !== 401 || isUnrepeatableBody(init.body)) return false
+  const path = requestPath(url)
+  if (path === refreshTokenCookiePath) return false
+  return !(path === '/api/v1/iam/sessions' && init.method.toUpperCase() === 'POST')
+}
+
+async function discardResponseBody(response: Response): Promise<void> {
+  try {
+    await response.body?.cancel()
+  } catch {
+    // Retrying must not fail merely because a runtime cannot cancel an unread body.
+  }
+}
+
+function isUnrepeatableBody(body: BodyInit | null | undefined): boolean {
+  return typeof ReadableStream !== 'undefined' && body instanceof ReadableStream
+}
+
+function requestPath(url: string): string {
+  try {
+    return new URL(url, 'http://jingwei.local').pathname
+  } catch {
+    return url
   }
 }

@@ -55,7 +55,7 @@ Runtime
 2. 把 Request ID 写入 Hono Context 和响应头。
 3. 默认设置 `authContext = null`。
 4. 对非 GET/HEAD/OPTIONS 请求验证 `Origin`。
-5. 若存在 Session Cookie，计算 Token Hash 并查询活动 Session。
+5. 若存在 Access Token Cookie，计算 Token Hash 并查询活动 Token Family。
 6. 验证 idle/absolute expiry，更新 lastSeen 和 idle expiry。
 7. 构造 `AuthContext`。
 8. 对有身份的 unsafe request 校验 CSRF Cookie/Header/Hash。
@@ -119,27 +119,30 @@ Login Form
   -> Zod validate
   -> resolve active tenant by code
   -> find user credential inside tenant
-  -> Argon2id verify
-  -> create opaque Session + CSRF token
+  -> Argon2id verify + account lockout state
+  -> reset failures + update last_login_at
+  -> append authentication.login audit
+  -> create opaque Access/Refresh Token Family + CSRF token
   -> database stores only hashes
-  -> Set-Cookie session(HttpOnly) + csrf(readable)
+  -> Set-Cookie access(HttpOnly) + refresh(HttpOnly) + csrf(readable)
   -> browser reloads /
   -> bootstrap + session status + /navigation/me
 ```
 
-登录失败统一返回相同错误，避免暴露租户、用户或状态是否存在。
+登录失败统一返回相同错误，避免暴露租户、用户、状态或锁定信息。未知租户/账号仍执行 dummy Argon2id 校验；已知活跃账号密码失败会原子增加失败次数，达到阈值后临时锁定。
 
 ## 8. Session 活动与退出
 
-每次携带 Session Cookie 的请求都会验证：
+每次携带 Access Token Cookie 的请求都会验证：
 
-- Session 未撤销；
-- 当前时间早于 idle expiry；
-- 当前时间早于 absolute expiry。
+- Token Family 未撤销；
+- Access Token 未过期；
+- 当前时间早于 refresh idle expiry；
+- 当前时间早于 refresh absolute expiry。
 
-认证成功后，idle expiry 最多延长到 absolute expiry。Logout 调用 `DELETE /api/v1/iam/sessions/current`，先撤销数据库 Session，再删除 Cookie。
+认证成功后，refresh idle expiry 最多延长到 absolute expiry。Access 过期后由 `POST /api/v1/iam/sessions/refresh` 原子消费旧 Refresh Token、签发下一代 Token Pair；旧 Refresh Token 超过并发窗口再次出现会撤销整个 Family。Logout 调用 `DELETE /api/v1/iam/sessions/current`，先撤销数据库 Family，再删除全部 Cookie。
 
-用户禁用或改密的 Application Use Case 应调用 `SessionService.revokeUser()`；当前 Foundation 已提供能力，但尚未实现完整用户管理 Use Case。
+用户禁用或改密的 Application Use Case 应调用 `SessionService.revokeUser()`；当前 Foundation 已提供能力，但尚未实现完整用户管理 Use Case。成功登录、退出和 Refresh Token 复用写入 append-only Audit Log；审计载荷不包含登录标识、密码或原始 token。
 
 ## 9. Navigation 解析
 

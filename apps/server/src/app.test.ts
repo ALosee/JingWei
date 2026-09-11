@@ -25,7 +25,8 @@ describe('API documentation', () => {
       expect(documentResponse.status).toBe(200)
       expect(document.paths).toHaveProperty('/api/v1/iam/sessions')
       expect(document.paths).toHaveProperty('/api/v1/navigation/versions/{id}/publish')
-      expect(document.components.securitySchemes).toHaveProperty('sessionCookie')
+      expect(document.components.securitySchemes).toHaveProperty('accessTokenCookie')
+      expect(document.components.securitySchemes).toHaveProperty('refreshTokenCookie')
       expect(document.components.securitySchemes).toHaveProperty('csrfHeader')
 
       const scalarResponse = await app.request('/docs')

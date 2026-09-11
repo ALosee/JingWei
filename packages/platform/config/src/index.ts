@@ -10,8 +10,12 @@ const configSchema = z.object({
     .default('postgres://jingwei:jingwei@127.0.0.1:5432/jingwei'),
   APP_ORIGIN: z.url().default('http://localhost:5173'),
   BOOTSTRAP_TENANT_CODE: z.string().trim().min(1).max(80).default('default'),
-  SESSION_IDLE_SECONDS: z.coerce.number().int().positive().default(1_800),
-  SESSION_ABSOLUTE_SECONDS: z.coerce.number().int().positive().default(604_800),
+  AUTH_ACCESS_TOKEN_SECONDS: z.coerce.number().int().positive().default(600),
+  AUTH_REFRESH_IDLE_SECONDS: z.coerce.number().int().positive().default(1_800),
+  AUTH_REFRESH_ABSOLUTE_SECONDS: z.coerce.number().int().positive().default(604_800),
+  AUTH_REFRESH_REUSE_GRACE_SECONDS: z.coerce.number().int().min(0).max(30).default(5),
+  AUTH_LOGIN_MAX_FAILED_ATTEMPTS: z.coerce.number().int().min(3).max(20).default(5),
+  AUTH_LOGIN_LOCK_SECONDS: z.coerce.number().int().min(60).max(86_400).default(900),
 })
 
 export interface AppConfig {
@@ -24,8 +28,14 @@ export interface AppConfig {
   readonly appOrigin: string
   readonly bootstrapTenantCode: string
   readonly session: {
-    readonly idleSeconds: number
-    readonly absoluteSeconds: number
+    readonly accessSeconds: number
+    readonly refreshIdleSeconds: number
+    readonly refreshAbsoluteSeconds: number
+    readonly refreshReuseGraceSeconds: number
+  }
+  readonly login: {
+    readonly maxFailedAttempts: number
+    readonly lockSeconds: number
   }
 }
 
@@ -39,8 +49,14 @@ export interface AppConfig {
 export function loadConfig(environment: NodeJS.ProcessEnv): AppConfig {
   const value = configSchema.parse(environment)
 
-  if (value.SESSION_IDLE_SECONDS >= value.SESSION_ABSOLUTE_SECONDS) {
-    throw new Error('SESSION_IDLE_SECONDS must be lower than SESSION_ABSOLUTE_SECONDS')
+  if (value.AUTH_ACCESS_TOKEN_SECONDS >= value.AUTH_REFRESH_ABSOLUTE_SECONDS) {
+    throw new Error('AUTH_ACCESS_TOKEN_SECONDS must be lower than AUTH_REFRESH_ABSOLUTE_SECONDS')
+  }
+  if (value.AUTH_REFRESH_IDLE_SECONDS >= value.AUTH_REFRESH_ABSOLUTE_SECONDS) {
+    throw new Error('AUTH_REFRESH_IDLE_SECONDS must be lower than AUTH_REFRESH_ABSOLUTE_SECONDS')
+  }
+  if (value.AUTH_ACCESS_TOKEN_SECONDS >= value.AUTH_REFRESH_IDLE_SECONDS) {
+    throw new Error('AUTH_ACCESS_TOKEN_SECONDS must be lower than AUTH_REFRESH_IDLE_SECONDS')
   }
 
   return Object.freeze({
@@ -50,8 +66,14 @@ export function loadConfig(environment: NodeJS.ProcessEnv): AppConfig {
     appOrigin: value.APP_ORIGIN,
     bootstrapTenantCode: value.BOOTSTRAP_TENANT_CODE,
     session: Object.freeze({
-      idleSeconds: value.SESSION_IDLE_SECONDS,
-      absoluteSeconds: value.SESSION_ABSOLUTE_SECONDS,
+      accessSeconds: value.AUTH_ACCESS_TOKEN_SECONDS,
+      refreshIdleSeconds: value.AUTH_REFRESH_IDLE_SECONDS,
+      refreshAbsoluteSeconds: value.AUTH_REFRESH_ABSOLUTE_SECONDS,
+      refreshReuseGraceSeconds: value.AUTH_REFRESH_REUSE_GRACE_SECONDS,
+    }),
+    login: Object.freeze({
+      maxFailedAttempts: value.AUTH_LOGIN_MAX_FAILED_ATTEMPTS,
+      lockSeconds: value.AUTH_LOGIN_LOCK_SECONDS,
     }),
   })
 }

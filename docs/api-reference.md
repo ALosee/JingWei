@@ -169,7 +169,7 @@ IAM 的 `getSessionStatus()` typed client 使用一个允许匿名的 `200` 状�
 
 基于模块生成的 OpenAPI `paths` 创建 typed client，URL、path/query 参数、JSON body 和返回类型由 contract 推断。默认 `client` 基于 `toFlatTypedClient`，通过 `toApiResult()` 返回 `{ data, error }` 并将失败转换为 `ApiClientError`；`throwingClient` 仅用于应用启动等明确 fail-fast 流程。模块调用仍必须传入自己拥有的 Zod response schema，TypeScript 生成类型不替代运行时验证。
 
-平台实例统一处理 Cookie、CSRF Header、`Accept`、30 秒默认超时、浏览器 `no-store` 与零自动重试。`@jingwei/api-client/vue` 的 `useApiRequestState()` 将 Fetch `onLoadingChange` 转为并发安全的只读 Vue loading；业务流程传递其 `options`，不得手工切换请求 loading。平台同时汇总 `onGlobalLoadingChange`。内置 cache/dedupe/Bearer refresh 默认关闭；模块页面需要 server-state 缓存时在 composable 上层单独设计。
+平台实例统一处理 Cookie、CSRF Header、`Accept`、30 秒默认超时和浏览器 `no-store`。普通传输错误不自动重试；受保护请求返回 401 时，平台会 single-flight 轮换 HttpOnly Refresh Cookie，并仅重放一次可重复请求。`@jingwei/api-client/vue` 的 `useApiRequestState()` 将 Fetch `onLoadingChange` 转为并发安全的只读 Vue loading；业务流程传递其 `options`，不得手工切换请求 loading。平台同时汇总 `onGlobalLoadingChange`。内置 cache/dedupe/Bearer refresh 默认关闭；模块页面需要 server-state 缓存时在 composable 上层单独设计。
 
 ### `ApiClientError`
 

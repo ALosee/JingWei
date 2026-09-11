@@ -19,6 +19,7 @@
   "dependencies": {
     "@hono/zod-openapi": "catalog:",
     "@jingwei/api-client": "workspace:*",
+    "@jingwei/audit": "workspace:*",
     "@jingwei/auth": "workspace:*",
     "@jingwei/database": "workspace:*",
     "@jingwei/http-contract": "workspace:*",

@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 import type { ApiRequestOptions } from '@jingwei/api-client'
 import { useApiRequestState } from '@jingwei/api-client/vue'
@@ -24,17 +24,23 @@ export function useSignIn(
   const errorMessage = ref('')
   const requestState = useApiRequestState()
 
+  watch([tenantCode, username, password], () => {
+    errorMessage.value = ''
+  })
+
   async function submit(): Promise<void> {
     if (requestState.loading.value) return
     errorMessage.value = ''
-    const { error } = await dependencies.login(
-      {
-        tenantCode: tenantCode.value,
-        login: username.value,
-        password: password.value,
-      },
-      requestState.options,
-    )
+    const input = {
+      tenantCode: tenantCode.value.trim(),
+      login: username.value.trim(),
+      password: password.value,
+    }
+    if (input.tenantCode.length === 0 || input.login.length === 0 || input.password.length === 0) {
+      errorMessage.value = '请完整填写租户代码、账号和密码'
+      return
+    }
+    const { error } = await dependencies.login(input, requestState.options)
     if (error !== null) {
       errorMessage.value = error.message
       return

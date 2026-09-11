@@ -39,7 +39,7 @@ DEV_ADMIN_PASSWORD='<至少 12 个字符>' pnpm seed:dev
 TEST_ADMIN_PASSWORD='<seed 时使用的密码>' pnpm test:auth:real
 ```
 
-它会依次验证错误密码被拒绝、真实登录、Cookie Session 恢复、已认证 Navigation、带 Origin/CSRF 的退出，以及已撤销 Session 无法再次认证。可通过 `TEST_BASE_URL` 指向非默认端口。
+它会依次验证错误密码被拒绝、真实登录、Access/Refresh/CSRF Cookie、会话恢复、Refresh 轮换、旧 Access 失效、已认证 Navigation、带 Origin/CSRF 的退出，以及已撤销 Token Family 无法再次认证。可通过 `TEST_BASE_URL` 指向非默认端口。
 
 ### `seed:navigation`
 
@@ -72,7 +72,7 @@ pnpm dev:test
 node --env-file=.env.test --import tsx tooling/migration/src/test-navigation-real.ts
 ```
 
-工具使用配置中的 PostgreSQL 实例创建唯一的 jingwei_navigation_test_* 临时数据库，运行所有迁移和真实 API/事务测试，最后删除这一个临时数据库，不清空应用数据库。连接账号必须具有 CREATEDB 权限。测试覆盖 code RBAC、跨租户访问、CSRF、并发写入/发布、回滚、不可变快照和 Outbox 故障回滚。
+工具使用配置中的 PostgreSQL 实例创建唯一的 jingwei_navigation_test_* 临时数据库，运行所有迁移和真实 API/事务测试，最后删除这一个临时数据库，不清空应用数据库。连接账号必须具有 CREATEDB 权限。测试覆盖密码失败锁定、Cookie Token 轮换、code RBAC、跨租户访问、CSRF、并发写入/发布、回滚、不可变快照和 Outbox 故障回滚。
 
 普通 pnpm test 不连接数据库，会跳过此集成 suite。单独运行集成测试必须使用 TEST_DATABASE_URL 且数据库名通过临时前缀保护；推荐使用上述包装工具以确保 finally 清理。
 

@@ -6,7 +6,7 @@ export const loginInputSchema = z
     login: z.string().trim().min(1).max(320),
     password: z.string().min(1).max(1_024),
   })
-  .meta({ id: 'IamLoginInput', description: 'Credentials used to create a server-side session' })
+  .meta({ id: 'IamLoginInput', description: 'Credentials used to create an opaque token family' })
 
 export const authenticatedUserSchema = z
   .object({
@@ -19,7 +19,10 @@ export const authenticatedUserSchema = z
 export const loginResultSchema = z
   .object({
     user: authenticatedUserSchema,
-    csrfToken: z.string(),
+    session: z.object({
+      accessExpiresAt: z.iso.datetime(),
+      absoluteExpiresAt: z.iso.datetime(),
+    }),
   })
   .meta({ id: 'IamLoginResult' })
 
@@ -33,6 +36,14 @@ export const sessionStatusSchema = z
   ])
   .meta({ id: 'IamSessionStatus' })
 
+export const refreshSessionResultSchema = z
+  .object({
+    accessExpiresAt: z.iso.datetime(),
+    absoluteExpiresAt: z.iso.datetime(),
+  })
+  .meta({ id: 'IamRefreshSessionResult' })
+
 export type LoginInput = z.infer<typeof loginInputSchema>
 export type LoginResult = z.infer<typeof loginResultSchema>
+export type RefreshSessionResult = z.infer<typeof refreshSessionResultSchema>
 export type SessionStatus = z.infer<typeof sessionStatusSchema>

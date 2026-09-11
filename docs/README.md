@@ -124,7 +124,8 @@
 - 0001：使用 Hono
 - 0002：使用 Kysely
 - 0003：使用 Modular Monolith
-- 0004：使用 Server-side Session
+- 0004：使用 Server-side Session（已由 0011 演进）
+- 0011：Web 使用服务端 opaque Access/Refresh Token
 - 0005：使用 Module-owned PostgreSQL Schema
 - 0006：限制 Elegant Router 为构建期页面注册表
 - [0007](./adr/0007-unified-navigation-and-role-grants.md)：统一五类导航节点、数据库布局配置与角色 navigation code 授权

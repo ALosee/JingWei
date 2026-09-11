@@ -12,18 +12,22 @@ Jingwei 的集中配置解析包。它把不可信的 `process.env` 转换为经
 
 返回的业务友好配置：
 
-| 字段                      | 环境变量                   | 默认值                  |
-| ------------------------- | -------------------------- | ----------------------- |
-| `environment`             | `NODE_ENV`                 | `development`           |
-| `http.host`               | `HTTP_HOST`                | `127.0.0.1`             |
-| `http.port`               | `HTTP_PORT`                | `3000`                  |
-| `databaseUrl`             | `DATABASE_URL`             | 本地 Jingwei PostgreSQL |
-| `appOrigin`               | `APP_ORIGIN`               | `http://localhost:5173` |
-| `bootstrapTenantCode`     | `BOOTSTRAP_TENANT_CODE`    | `default`               |
-| `session.idleSeconds`     | `SESSION_IDLE_SECONDS`     | `1800`                  |
-| `session.absoluteSeconds` | `SESSION_ABSOLUTE_SECONDS` | `604800`                |
+| 字段                               | 环境变量                           | 默认值                  |
+| ---------------------------------- | ---------------------------------- | ----------------------- |
+| `environment`                      | `NODE_ENV`                         | `development`           |
+| `http.host`                        | `HTTP_HOST`                        | `127.0.0.1`             |
+| `http.port`                        | `HTTP_PORT`                        | `3000`                  |
+| `databaseUrl`                      | `DATABASE_URL`                     | 本地 Jingwei PostgreSQL |
+| `appOrigin`                        | `APP_ORIGIN`                       | `http://localhost:5173` |
+| `bootstrapTenantCode`              | `BOOTSTRAP_TENANT_CODE`            | `default`               |
+| `session.accessSeconds`            | `AUTH_ACCESS_TOKEN_SECONDS`        | `600`                   |
+| `session.refreshIdleSeconds`       | `AUTH_REFRESH_IDLE_SECONDS`        | `1800`                  |
+| `session.refreshAbsoluteSeconds`   | `AUTH_REFRESH_ABSOLUTE_SECONDS`    | `604800`                |
+| `session.refreshReuseGraceSeconds` | `AUTH_REFRESH_REUSE_GRACE_SECONDS` | `5`                     |
+| `login.maxFailedAttempts`          | `AUTH_LOGIN_MAX_FAILED_ATTEMPTS`   | `5`                     |
+| `login.lockSeconds`                | `AUTH_LOGIN_LOCK_SECONDS`          | `900`                   |
 
-额外约束：idle 有效期必须严格小于 absolute 有效期；端口必须在合法范围；数据库 URL 必须使用 PostgreSQL 协议。
+额外约束：access 有效期必须严格小于 refresh idle，二者都必须严格小于 refresh absolute；refresh 复用并发窗口最大为 30 秒；登录失败阈值为 3–20 次，锁定时间为 60–86400 秒；端口必须在合法范围；数据库 URL 必须使用 PostgreSQL 协议。
 
 bootstrapTenantCode 用于匿名 Navigation bootstrap 的默认租户选择，仍须通过 TenantDirectory 找到活跃租户。已登录请求只使用 Session tenantId，不受此配置或 query 租户影响。
 

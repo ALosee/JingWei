@@ -1,6 +1,12 @@
 import { createHash, timingSafeEqual } from 'node:crypto'
 
-export { sessionCookieName, csrfCookieName, csrfHeaderName } from './shared.js'
+export {
+  accessTokenCookieName,
+  csrfCookieName,
+  csrfHeaderName,
+  refreshTokenCookieName,
+  refreshTokenCookiePath,
+} from './shared.js'
 
 const safeMethods = new Set(['GET', 'HEAD', 'OPTIONS'])
 

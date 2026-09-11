@@ -50,8 +50,23 @@ it('renders a flat login error without exception control flow', async () => {
     },
     enterWorkspace,
   })
+  form.username.value = 'admin'
+  form.password.value = 'incorrect'
   await form.submit()
   expect(form.errorMessage.value).toBe('Invalid credentials')
   expect(form.submitting.value).toBe(false)
   expect(enterWorkspace).not.toHaveBeenCalled()
+})
+
+it('rejects an incomplete form before starting an HTTP request', async () => {
+  const login = vi.fn()
+  const form = useSignIn({
+    login,
+    enterWorkspace: vi.fn(),
+  })
+
+  await form.submit()
+
+  expect(login).not.toHaveBeenCalled()
+  expect(form.errorMessage.value).toBe('请完整填写租户代码、账号和密码')
 })

@@ -2,8 +2,13 @@ import { sql } from 'kysely'
 import { Migrator } from 'kysely/migration'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import type { CreatedSession } from '@jingwei/auth'
-import { csrfCookieName, csrfHeaderName, sessionCookieName } from '@jingwei/auth/shared'
+import { Argon2idPasswordHasher, hashOpaqueToken, type CreatedSession } from '@jingwei/auth'
+import {
+  accessTokenCookieName,
+  csrfCookieName,
+  csrfHeaderName,
+  refreshTokenCookieName,
+} from '@jingwei/auth/shared'
 import { StaticMigrationProvider } from '@jingwei/database'
 import { newEntityId, newTenantId, newUserId } from '@jingwei/kernel'
 import {
@@ -95,7 +100,13 @@ describe.skipIf(databaseUrl === undefined)('real PostgreSQL navigation/API', () 
     if (session) {
       headers.set(
         'cookie',
-        sessionCookieName + '=' + session.token + '; ' + csrfCookieName + '=' + session.csrfToken,
+        accessTokenCookieName +
+          '=' +
+          session.accessToken +
+          '; ' +
+          csrfCookieName +
+          '=' +
+          session.csrfToken,
       )
       if (csrf) headers.set(csrfHeaderName, session.csrfToken)
     }
@@ -182,6 +193,144 @@ describe.skipIf(databaseUrl === undefined)('real PostgreSQL navigation/API', () 
     expect(pointer.rows[0]?.published_version_id).toBe(legacyVersion)
   })
 
+  it('locks repeated password failures and rotates real HTTP authentication cookies', async () => {
+    const db = runtime.database.view()
+    const tenantId = newTenantId()
+    const userId = newUserId()
+    const tenantCode = 'auth-' + tenantId
+    const username = 'login-' + userId
+    const password = 'Integration-password-2026!'
+    const passwordHash = await new Argon2idPasswordHasher().hash(password)
+    await sql`INSERT INTO platform.tenant (id, code, name, status, default_locale, default_timezone, default_currency, settings, created_at, updated_at)
+      VALUES (${tenantId}, ${tenantCode}, 'Authentication Tenant', 'ACTIVE', 'zh-CN', 'UTC', 'CNY', '{}', now(), now())`.execute(
+      db,
+    )
+    await sql`INSERT INTO iam."user" (id, tenant_id, username, username_normalized, display_name, status, created_at, updated_at)
+      VALUES (${userId}, ${tenantId}, ${username}, ${username}, 'Authentication User', 'ACTIVE', now(), now())`.execute(
+      db,
+    )
+    await sql`INSERT INTO iam.user_credential (user_id, password_hash, password_changed_at, created_at, updated_at)
+      VALUES (${userId}, ${passwordHash}, now(), now(), now())`.execute(db)
+
+    const login = (candidate: string) =>
+      app.request('/api/v1/iam/sessions', {
+        method: 'POST',
+        headers: {
+          origin: 'http://localhost:5173',
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ tenantCode, login: username, password: candidate }),
+      })
+
+    for (let attempt = 0; attempt < 5; attempt++) {
+      expect((await login('incorrect-password')).status).toBe(401)
+    }
+    expect((await login(password)).status).toBe(401)
+    const locked = await sql<{ failed_attempts: number; locked_until: Date | null }>`
+      SELECT failed_attempts, locked_until
+      FROM iam.user_credential
+      WHERE user_id = ${userId}
+    `.execute(db)
+    expect(locked.rows[0]?.failed_attempts).toBe(5)
+    expect(locked.rows[0]?.locked_until?.getTime()).toBeGreaterThan(Date.now())
+
+    await sql`UPDATE iam.user_credential
+      SET locked_until = now() - interval '1 second'
+      WHERE user_id = ${userId}`.execute(db)
+    const created = await login(password)
+    expect(created.status).toBe(201)
+    expect(created.headers.get('cache-control')).toBe('no-store')
+    const initialCookies = readCookies(created)
+    const initialAccess = requireCookie(initialCookies, accessTokenCookieName)
+    const initialRefresh = requireCookie(initialCookies, refreshTokenCookieName)
+    const csrf = requireCookie(initialCookies, csrfCookieName)
+
+    const session = await app.request('/api/v1/iam/session', {
+      headers: { cookie: `${accessTokenCookieName}=${initialAccess}` },
+    })
+    expect(await session.json()).toMatchObject({ authenticated: true })
+
+    const refreshed = await app.request('/api/v1/iam/sessions/refresh', {
+      method: 'POST',
+      headers: {
+        origin: 'http://localhost:5173',
+        cookie: `${refreshTokenCookieName}=${initialRefresh}; ${csrfCookieName}=${csrf}`,
+        [csrfHeaderName]: csrf,
+      },
+    })
+    expect(refreshed.status).toBe(200)
+    const rotatedCookies = readCookies(refreshed)
+    expect(requireCookie(rotatedCookies, accessTokenCookieName)).not.toBe(initialAccess)
+    expect(requireCookie(rotatedCookies, refreshTokenCookieName)).not.toBe(initialRefresh)
+    expect(rotatedCookies.has(csrfCookieName)).toBe(false)
+
+    const superseded = await app.request('/api/v1/iam/session', {
+      headers: { cookie: `${accessTokenCookieName}=${initialAccess}` },
+    })
+    expect(await superseded.json()).toEqual({ authenticated: false })
+    const concurrentRefresh = await app.request('/api/v1/iam/sessions/refresh', {
+      method: 'POST',
+      headers: {
+        origin: 'http://localhost:5173',
+        cookie: `${refreshTokenCookieName}=${initialRefresh}; ${csrfCookieName}=${csrf}`,
+        [csrfHeaderName]: csrf,
+      },
+    })
+    expect(concurrentRefresh.status).toBe(409)
+
+    await sql`UPDATE platform.auth_refresh_token
+      SET consumed_at = now() - interval '10 seconds'
+      WHERE token_hash = ${hashOpaqueToken(initialRefresh)}`.execute(db)
+    const reusedRefresh = await app.request('/api/v1/iam/sessions/refresh', {
+      method: 'POST',
+      headers: {
+        origin: 'http://localhost:5173',
+        cookie: `${refreshTokenCookieName}=${initialRefresh}; ${csrfCookieName}=${csrf}`,
+        [csrfHeaderName]: csrf,
+      },
+    })
+    expect(reusedRefresh.status).toBe(401)
+
+    const relogin = await login(password)
+    expect(relogin.status).toBe(201)
+    const reloginCookies = readCookies(relogin)
+    const logout = await app.request('/api/v1/iam/sessions/current', {
+      method: 'DELETE',
+      headers: {
+        origin: 'http://localhost:5173',
+        cookie: `${accessTokenCookieName}=${requireCookie(reloginCookies, accessTokenCookieName)}; ${csrfCookieName}=${requireCookie(reloginCookies, csrfCookieName)}`,
+        [csrfHeaderName]: requireCookie(reloginCookies, csrfCookieName),
+      },
+    })
+    expect(logout.status).toBe(204)
+
+    const successful = await sql<{
+      failed_attempts: number
+      last_login_at: Date | null
+      locked_until: Date | null
+    }>`
+      SELECT credential.failed_attempts, credential.locked_until, "user".last_login_at
+      FROM iam.user_credential AS credential
+      JOIN iam."user" AS "user" ON "user".id = credential.user_id
+      WHERE credential.user_id = ${userId}
+    `.execute(db)
+    expect(successful.rows[0]?.failed_attempts).toBe(0)
+    expect(successful.rows[0]?.locked_until).toBeNull()
+    expect(successful.rows[0]?.last_login_at).toBeInstanceOf(Date)
+    const audit = await sql<{ action: string; result: string }>`
+      SELECT action, result
+      FROM platform.audit_log
+      WHERE tenant_id = ${tenantId} AND actor_user_id = ${userId}
+    `.execute(db)
+    expect(audit.rows).toEqual(
+      expect.arrayContaining([
+        { action: 'authentication.login', result: 'SUCCESS' },
+        { action: 'authentication.refresh-token-reuse', result: 'FAILURE' },
+        { action: 'authentication.logout', result: 'SUCCESS' },
+      ]),
+    )
+  })
+
   it('loads database PUBLIC pages, enforces authentication/CSRF, and fails closed for missing tenants', async () => {
     const f = await fixture()
     const response = await request('/bootstrap?tenantCode=' + f.tenantCode, null)
@@ -205,9 +354,9 @@ describe.skipIf(databaseUrl === undefined)('real PostgreSQL navigation/API', () 
         origin: 'http://localhost:5173',
         'content-type': 'application/json',
         cookie:
-          sessionCookieName +
+          accessTokenCookieName +
           '=' +
-          f.admin.session.token +
+          f.admin.session.accessToken +
           '; ' +
           csrfCookieName +
           '=' +
@@ -447,3 +596,20 @@ describe.skipIf(databaseUrl === undefined)('real PostgreSQL navigation/API', () 
     ).toBe('DRAFT')
   })
 })
+
+function readCookies(response: Response): Map<string, string> {
+  const cookies = new Map<string, string>()
+  for (const value of response.headers.getSetCookie()) {
+    const pair = value.split(';', 1)[0]
+    if (pair === undefined) continue
+    const separator = pair.indexOf('=')
+    if (separator > 0) cookies.set(pair.slice(0, separator), pair.slice(separator + 1))
+  }
+  return cookies
+}
+
+function requireCookie(cookies: Map<string, string>, name: string): string {
+  const value = cookies.get(name)
+  if (value === undefined || value.length === 0) throw new Error(`Missing ${name} cookie`)
+  return value
+}

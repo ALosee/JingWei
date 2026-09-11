@@ -1,3 +1,10 @@
+import {
+  accessTokenCookieName,
+  csrfCookieName,
+  csrfHeaderName,
+  refreshTokenCookieName,
+} from '@jingwei/auth/shared'
+
 /** Explicit command boundary; importing this module performs no I/O. */
 export async function runAuthenticationSmokeTest(
   environment: NodeJS.ProcessEnv = process.env,
@@ -25,26 +32,42 @@ export async function runAuthenticationSmokeTest(
     body: JSON.stringify({ tenantCode, login, password }),
   })
   assertStatus(created, 201, 'login')
-  const loginBody: unknown = await created.json()
-  const csrfToken = readString(loginBody, 'csrfToken')
-  const cookie = created.headers
-    .getSetCookie()
-    .map((value) => value.split(';', 1)[0])
-    .filter((value): value is string => value !== undefined)
-    .join('; ')
-  if (cookie.length === 0) throw new Error('Login did not set session cookies')
+  const cookies = readSetCookies(created)
+  assertCookie(cookies, accessTokenCookieName)
+  assertCookie(cookies, refreshTokenCookieName)
+  const csrfToken = assertCookie(cookies, csrfCookieName)
+  const initialCookieHeader = cookieHeader(cookies)
 
   const session = await fetch(`${baseUrl}/api/v1/iam/session`, {
-    headers: { cookie },
+    headers: { cookie: initialCookieHeader },
   })
   assertStatus(session, 200, 'session restore')
-  const sessionBody: unknown = await session.json()
-  if (!isRecord(sessionBody) || sessionBody.authenticated !== true) {
-    throw new Error('Session was not restored as authenticated')
-  }
+  await assertAuthenticated(session, true, 'Session was not restored as authenticated')
 
+  const refreshed = await fetch(`${baseUrl}/api/v1/iam/sessions/refresh`, {
+    method: 'POST',
+    headers: {
+      cookie: initialCookieHeader,
+      origin,
+      [csrfHeaderName]: csrfToken,
+    },
+  })
+  assertStatus(refreshed, 200, 'refresh rotation')
+  const refreshedCookies = new Map(cookies)
+  for (const [name, value] of readSetCookies(refreshed)) refreshedCookies.set(name, value)
+
+  const supersededAccess = await fetch(`${baseUrl}/api/v1/iam/session`, {
+    headers: { cookie: initialCookieHeader },
+  })
+  await assertAuthenticated(
+    supersededAccess,
+    false,
+    'Superseded access token remained authenticated',
+  )
+
+  const refreshedCookieHeader = cookieHeader(refreshedCookies)
   const navigation = await fetch(`${baseUrl}/api/v1/navigation/me`, {
-    headers: { cookie },
+    headers: { cookie: refreshedCookieHeader },
   })
   assertStatus(navigation, 200, 'authenticated navigation')
   const navigationBody: unknown = await navigation.json()
@@ -54,38 +77,65 @@ export async function runAuthenticationSmokeTest(
 
   const logout = await fetch(`${baseUrl}/api/v1/iam/sessions/current`, {
     method: 'DELETE',
-    headers: { cookie, origin, 'x-csrf-token': csrfToken },
+    headers: {
+      cookie: refreshedCookieHeader,
+      origin,
+      [csrfHeaderName]: csrfToken,
+    },
   })
   assertStatus(logout, 204, 'logout')
 
   const revokedSession = await fetch(`${baseUrl}/api/v1/iam/session`, {
-    headers: { cookie },
+    headers: { cookie: refreshedCookieHeader },
   })
-  assertStatus(revokedSession, 200, 'revoked session lookup')
-  const revokedBody: unknown = await revokedSession.json()
-  if (!isRecord(revokedBody) || revokedBody.authenticated !== false) {
-    throw new Error('Revoked session remained authenticated')
-  }
+  await assertAuthenticated(revokedSession, false, 'Revoked session remained authenticated')
 
   console.log('Real authentication smoke test passed')
   console.log(
-    'Verified invalid login, session creation, restore, navigation, CSRF logout, and revocation',
+    'Verified invalid login, access/refresh cookies, refresh rotation, navigation, CSRF logout, and revocation',
   )
+}
 
-  function assertStatus(response: Response, expected: number, operation: string): void {
-    if (response.status !== expected) {
-      throw new Error(`${operation} returned ${response.status}; expected ${expected}`)
-    }
+function readSetCookies(response: Response): Map<string, string> {
+  const cookies = new Map<string, string>()
+  for (const value of response.headers.getSetCookie()) {
+    const pair = value.split(';', 1)[0]
+    if (pair === undefined) continue
+    const separator = pair.indexOf('=')
+    if (separator < 1) continue
+    cookies.set(pair.slice(0, separator), pair.slice(separator + 1))
   }
+  return cookies
+}
 
-  function readString(value: unknown, key: string): string {
-    if (!isRecord(value) || typeof value[key] !== 'string') {
-      throw new Error(`Response field ${key} is missing`)
-    }
-    return value[key]
+function assertCookie(cookies: Map<string, string>, name: string): string {
+  const value = cookies.get(name)
+  if (value === undefined || value.length === 0) {
+    throw new Error(`Login did not set ${name}`)
   }
+  return value
+}
 
-  function isRecord(value: unknown): value is Record<string, unknown> {
-    return typeof value === 'object' && value !== null
+function cookieHeader(cookies: Map<string, string>): string {
+  return [...cookies].map(([name, value]) => `${name}=${value}`).join('; ')
+}
+
+function assertStatus(response: Response, expected: number, operation: string): void {
+  if (response.status !== expected) {
+    throw new Error(`${operation} returned ${response.status}; expected ${expected}`)
   }
+}
+
+async function assertAuthenticated(
+  response: Response,
+  expected: boolean,
+  message: string,
+): Promise<void> {
+  assertStatus(response, 200, 'session lookup')
+  const body: unknown = await response.json()
+  if (!isRecord(body) || body.authenticated !== expected) throw new Error(message)
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
 }

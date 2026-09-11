@@ -9,10 +9,13 @@ V1 中一个 User 属于一个 Tenant；同一自然人在不同 Tenant 可以�
 ## Authentication
 
 - Argon2id 密码散列，参数集中配置。
-- Server-side Session + HttpOnly Cookie；raw token 至少 256-bit CSPRNG，只在 Cookie 中出现，数据库保存 SHA-256 hash。
-- Session 同时有 idle/absolute expiry，支持 logout、管理员 revoke、改密/禁用后的全部 revoke。
-- Production Cookie：HttpOnly、Secure、SameSite=Lax、Path=/。
-- unsafe methods 执行 Origin Validation 与 CSRF Protection。业务代码只读取 AuthContext，不读取 Cookie。
+- Web 使用服务端 opaque Access/Refresh Token Family；两个 raw token 均为至少 256-bit CSPRNG，只在 HttpOnly Cookie 中出现，数据库保存 SHA-256 hash。
+- Access Token 默认 10 分钟；Refresh Token 每次使用后轮换，Family 同时有 30 分钟 idle 和 7 天 absolute expiry，支持 logout、管理员 revoke、改密/禁用后的全部 revoke。
+- Production Cookie：HttpOnly、Secure、SameSite=Strict、host-only。Access Path=/；Refresh Path=/api/v1/iam/sessions/refresh。
+- unsafe methods 执行 Origin Validation 与 CSRF Protection。刷新端点即使 Access 已过期也必须校验 CSRF。业务代码只读取 AuthContext，不读取 Cookie。
+- 连续密码失败默认 5 次后锁定 15 分钟，计数与锁定由 IAM 在 PostgreSQL 原子更新；未知租户/账号同样执行 dummy Argon2id 校验，所有认证失败保持相同外部响应。
+- 成功登录、退出与 Refresh Token 复用写入 append-only 安全审计；审计和结构化日志都禁止保存密码、原始 token 或完整凭据请求。
+- 密码、微信、OIDC 等是认证方式；Web Cookie、未来 Public Client Bearer 与 Machine Token 是凭证传输方式。二者不在 IAM Domain 中耦合。
 
 ## Organization
 
@@ -31,7 +34,7 @@ V1 中一个 User 属于一个 Tenant；同一自然人在不同 Tenant 可以�
 Authentication -> Tenant -> Module/Capability -> Permission -> Data Scope -> Application -> Repository
 ```
 
-Session 只证明“谁登录了”，不持久化完整 role/permission/scope；授权读取当前状态，V1 不引入 Redis permission cache。Tenant Admin 不能跨 Tenant；未来 Platform Operator 必须使用独立 backoffice 安全域。
+Token Family 只证明“谁登录了”，不持久化完整 role/permission/scope；授权读取当前状态，V1 不引入 Redis session/permission cache。Tenant Admin 不能跨 Tenant；未来 Platform Operator 必须使用独立 backoffice 安全域。
 
 ## 导航授权是独立资源
 

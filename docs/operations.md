@@ -20,16 +20,17 @@ Edition 在构建前确定进入制品的模块集合。不要用同一个含全
 
 应管理的配置类别：
 
-| 类别         | 示例                        | 生产要求                                                      |
-| ------------ | --------------------------- | ------------------------------------------------------------- |
-| 运行环境     | `NODE_ENV`                  | 明确设置为 production                                         |
-| 监听         | host、port                  | 与容器和探针对齐                                              |
-| 数据库       | PostgreSQL URL              | 通过 Secret 注入，启用 TLS/网络隔离                           |
-| 日志         | level                       | 默认结构化输出，不记录 Secret                                 |
-| 会话         | Cookie 名、有效期、安全属性 | HTTPS 下启用 Secure，使用强随机令牌                           |
-| Web 来源     | allowed origins             | 精确白名单，不使用任意通配                                    |
-| 匿名启动租户 | BOOTSTRAP_TENANT_CODE       | 必须指向活跃真实租户，默认 default；已登录使用 Session tenant |
-| Edition      | development/full 等         | 构建和迁移使用同一值                                          |
+| 类别         | 示例                                             | 生产要求                                                      |
+| ------------ | ------------------------------------------------ | ------------------------------------------------------------- |
+| 运行环境     | `NODE_ENV`                                       | 明确设置为 production                                         |
+| 监听         | host、port                                       | 与容器和探针对齐                                              |
+| 数据库       | PostgreSQL URL                                   | 通过 Secret 注入，启用 TLS/网络隔离                           |
+| 日志         | level                                            | 默认结构化输出，不记录 Secret                                 |
+| 会话         | Access/Refresh 有效期、复用窗口、Cookie 安全属性 | HTTPS 下启用 Secure，使用强随机令牌                           |
+| 登录防护     | 失败阈值、账号锁定时长                           | 结合边缘 IP 限流监控异常尝试                                  |
+| Web 来源     | allowed origins                                  | 精确白名单，不使用任意通配                                    |
+| 匿名启动租户 | BOOTSTRAP_TENANT_CODE                            | 必须指向活跃真实租户，默认 default；已登录使用 Session tenant |
+| Edition      | development/full 等                              | 构建和迁移使用同一值                                          |
 
 完整变量名和默认值以 `platform/config` 的 schema 为准。部署模板引用配置时，应在 CI 中执行一次启动验证，防止拼写错误直到生产才暴露。
 
@@ -172,11 +173,15 @@ schemaVersion 2 与统一节点迁移要求前后端一起部署；迁移前备�
 
 ### 登录成功后立即变成未登录
 
-检查浏览器是否接受 Cookie、Secure 与协议是否匹配、SameSite/Domain/Path、反向代理头、系统时间和会话摘要查询。
+检查浏览器是否接受三个 Cookie、Secure 与协议是否匹配、SameSite/Domain/Path、反向代理头、系统时间、Access 有效期和 Token Family 摘要查询。
+
+### 正确密码仍提示认证失败
+
+检查用户与租户状态、`iam.user_credential.locked_until`、应用与数据库系统时间。账号锁定不会通过 API 单独暴露；默认到期自动允许重试，成功后清零 `failed_attempts`。公网入口仍应配置按 IP/设备的边缘限流，账号锁定不能替代网关级抗爆破和告警。
 
 ### 修改请求返回 403
 
-检查 Origin 白名单、CSRF Cookie、CSRF 请求头、会话 Cookie 和代理是否改写相关头。
+检查 Origin 白名单、CSRF Cookie、CSRF 请求头、Access/Refresh Cookie 和代理是否改写相关头。
 
 ### Outbox 持续积压
 

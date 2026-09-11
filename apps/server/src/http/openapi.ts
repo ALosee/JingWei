@@ -1,6 +1,6 @@
 import type { OpenAPIHono } from '@hono/zod-openapi'
 
-import { csrfHeaderName, sessionCookieName } from '@jingwei/auth/shared'
+import { accessTokenCookieName, csrfHeaderName, refreshTokenCookieName } from '@jingwei/auth/shared'
 import { openApiSecurityNames } from '@jingwei/http-contract'
 import type { ServerAppEnv } from '@jingwei/module-sdk/server'
 
@@ -10,17 +10,27 @@ export const openApiDocumentConfig = {
     title: 'Jingwei HTTP API',
     version: '1.0.0',
     description:
-      'Jingwei 平台 HTTP API。业务接口位于 /api/v1；会话使用 HttpOnly Cookie，修改请求同时要求 Origin 与双提交 CSRF Token。',
+      'Jingwei 平台 HTTP API。业务接口位于 /api/v1；Web 会话使用 HttpOnly Access/Refresh Cookie，修改请求同时要求 Origin 与双提交 CSRF Token。',
   },
 } as const
 
 export function registerOpenApiSecuritySchemes(app: OpenAPIHono<ServerAppEnv>): void {
-  app.openAPIRegistry.registerComponent('securitySchemes', openApiSecurityNames.sessionCookie, {
+  app.openAPIRegistry.registerComponent('securitySchemes', openApiSecurityNames.accessTokenCookie, {
     type: 'apiKey',
     in: 'cookie',
-    name: sessionCookieName,
-    description: '服务端会话 Cookie，由登录接口通过 Set-Cookie 写入，浏览器 JavaScript 不可读取。',
+    name: accessTokenCookieName,
+    description: '短期 opaque Access Token，由浏览器作为 HttpOnly Cookie 自动携带。',
   })
+  app.openAPIRegistry.registerComponent(
+    'securitySchemes',
+    openApiSecurityNames.refreshTokenCookie,
+    {
+      type: 'apiKey',
+      in: 'cookie',
+      name: refreshTokenCookieName,
+      description: '单次使用的 opaque Refresh Token，仅发送到会话刷新端点。',
+    },
+  )
   app.openAPIRegistry.registerComponent('securitySchemes', openApiSecurityNames.csrfHeader, {
     type: 'apiKey',
     in: 'header',

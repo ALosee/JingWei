@@ -2,12 +2,12 @@ import type { MiddlewareHandler } from 'hono'
 import { getCookie } from 'hono/cookie'
 
 import {
+  accessTokenCookieName,
   csrfCookieName,
   csrfHeaderName,
   isAllowedOrigin,
   isValidCsrfToken,
   requiresOriginValidation,
-  sessionCookieName,
   type SessionService,
 } from '@jingwei/auth'
 import { ApplicationError, type AuthContext } from '@jingwei/kernel'
@@ -15,7 +15,7 @@ import type { ServerAppEnv } from '@jingwei/module-sdk/server'
 
 /** Establish optional identity and protect unsafe cookie requests; route authorization remains separate. */
 export function sessionSecurity(dependencies: {
-  readonly sessions: Pick<SessionService, 'authenticate'>
+  readonly sessions: Pick<SessionService, 'authenticateAccess'>
   readonly appOrigin: string
 }): MiddlewareHandler<ServerAppEnv> {
   return async (context, next) => {
@@ -32,9 +32,9 @@ export function sessionSecurity(dependencies: {
       })
     }
 
-    const token = getCookie(context, sessionCookieName)
+    const token = getCookie(context, accessTokenCookieName)
     if (token !== undefined) {
-      const session = await dependencies.sessions.authenticate(token)
+      const session = await dependencies.sessions.authenticateAccess(token)
       if (session !== null) {
         const authContext: AuthContext = {
           requestId,

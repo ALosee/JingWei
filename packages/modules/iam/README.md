@@ -18,7 +18,7 @@ IAM 负责：
 
 IAM 不负责：
 
-- `platform.auth_session` 的安全实现（由 `@jingwei/auth` 拥有）；
+- `platform.auth_session` / `platform.auth_refresh_token` 的安全实现（由 `@jingwei/auth` 拥有）；
 - 员工档案、劳动关系和 HR 职务；
 - 组织树（由 Organization 拥有）；
 - 菜单是否展示（由 Navigation 解析）；
@@ -70,8 +70,9 @@ src/
 ├── server/
 │   ├── api/routes.ts
 │   ├── application/authenticate-user.ts
+│   ├── application/session-lifecycle.ts
 │   ├── domain/user-status.ts
-│   ├── infrastructure/credential-reader.pg.ts
+│   ├── infrastructure/credential-reader.pg.ts # 凭据状态读写适配器
 │   ├── public/authorization.ts
 │   └── module.ts
 └── web/
@@ -84,15 +85,19 @@ src/
 
 ### `POST /api/v1/iam/sessions`
 
-输入：`tenantCode`、`login`、`password`。登录标识会规范化后查询租户用户，密码由 Argon2id 验证。成功返回 `201`、用户安全视图与 CSRF token，并设置 session/CSRF Cookie。
+输入：`tenantCode`、`login`、`password`。登录标识会规范化后查询租户用户，密码由 Argon2id 验证。成功返回 `201`、用户安全视图与会话有效期，并设置 access/refresh/CSRF Cookie。认证响应不返回任何原始认证 token。
 
 ### `GET /api/v1/iam/session`
 
-恢复当前会话状态。有效会话返回 `200 { authenticated: true, user: { id, tenantId } }`；没有 Cookie、过期或撤销均返回 `200 { authenticated: false }`。匿名状态不是异常，Web 据此决定是否继续调用受保护的 `/navigation/me`。响应不包含原始 session token。
+恢复当前 Access Token 状态。有效 token 返回 `200 { authenticated: true, user: { id, tenantId } }`；没有 Cookie、过期或撤销均返回 `200 { authenticated: false }`。Web 客户端可先尝试一次 Refresh Cookie 轮换，再决定是否调用受保护的 `/navigation/me`。
+
+### `POST /api/v1/iam/sessions/refresh`
+
+使用仅匹配本端点的 HttpOnly Refresh Cookie，并要求 Origin、CSRF Cookie/Header。成功原子消费旧 refresh generation，返回 `200` 会话有效期并重新设置 access/refresh Cookie；并发轮换返回 `409`；无效、过期、复用或已撤销返回 `401`。
 
 ### `DELETE /api/v1/iam/sessions/current`
 
-撤销当前会话、删除两个 Cookie，成功返回 `204`。由于是已认证修改请求，它由平台中间件执行 Origin 和 CSRF 校验。
+撤销当前 token family、删除 access/refresh/CSRF 三个 Cookie，成功返回 `204`。由于是已认证修改请求，它由平台中间件执行 Origin 和 CSRF 校验。
 
 完整协议见 [HTTP API 手册](../../../docs/http-api.md)。
 
@@ -100,17 +105,17 @@ src/
 
 ```text
 tenantCode ──> TenantDirectory
-login ───────> CredentialReader ──> 用户状态检查
-password ────> PasswordHasher.verify
+login ───────> CredentialStore ──> 用户状态/锁定检查
+password ────> PasswordHasher.verify ──> 失败计数/成功时间
                        │
                        ▼
                  SessionService.create
                        │
                        ▼
-               安全用户视图 + Cookie
+          opaque Access/Refresh + CSRF Cookie
 ```
 
-用户名不存在、密码错误、用户不可用等情况必须使用一致的外部错误，避免账号枚举。原始密码、密码摘要和 session token 不得进入日志/审计/事件。
+用户名不存在、密码错误、用户不可用和账号锁定必须使用一致的外部错误；未知用户也执行一次 dummy Argon2id 校验，降低基于响应耗时的账号枚举风险。默认连续失败 5 次锁定 15 分钟；成功登录原子清零失败状态、更新 `last_login_at` 并写入安全审计。退出和 Refresh Token 复用同样写入审计。原始密码、密码摘要、access/refresh token 不得进入日志、审计或事件。
 
 Web 登录页只调用 `useSignIn()` 绑定字段和提交事件。登录 client 使用 Soybean Fetch 扁平结果，composable 显式判断 `error`，无需异常控制流；`submitting` 由共享 `useApiRequestState()` 订阅 Fetch lifecycle 自动产生，不手工切换。`login` 与 `enterWorkspace` 以最小端口注入，测试不用建立真实 Cookie 或浏览器全局对象。HTTP/OpenAPI/Zod 细节由 module client 负责，Cookie、CSRF 与请求状态由平台请求边界负责，页面不得直接调用 client。结构规则见 [代码职责与入口约束](../../../docs/code-structure.md)。
 
@@ -121,16 +126,15 @@ Web 登录页只调用 `useSignIn()` 绑定字段和提交事件。登录 client
 - `AuthorizationEvaluator.evaluate(request)`：输入 AuthContext、capability 和 permission，返回 allow-only 决策及可选数据范围；
 - `AuthorizationDecision` / `DataScopeGrant`；
 - `DataScopeType`：`ALL`、`ORGANIZATION`、`ORGANIZATION_AND_DESCENDANTS`、`SELF`、`CUSTOM`；
-- 认证用例所需的 `CredentialSnapshot` 类型。
 - `IamAccess` 与 `createIamAccess(database, registry)`：返回活跃角色、租户活跃角色目录，并校验不带数据范围的功能权限。Navigation 通过它接入真实角色，不读取 IAM 内部表。
 
 授权实现必须合并所有角色授予，不能从菜单推断权限；deny 是默认结果。其他模块只能依赖这个 public 子路径，不能导入 IAM 仓储和表类型。
 
 ## 当前实现状态
 
-已经实现认证、Cookie 会话创建/状态恢复/撤销、凭据 PostgreSQL reader，以及供 Navigation 使用的真实 IamAccess。IamAccess 每次查询活跃用户/角色，多角色取并集，不使用 is_super 绕过；requirePermission 先检查 Edition registry/capability，仅处理无 Data Scope 的功能权限。它不等于通用 AuthorizationEvaluator。
+已经实现认证、登录失败计数/临时锁定/成功时间更新、opaque Access/Refresh Token Family 创建/状态恢复/轮换/复用检测/撤销、凭据 PostgreSQL store，以及供 Navigation 使用的真实 IamAccess。IamAccess 每次查询活跃用户/角色，多角色取并集，不使用 is_super 绕过；requirePermission 先检查 Edition registry/capability，仅处理无 Data Scope 的功能权限。它不等于通用 AuthorizationEvaluator。
 
-角色管理 CRUD、通用权限投影同步、完整 Data Scope evaluator、失败次数/锁定更新、last_login 更新和完整账号资料查询仍是后续工作。开发种子会投影当前 Edition 的功能权限并初始化显式管理员 grant，但不能当作生产权限同步服务。
+角色管理 CRUD、通用权限投影同步、完整 Data Scope evaluator 和完整账号资料查询仍是后续工作。开发种子会投影当前 Edition 的功能权限并初始化显式管理员 grant，但不能当作生产权限同步服务。
 
 角色导航授权由 Navigation 拥有的 navigation.role_navigation 保存 role UUID 与 navigation code，不在 IAM 中新建路由/菜单表，不建立跨模块外键。导航 grant 不能授予业务 API 权限；Navigation 的角色授权写接口同时要求 navigation.manage 与 iam.role.manage。
 

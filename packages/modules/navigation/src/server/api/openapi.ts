@@ -21,10 +21,10 @@ const error = (description: string) => ({
   description,
   content: json(apiErrorSchema),
 })
-const authenticated = [{ [openApiSecurityNames.sessionCookie]: [] }]
+const authenticated = [{ [openApiSecurityNames.accessTokenCookie]: [] }]
 const mutation = [
   {
-    [openApiSecurityNames.sessionCookie]: [],
+    [openApiSecurityNames.accessTokenCookie]: [],
     [openApiSecurityNames.csrfHeader]: [],
   },
 ]

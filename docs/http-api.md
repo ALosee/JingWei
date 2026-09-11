@@ -37,14 +37,15 @@
 
 ## 2. 认证、Cookie 与 CSRF
 
-### 2.1 会话 Cookie
+### 2.1 Access、Refresh 与 CSRF Cookie
 
-登录成功后服务端写入两个 Cookie：
+登录成功后服务端写入三个 Cookie：
 
-- 会话 Cookie：保存随机会话令牌，服务端只保存令牌摘要；应使用 `HttpOnly`、`SameSite` 和生产环境 `Secure` 属性。
+- `jingwei_access`：短期 opaque Access Token，HttpOnly、SameSite=Strict、Path=/；
+- `jingwei_refresh`：单次使用的 opaque Refresh Token，HttpOnly、SameSite=Strict、Path=/api/v1/iam/sessions/refresh；
 - CSRF Cookie：保存可由前端读取的 CSRF 令牌，用于双提交校验。
 
-不要把会话令牌保存在 `localStorage`，也不要在日志、错误信息或审计载荷中记录原始令牌。
+生产环境两个认证 Cookie 同时启用 Secure 且不设置 Domain。不要把 access/refresh token 保存在 `localStorage`，也不要在响应、日志、错误信息或审计载荷中记录原始令牌。数据库只保存 SHA-256 hash。
 
 ### 2.2 修改请求的 CSRF 校验
 
@@ -53,9 +54,11 @@
 1. 请求来源通过 Origin 校验；
 2. CSRF Cookie 存在；
 3. 请求头携带同一个 CSRF 值；
-4. 会话仍有效且未过期。
+4. Token Family 仍有效且未过期。
 
 当前前端客户端会自动携带 Cookie。新增修改型接口时，模块不能绕过平台层的 CSRF 与会话校验。
+
+Refresh 请求在 Access Token 已过期时仍必须校验 Origin 与 CSRF；刷新成功后消费当前 generation 并签发新的 access/refresh token。
 
 `@jingwei/api-client` 会为修改请求自动读取 `jingwei_csrf` Cookie 并写入 `x-csrf-token`；业务模块客户端不得再次解析 Cookie 或手写该 Header。
 
@@ -136,25 +139,39 @@
 }
 ```
 
-成功返回 `201 Created`，响应包含当前用户的安全视图与 CSRF token，并通过 `Set-Cookie` 写入会话与 CSRF 令牌。密码、密码摘要、原始会话令牌永远不会出现在响应中。
+成功返回 `201 Created`，响应包含当前用户安全视图与 access/absolute 有效期，并通过 `Set-Cookie` 写入 access、refresh 与 CSRF 令牌。密码、密码摘要和原始认证 token 永远不会出现在响应中。
 
 可能错误：
 
 - 输入缺失或格式无效：`400`；
-- 用户不存在、被禁用、密码错误：统一返回认证失败，避免用户名枚举；
+- 用户不存在、被禁用、被临时锁定或密码错误：统一返回认证失败，避免用户名枚举；
+- 已知活跃账号的密码失败会增加持久化失败次数，默认连续 5 次锁定 15 分钟；成功登录清零并更新 `last_login_at`；
 - 租户不可用：认证失败或服务不可用，具体映射由应用层错误定义决定。
 
 ### `GET /api/v1/iam/session`
 
-用途：恢复当前登录状态。Web 应用启动时用它判断 HttpOnly Cookie 对应的会话是否仍可使用。该查询本身允许匿名访问。
+用途：恢复当前登录状态。Web 应用启动时用它判断短期 Access Cookie 是否仍可使用。该查询本身允许匿名访问。
 
 行为：
 
 - 会话有效时返回 `200 { "authenticated": true, "user": { "id": "...", "tenantId": "..." } }`；
-- 未携带 Cookie、令牌摘要不匹配、会话过期或已撤销时返回 `200 { "authenticated": false }`；
+- 未携带 Access Cookie、令牌摘要不匹配、token 过期或 family 已撤销时返回 `200 { "authenticated": false }`；
 - 不延长会话的规则应由会话服务统一决定，路由不能自行修改。
 
-匿名状态使用正常的 `200`，使 Web 可以先恢复会话状态，再决定是否请求受保护的 `/navigation/me`。它不把 session token 暴露给 JavaScript。
+匿名状态使用正常的 `200`。若浏览器仍有 CSRF/Refresh Cookie，平台客户端会先 single-flight 调用刷新端点，再读取一次 session；失败才进入匿名导航。任何原始 token 都不会暴露给 JavaScript。
+
+### `POST /api/v1/iam/sessions/refresh`
+
+用途：消费当前 Refresh Token generation，并原子签发新的 Access/Refresh Cookie。请求无 body，但必须携带 Refresh/CSRF Cookie、`Origin` 与 `x-csrf-token`。
+
+行为：
+
+- 成功：`200`，返回新的 access/absolute 有效期；
+- 同一 generation 在并发窗口内已由另一请求消费：`AUTHENTICATION_REFRESH_IN_PROGRESS/409`，客户端等待共享 Cookie 后重试原请求；
+- refresh 无效、过期、family 已撤销或检测到超过窗口的复用：`AUTHENTICATION_REFRESH_FAILED/401`；
+- CSRF 不匹配：`CSRF_VALIDATION_FAILED/403`。
+
+超过并发窗口的 refresh 复用会撤销整个 token family。正常客户端不得主动缓存或复制 refresh token。
 
 ### `DELETE /api/v1/iam/sessions/current`
 
@@ -162,9 +179,9 @@
 
 要求：
 
-- 必须通过会话认证；
+- 必须通过 Access Token 认证；
 - 必须通过 CSRF 与 Origin 校验；
-- 撤销操作应幂等：重复退出不能恢复或延长任何会话。
+- 撤销操作应幂等：重复退出不能恢复或延长任何 token family。
 
 ## 6. Navigation 接口
 
@@ -360,7 +377,7 @@ curl -i \
   http://localhost:3000/api/v1/navigation/me
 ```
 
-退出时还要从 `jingwei_csrf` Cookie 中读取 CSRF 值，并放入 `x-csrf-token` 请求头，同时携带 `Origin`。常量以 `@jingwei/auth` 导出为准，不要在业务模块重复硬编码。
+刷新和退出时还要从 `jingwei_csrf` Cookie 中读取 CSRF 值，并放入 `x-csrf-token` 请求头，同时携带 `Origin`。常量以 `@jingwei/auth` 导出为准，不要在业务模块重复硬编码。
 
 ## 8. 新增接口检查表
 

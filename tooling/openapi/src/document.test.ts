@@ -12,6 +12,7 @@ describe('module OpenAPI documents', () => {
     expect(Object.keys(document.paths ?? {})).toEqual([
       '/api/v1/iam/sessions',
       '/api/v1/iam/session',
+      '/api/v1/iam/sessions/refresh',
       '/api/v1/iam/sessions/current',
     ])
     expect(document.paths?.['/api/v1/iam/sessions']?.post?.operationId).toBe('iamCreateSession')
@@ -21,10 +22,11 @@ describe('module OpenAPI documents', () => {
     const document = createModuleOpenApiDocument(navigationOpenApiContract)
     const publish = document.paths?.['/api/v1/navigation/versions/{id}/publish']?.post
 
-    expect(publish?.security).toEqual([{ sessionCookie: [], csrfHeader: [] }])
+    expect(publish?.security).toEqual([{ accessTokenCookie: [], csrfHeader: [] }])
     expect(document.components?.securitySchemes).toMatchObject({
-      sessionCookie: { type: 'apiKey', in: 'cookie', name: 'jingwei_session' },
+      accessTokenCookie: { type: 'apiKey', in: 'cookie', name: 'jingwei_access' },
       csrfHeader: { type: 'apiKey', in: 'header', name: 'x-csrf-token' },
+      refreshTokenCookie: { type: 'apiKey', in: 'cookie', name: 'jingwei_refresh' },
     })
   })
 })

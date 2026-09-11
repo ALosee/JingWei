@@ -1,6 +1,7 @@
 import {
   createModuleApiClient,
   executeApiRequest,
+  refreshCookieSession,
   toApiResult,
   type ApiRequestOptions,
   type ApiResult,
@@ -31,13 +32,19 @@ export function login(
 }
 
 /**
- * Restores the HttpOnly-cookie session state without turning the normal anonymous state into a
- * failed HTTP request. The raw session token remains inaccessible to browser JavaScript.
+ * Restores the HttpOnly-cookie session state and performs one refresh attempt when only the
+ * long-lived cookie remains. Raw access and refresh tokens stay inaccessible to JavaScript.
  */
-export function getSessionStatus(): Promise<SessionStatus> {
-  return executeApiRequest(() =>
+export async function getSessionStatus(): Promise<SessionStatus> {
+  let status = await executeApiRequest(() =>
     api.throwingClient.get('/session', { schema: sessionStatusSchema }),
   )
+  if (status.authenticated || !(await refreshCookieSession())) return status
+
+  status = await executeApiRequest(() =>
+    api.throwingClient.get('/session', { schema: sessionStatusSchema }),
+  )
+  return status
 }
 
 export function logout(): Promise<void> {

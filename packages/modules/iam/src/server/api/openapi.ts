@@ -2,7 +2,12 @@ import { createRoute } from '@hono/zod-openapi'
 
 import { apiErrorSchema, openApiSecurityNames } from '@jingwei/http-contract'
 
-import { loginInputSchema, loginResultSchema, sessionStatusSchema } from '../../shared/index.js'
+import {
+  loginInputSchema,
+  loginResultSchema,
+  refreshSessionResultSchema,
+  sessionStatusSchema,
+} from '../../shared/index.js'
 
 const json = <TSchema>(schema: TSchema) => ({
   'application/json': { schema },
@@ -20,7 +25,7 @@ export const iamApiRoutes = {
     tags: ['IAM'],
     summary: '登录并创建会话',
     description:
-      '验证租户和凭据，创建服务端会话，并通过 Set-Cookie 写入 HttpOnly Session Cookie 与可读的 CSRF Cookie。',
+      '验证租户和凭据，创建服务端 opaque token family，并通过 Set-Cookie 写入 HttpOnly Access/Refresh Cookie 与可读的 CSRF Cookie。',
     request: {
       body: {
         required: true,
@@ -48,6 +53,28 @@ export const iamApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
+  refreshSession: createRoute({
+    method: 'post',
+    path: '/sessions/refresh',
+    operationId: 'iamRefreshSession',
+    tags: ['IAM'],
+    summary: '轮换刷新令牌并续期访问令牌',
+    description:
+      '使用仅发送到本端点的 HttpOnly Refresh Token Cookie 轮换 token family，并重新签发短期 Access Token Cookie。要求 Origin 与双提交 CSRF 校验。',
+    security: [
+      {
+        [openApiSecurityNames.refreshTokenCookie]: [],
+        [openApiSecurityNames.csrfHeader]: [],
+      },
+    ],
+    responses: {
+      200: { description: '刷新成功', content: json(refreshSessionResultSchema) },
+      401: error('刷新令牌无效、过期、已复用或会话已撤销'),
+      403: error('Origin 或 CSRF 校验失败'),
+      409: error('同一刷新令牌正在被另一个并发请求轮换'),
+      500: error('服务器内部错误'),
+    },
+  }),
   deleteSession: createRoute({
     method: 'delete',
     path: '/sessions/current',
@@ -56,7 +83,7 @@ export const iamApiRoutes = {
     summary: '退出当前会话',
     security: [
       {
-        [openApiSecurityNames.sessionCookie]: [],
+        [openApiSecurityNames.accessTokenCookie]: [],
         [openApiSecurityNames.csrfHeader]: [],
       },
     ],

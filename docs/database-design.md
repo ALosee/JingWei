@@ -19,7 +19,7 @@ V1 使用一个 PostgreSQL 18 Database 与多个 module-owned schema：`platform
 
 ## Platform schema
 
-只保存跨模块基础设施：tenant、auth_session、outbox、audit_log、number_sequence。未知归属的数据不得丢入 platform。
+只保存跨模块基础设施：tenant、auth_session、auth_refresh_token、outbox、audit_log、number_sequence。auth_session 保存当前短期 access hash 与 token family 生命周期；auth_refresh_token 保存 refresh 代际 hash 和消费时间用于轮换与复用检测。未知归属的数据不得丢入 platform。
 
 Audit Log append-only，且在统一 serializer 处过滤 password、hash、token、secret、API key 等敏感信息。Outbox 包含 event/aggregate identity、payload、occurred/published/attempt/retry/error 字段。
 

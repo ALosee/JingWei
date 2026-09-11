@@ -1,6 +1,6 @@
 import { OpenAPIHono, type RouteConfig } from '@hono/zod-openapi'
 
-import { csrfHeaderName, sessionCookieName } from '@jingwei/auth/shared'
+import { accessTokenCookieName, csrfHeaderName, refreshTokenCookieName } from '@jingwei/auth/shared'
 import { openApiSecurityNames } from '@jingwei/http-contract'
 
 export interface ModuleOpenApiContract {
@@ -12,11 +12,20 @@ export interface ModuleOpenApiContract {
 
 export function createModuleOpenApiDocument(contract: ModuleOpenApiContract) {
   const app = new OpenAPIHono()
-  app.openAPIRegistry.registerComponent('securitySchemes', openApiSecurityNames.sessionCookie, {
+  app.openAPIRegistry.registerComponent('securitySchemes', openApiSecurityNames.accessTokenCookie, {
     type: 'apiKey',
     in: 'cookie',
-    name: sessionCookieName,
+    name: accessTokenCookieName,
   })
+  app.openAPIRegistry.registerComponent(
+    'securitySchemes',
+    openApiSecurityNames.refreshTokenCookie,
+    {
+      type: 'apiKey',
+      in: 'cookie',
+      name: refreshTokenCookieName,
+    },
+  )
   app.openAPIRegistry.registerComponent('securitySchemes', openApiSecurityNames.csrfHeader, {
     type: 'apiKey',
     in: 'header',

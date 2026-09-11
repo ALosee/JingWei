@@ -1,6 +1,6 @@
 # ADR 0004: Use Server-side Session
 
-- Status: Accepted
+- Status: Superseded by ADR 0011
 - Date: 2026-09-01
 
 ## Context
@@ -18,3 +18,5 @@
 ## Consequences
 
 PostgreSQL 是 V1 session store。移动端、Open API、第三方集成需要 OAuth/OIDC、PAT 或 service token 时另写 ADR。
+
+ADR 0011 保留本 ADR 的服务端状态、opaque token、撤销、Origin 与 CSRF 决策，并将单一 Web Session Cookie 演进为短期 Access Token 与轮换 Refresh Token 两个 HttpOnly Cookie。

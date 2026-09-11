@@ -35,7 +35,7 @@ export type paths = {
         put?: never;
         /**
          * 登录并创建会话
-         * @description 验证租户和凭据，创建服务端会话，并通过 Set-Cookie 写入 HttpOnly Session Cookie 与可读的 CSRF Cookie。
+         * @description 验证租户和凭据，创建服务端 opaque token family，并通过 Set-Cookie 写入 HttpOnly Access/Refresh Cookie 与可读的 CSRF Cookie。
          */
         post: operations["iamCreateSession"];
         delete?: never;
@@ -61,6 +61,26 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/iam/sessions/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 轮换刷新令牌并续期访问令牌
+         * @description 使用仅发送到本端点的 HttpOnly Refresh Token Cookie 轮换 token family，并重新签发短期 Access Token Cookie。要求 Origin 与双提交 CSRF 校验。
+         */
+        post: operations["iamRefreshSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 };
 export type webhooks = Record<string, never>;
 export type components = {
@@ -81,15 +101,26 @@ export type components = {
             /** Format: uuid */
             tenantId: string;
         };
-        /** @description Credentials used to create a server-side session */
+        /** @description Credentials used to create an opaque token family */
         IamLoginInput: {
             login: string;
             password: string;
             tenantCode: string;
         };
         IamLoginResult: {
-            csrfToken: string;
+            session: {
+                /** Format: date-time */
+                absoluteExpiresAt: string;
+                /** Format: date-time */
+                accessExpiresAt: string;
+            };
             user: components["schemas"]["IamAuthenticatedUser"];
+        };
+        IamRefreshSessionResult: {
+            /** Format: date-time */
+            absoluteExpiresAt: string;
+            /** Format: date-time */
+            accessExpiresAt: string;
         };
         IamSessionStatus: {
             /** @enum {boolean} */
@@ -238,6 +269,62 @@ export interface operations {
             };
             /** @description Origin 或 CSRF 校验失败 */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 服务器内部错误 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    iamRefreshSession: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 刷新成功 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IamRefreshSessionResult"];
+                };
+            };
+            /** @description 刷新令牌无效、过期、已复用或会话已撤销 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Origin 或 CSRF 校验失败 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 同一刷新令牌正在被另一个并发请求轮换 */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

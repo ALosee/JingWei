@@ -377,6 +377,9 @@ importers:
       '@jingwei/api-client':
         specifier: workspace:*
         version: link:../../platform/api-client
+      '@jingwei/audit':
+        specifier: workspace:*
+        version: link:../../platform/audit
       '@jingwei/auth':
         specifier: workspace:*
         version: link:../../platform/auth

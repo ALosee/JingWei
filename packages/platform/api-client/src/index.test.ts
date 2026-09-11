@@ -4,6 +4,7 @@ import { z } from 'zod'
 import {
   createModuleApiClient,
   executeApiRequest,
+  refreshCookieSession,
   subscribeGlobalApiLoading,
   toApiResult,
 } from './index.js'
@@ -47,6 +48,24 @@ interface TestPathsDefinition {
 
 type TestPaths = {
   [Path in keyof TestPathsDefinition]: TestPathsDefinition[Path]
+}
+
+interface LoginTestPathsDefinition {
+  '/api/v1/iam/sessions': {
+    parameters: { query?: never; header?: never; path?: never; cookie?: never }
+    get?: never
+    put?: never
+    post: TestMutation
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+}
+
+type LoginTestPaths = {
+  [Path in keyof LoginTestPathsDefinition]: LoginTestPathsDefinition[Path]
 }
 
 const schema = z.object({ value: z.string() })
@@ -141,6 +160,126 @@ describe('platform API client', () => {
         details: { permission: 'navigation.view' },
       },
     })
+  })
+
+  it('refreshes HttpOnly cookies once for concurrent 401 responses and retries each request', async () => {
+    let accessActive = false
+    let refreshRequests = 0
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const rawUrl =
+        typeof input === 'string' ? input : input instanceof URL ? input.href : input.url
+      const path = new URL(rawUrl, 'http://jingwei.test').pathname
+      if (path === '/api/v1/iam/sessions/refresh') {
+        refreshRequests++
+        accessActive = true
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              accessExpiresAt: '2026-09-10T10:10:00.000Z',
+              absoluteExpiresAt: '2026-09-17T10:00:00.000Z',
+            }),
+            { status: 200, headers: { 'content-type': 'application/json' } },
+          ),
+        )
+      }
+      return Promise.resolve(
+        new Response(
+          JSON.stringify(
+            accessActive
+              ? { value: 'restored' }
+              : {
+                  code: 'AUTHENTICATION_REQUIRED',
+                  message: '需要登录',
+                  requestId: 'request-auth',
+                },
+          ),
+          {
+            status: accessActive ? 200 : 401,
+            headers: { 'content-type': 'application/json' },
+          },
+        ),
+      )
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    vi.stubGlobal('document', { cookie: 'jingwei_csrf=csrf-token' })
+
+    const [first, second] = await Promise.all([
+      toApiResult(api.client.get('/resource', { schema })),
+      toApiResult(api.client.get('/resource', { schema })),
+    ])
+
+    expect(first).toEqual({ data: { value: 'restored' }, error: null })
+    expect(second).toEqual({ data: { value: 'restored' }, error: null })
+    expect(refreshRequests).toBe(1)
+    // Web Locks performs one authenticated-session probe while holding the cross-tab lock.
+    expect(fetchMock).toHaveBeenCalledTimes(6)
+  })
+
+  it('skips refresh coordination and its session probe when no CSRF cookie exists', async () => {
+    const fetchMock = vi.fn()
+    const lockRequest = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    vi.stubGlobal('document', { cookie: '' })
+    vi.stubGlobal('navigator', { locks: { request: lockRequest } })
+
+    await expect(refreshCookieSession()).resolves.toBe(false)
+
+    expect(lockRequest).not.toHaveBeenCalled()
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('does not refresh after a rejected login attempt', async () => {
+    const fetchMock = vi.fn(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            code: 'AUTHENTICATION_FAILED',
+            message: '租户、账号或密码不正确',
+            requestId: 'request-login',
+          }),
+          { status: 401, headers: { 'content-type': 'application/json' } },
+        ),
+      ),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    vi.stubGlobal('document', { cookie: 'jingwei_csrf=csrf-token' })
+
+    const loginApi = createModuleApiClient<LoginTestPaths, '/api/v1/iam'>('/api/v1/iam')
+    await expect(
+      toApiResult(
+        loginApi.client.post('/sessions', {
+          body: { value: 'invalid' },
+          schema,
+        }),
+      ),
+    ).resolves.toMatchObject({ data: null, error: { code: 'AUTHENTICATION_FAILED' } })
+    expect(fetchMock).toHaveBeenCalledOnce()
+  })
+
+  it('returns the original 401 when cross-tab refresh coordination is unavailable', async () => {
+    const fetchMock = vi.fn(() =>
+      Promise.resolve(
+        new Response(
+          JSON.stringify({
+            code: 'AUTHENTICATION_REQUIRED',
+            message: '需要登录',
+            requestId: 'request-lock-failed',
+          }),
+          { status: 401, headers: { 'content-type': 'application/json' } },
+        ),
+      ),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    vi.stubGlobal('document', { cookie: 'jingwei_csrf=csrf-token' })
+    vi.stubGlobal('navigator', {
+      locks: { request: vi.fn(() => Promise.reject(new Error('Web Locks unavailable'))) },
+    })
+
+    await expect(toApiResult(api.client.get('/resource', { schema }))).resolves.toMatchObject({
+      data: null,
+      error: { code: 'AUTHENTICATION_REQUIRED', status: 401 },
+    })
+    expect(fetchMock).toHaveBeenCalledOnce()
   })
 
   it('supports successful 204 responses without attempting to parse JSON', async () => {

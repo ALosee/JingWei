@@ -68,7 +68,7 @@ Navigation 的 install 通过 IAM 公开工厂获取活跃角色/功能授权服
 
 1. 接受合法 UUIDv7 `x-request-id`，否则生成新 ID；
 2. 对修改型请求验证 Origin；
-3. 读取会话 Cookie，并通过摘要查询恢复 `AuthContext`；
+3. 读取短期 Access Token Cookie，并通过摘要查询活动 Token Family，恢复 `AuthContext`；
 4. 已登录的修改型请求继续验证 CSRF Cookie 与请求头；
 5. 执行路由；
 6. 在 `finally` 中记录 method、path、status、duration 和安全上下文。

@@ -100,11 +100,23 @@ test('the static recovery route remains available', async ({ page }) => {
 
 test('anonymous refresh rematches PAGE without requesting user navigation', async ({ page }) => {
   let meRequests = 0
+  let sessionRequests = 0
   await page.route('**/api/v1/navigation/bootstrap', (route) =>
     route.fulfill({ json: response([login]) }),
   )
-  await page.route('**/api/v1/iam/session', (route) =>
-    route.fulfill({ json: { authenticated: false } }),
+  await page.route('**/api/v1/iam/session', (route) => {
+    sessionRequests++
+    return route.fulfill({ json: { authenticated: false } })
+  })
+  await page.route('**/api/v1/iam/sessions', (route) =>
+    route.fulfill({
+      status: 401,
+      json: {
+        code: 'AUTHENTICATION_FAILED',
+        message: '租户、账号或密码不正确',
+        requestId: 'e2e-request',
+      },
+    }),
   )
   await page.route('**/api/v1/navigation/me', (route) => {
     meRequests++
@@ -112,6 +124,16 @@ test('anonymous refresh rematches PAGE without requesting user navigation', asyn
   })
   await page.goto('/signin')
   await expect(page.getByRole('heading', { name: '经纬企业平台' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '登录工作空间' })).toBeVisible()
+  expect(sessionRequests).toBe(1)
+  await expect(page.getByLabel('租户代码')).toHaveValue('default')
+  await expect(page.getByLabel('账号')).toBeFocused()
+  await page.getByLabel('显示密码').click()
+  await expect(page.getByLabel('隐藏密码')).toHaveAttribute('aria-pressed', 'true')
+  await page.getByLabel('账号').fill('admin')
+  await page.getByLabel('密码', { exact: true }).fill('wrong-password')
+  await page.getByRole('button', { name: '登录', exact: true }).click()
+  await expect(page.getByRole('alert')).toHaveText('租户、账号或密码不正确')
   expect(meRequests).toBe(0)
   await expect(page.getByRole('complementary')).toHaveCount(0)
 })

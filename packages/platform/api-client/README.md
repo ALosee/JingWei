@@ -69,8 +69,11 @@ const submitting = requestState.loading
 - 30 秒超时；
 - 自动重试为 0；
 - POST/PUT/PATCH/DELETE 自动从 `jingwei_csrf` Cookie 添加 `x-csrf-token`；
+- 401 时通过 HttpOnly Refresh Cookie 自动续期并重放一次原请求；登录端点和不可重放的流式 body 不参与；
+- 不存在可读 CSRF Cookie 时直接跳过续期协调，不获取跨标签页锁，也不额外探测会话；
+- 同一页面的刷新使用 single-flight，支持 Web Locks 时同时串行化多个标签页；
 - 所有请求通过 `onGlobalLoadingChange` 汇总全局 loading；操作级状态使用 `useApiRequestState()`；
-- Soybean Fetch 的 response cache、dedupe、Bearer auth refresh 默认不启用。
+- Soybean Fetch 的 response cache、dedupe、Bearer auth refresh 默认不启用；Cookie refresh 由平台 transport adapter 独立实现，因为页面脚本不能读取 opaque token。
 
 幂等查询若确需重试，可以在模块调用点显式设置并记录原因。不得透明重试修改请求。页面级缓存、失效、预取属于 server-state 层，不放进 transport；有明确需求时再引入 Pinia Colada。
 
