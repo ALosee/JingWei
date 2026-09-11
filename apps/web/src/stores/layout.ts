@@ -19,8 +19,8 @@ export interface LayoutPreferences {
 export const defaultLayoutPreferences: LayoutPreferences = {
   mode: 'left',
   brandPlacement: 'header',
-  headerHeight: 64,
-  siderWidth: 240,
+  headerHeight: 56,
+  siderWidth: 220,
   showTabs: true,
   siderCollapsed: false,
 }

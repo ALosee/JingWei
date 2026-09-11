@@ -23,12 +23,16 @@ const modeContext = computed<LayoutModeContext>(() => ({
 const orientation = computed(() => modeDefinition.value.orientation(modeContext.value))
 const showHeaderBrand = computed(() => modeDefinition.value.showHeaderBrand(modeContext.value))
 const showSiderBrand = computed(() => modeDefinition.value.showSiderBrand(modeContext.value))
+const reserveHeaderBrandSpace = computed(
+  () => showHeaderBrand.value && modeDefinition.value.sidebarVisible && !isMobile.value,
+)
+const compactHeaderBrand = computed(() => isMobile.value)
 const layoutUi = {
   root: 'h-dvh min-h-0 overflow-hidden bg-background',
   sidebarWrapper: 'border-sidebar-border',
   sidebar: 'text-sidebar-foreground',
   rail: 'hidden',
-  header: 'border-b border-border bg-card px-4',
+  header: 'border-b border-border bg-card',
   tab: 'bg-card',
   content: 'min-w-0 overscroll-contain p-6',
 } as const
@@ -57,7 +61,8 @@ const layoutUi = {
       <div class="min-h-0 flex flex-1 flex-col">
         <div
           v-if="showSiderBrand"
-          class="h-[var(--soybean-layout-header-height)] flex shrink-0 items-center overflow-hidden border-b border-sidebar-border px-4"
+          data-global-brand-region="sider"
+          class="h-[var(--soybean-layout-header-height)] flex shrink-0 items-center overflow-hidden pl-4"
         >
           <GlobalBrand :compact="preferences.siderCollapsed" />
         </div>
@@ -66,7 +71,12 @@ const layoutUi = {
     </template>
 
     <template #header>
-      <GlobalHeader :definition="modeDefinition" :show-brand="showHeaderBrand" />
+      <GlobalHeader
+        :definition="modeDefinition"
+        :show-brand="showHeaderBrand"
+        :reserve-brand-space="reserveHeaderBrandSpace"
+        :brand-compact="compactHeaderBrand"
+      />
     </template>
 
     <template #tab>

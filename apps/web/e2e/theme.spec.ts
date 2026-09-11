@@ -202,6 +202,46 @@ test('layout region boundaries are drawn by a single owning layer', async ({ pag
   await expect(tabs).toHaveCSS('border-bottom-width', '1px')
 })
 
+test('brand keeps distinct header and sider behavior', async ({ page }) => {
+  await page.goto('/account/me')
+  const sidebarWrapper = page.locator('[data-soybean-layout-sidebar] > div:nth-child(2)')
+  const headerBrandRegion = page.locator('[data-global-brand-region="header"]')
+  const headerBrandLink = headerBrandRegion.getByRole('link', {
+    name: '经纬企业平台首页',
+  })
+
+  await expect(headerBrandRegion).toBeVisible()
+  await expect(headerBrandRegion).toHaveCSS('border-inline-end-width', '0px')
+  await expect
+    .poll(async () => {
+      const sidebarBox = await sidebarWrapper.boundingBox()
+      const brandBox = await headerBrandRegion.boundingBox()
+      if (!sidebarBox || !brandBox) return Number.POSITIVE_INFINITY
+      return Math.abs(sidebarBox.width - brandBox.width)
+    })
+    .toBeLessThanOrEqual(1)
+  const expandedBrandWidth = await headerBrandRegion.evaluate((element) => element.clientWidth)
+
+  await page.getByRole('button', { name: '切换侧边栏' }).click()
+  await expect(page.locator('[data-soybean-layout-root]')).toHaveAttribute(
+    'data-state',
+    'collapsed',
+  )
+  await expect(headerBrandLink.locator('[data-global-brand-wordmark]')).toBeVisible()
+  await expect
+    .poll(async () => headerBrandRegion.evaluate((element) => element.clientWidth))
+    .toBe(expandedBrandWidth)
+  await page.getByRole('button', { name: '切换侧边栏' }).click()
+
+  await page.getByRole('button', { name: '工作区设置', exact: true }).click()
+  await page.getByRole('tab', { name: '布局设置' }).click()
+  await page.getByRole('combobox', { name: '品牌位置' }).selectOption('sider')
+
+  const siderBrandRegion = page.locator('[data-global-brand-region="sider"]')
+  await expect(siderBrandRegion).toBeVisible()
+  await expect(headerBrandRegion).toHaveCount(0)
+})
+
 test('collapsed tree menu aligns active and hover surfaces in the sider', async ({ page }) => {
   await page.goto('/account/me')
   await page.getByRole('button', { name: '切换侧边栏' }).click()
