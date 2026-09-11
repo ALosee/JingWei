@@ -24,6 +24,12 @@ import type {
 import type { ThemeContext } from './components/config-provider/theme-context'
 import type { ConfigProviderProps } from './components/config-provider/types'
 import type { DialogEmits, DialogProps, DialogSlots } from './components/dialog/types'
+import type {
+  DropdownMenuEmits,
+  DropdownMenuProps,
+  DropdownMenuSlots,
+  MenuOptionData,
+} from './components/dropdown-menu/types'
 import type { IconProps, IconValue } from './components/icon/types'
 import type { InputEmits, InputProps, InputSlots } from './components/input/types'
 import type {
@@ -62,6 +68,7 @@ export declare const BreadcrumbEllipsis: UiComponent
 export declare const BreadcrumbPage: UiComponent
 export declare const ConfigProvider: UiComponent<ConfigProviderProps>
 export declare const Dialog: UiComponent<DialogProps>
+export declare const DropdownMenu: UiComponent<DropdownMenuProps<string>>
 export declare const Icon: UiComponent<IconProps>
 export declare const Input: UiComponent<InputProps>
 export declare const InputClear: UiComponent<InputClearProps>
@@ -104,6 +111,10 @@ export type {
   DialogEmits,
   DialogProps,
   DialogSlots,
+  DropdownMenuEmits,
+  DropdownMenuProps,
+  DropdownMenuSlots,
+  MenuOptionData,
   IconProps,
   IconValue,
   InputEmits,

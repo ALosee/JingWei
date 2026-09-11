@@ -29,6 +29,13 @@ export type {
 } from './components/breadcrumb/index.js'
 export { SDialog as Dialog, dialog } from './components/dialog/index.js'
 export type { DialogEmits, DialogProps, DialogSlots } from './components/dialog/index.js'
+export { SDropdownMenu as DropdownMenu } from './components/dropdown-menu/index.js'
+export type {
+  DropdownMenuEmits,
+  DropdownMenuProps,
+  DropdownMenuSlots,
+  MenuOptionData,
+} from './components/dropdown-menu/index.js'
 export { SIcon as Icon } from './components/icon/index.js'
 export type { IconProps, IconValue } from './components/icon/index.js'
 export { SInput as Input, SInputClear as InputClear } from './components/input/index.js'
