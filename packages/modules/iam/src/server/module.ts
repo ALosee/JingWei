@@ -6,13 +6,16 @@ import type { ServerModule } from '@jingwei/module-sdk/server'
 import { manifest } from '../manifest.js'
 import { createIamRoutes } from './api/routes.js'
 import { AuthenticateUser } from './application/authenticate-user.js'
+import { ReadCurrentUser } from './application/read-current-user.js'
 import { SessionLifecycle } from './application/session-lifecycle.js'
 import { PostgresCredentialStore, type IamDatabase } from './infrastructure/credential-reader.pg.js'
+import { PostgresCurrentUserReader } from './infrastructure/current-user-reader.pg.js'
 
 export const serverModule: ServerModule = {
   manifest,
   async install(context) {
     const credentials = new PostgresCredentialStore(context.database.view<IamDatabase>())
+    const currentUsers = new PostgresCurrentUserReader(context.database.view<IamDatabase>())
     const passwords = new Argon2idPasswordHasher()
     const dummyPasswordHash = await passwords.hash('not-a-real-jingwei-user-password')
     const audit = new PostgresAuditWriter(context.database.view())
@@ -33,6 +36,7 @@ export const serverModule: ServerModule = {
       basePath: '/iam',
       routes: createIamRoutes({
         authenticateUser,
+        readCurrentUser: new ReadCurrentUser(currentUsers),
         sessions: sessionLifecycle,
         secureCookies: context.config.environment === 'production',
         logger: context.logger,

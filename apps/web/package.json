@@ -18,6 +18,7 @@
     "@jingwei/module-organization": "workspace:*",
     "@jingwei/module-sdk": "workspace:*",
     "@jingwei/ui": "workspace:*",
+    "@vueuse/core": "catalog:",
     "pinia": "catalog:",
     "vue": "catalog:",
     "vue-router": "catalog:"

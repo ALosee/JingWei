@@ -61,7 +61,19 @@ function dependencies(loggedIn: boolean) {
     }),
     loadSession: vi.fn(() => {
       events.push('session')
-      return Promise.resolve({ authenticated: loggedIn })
+      return Promise.resolve(
+        loggedIn
+          ? {
+              authenticated: true as const,
+              user: {
+                id: '00000000-0000-7000-8000-000000000010',
+                tenantId: '00000000-0000-7000-8000-000000000011',
+                displayName: 'Admin',
+                avatarUrl: null,
+              },
+            }
+          : { authenticated: false as const },
+      )
     }),
     loadAuthenticated: vi.fn(() => {
       events.push('me')
@@ -75,7 +87,7 @@ function dependencies(loggedIn: boolean) {
       events.push('replace:' + value)
       return Promise.resolve()
     }),
-    shell: { navigation: null, bootstrapError: null },
+    shell: { navigation: null, currentUser: null, bootstrapError: null },
   }
   return { ports, events }
 }
@@ -105,6 +117,7 @@ describe('navigation startup orchestration', () => {
       'replace:/account/me?tab=profile',
     ])
     expect(ports.shell.navigation).toBe(authenticated)
+    expect(ports.shell.currentUser?.displayName).toBe('Admin')
   })
   it('falls back to public navigation when the session expires between requests', async () => {
     const { ports } = dependencies(true)
@@ -112,6 +125,7 @@ describe('navigation startup orchestration', () => {
     await initializeNavigation('/', ports)
     expect(ports.replace).toHaveBeenCalledWith('/signin')
     expect(ports.shell.navigation).toBe(bootstrap)
+    expect(ports.shell.currentUser).toBeNull()
   })
   it('routes bootstrap errors to static recovery without issuing later requests', async () => {
     const { ports } = dependencies(true)

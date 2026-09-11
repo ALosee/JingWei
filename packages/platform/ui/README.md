@@ -23,7 +23,8 @@ src/
 - 无业务词汇、跨模块共享的基础组件放 `@jingwei/ui/src/components`；
 - 组合多个基础组件形成的跨模块通用模式放 `@jingwei/ui/src/patterns`；
 - “组织选择器”“角色授权面板”等业务组件放所有者模块的 `src/web/components`；
-- 只属于应用外壳的导航树、顶栏等放 `apps/web/src/components`。
+- 只属于应用外壳的品牌、导航、顶栏和设置等按职责放在
+  `apps/web/src/layouts/base/modules/<module>`。
 
 业务模块只能从 `@jingwei/ui` 公共入口导入共享 UI，不能跨包引用其 `src`。模块业务组件
 可以直接引用本模块的 composable/client，但网络流程仍应由 composable/controller 拥有。
@@ -31,11 +32,12 @@ src/
 ## 公开 API
 
 `components` 内保留 sbean 生成的 `SButton`、`SInput` 等上游命名，以便升级时直接比较；
-`src/index.ts` 在包边界导出 `Button`、`ButtonLoading`、`Input`、`Dialog`、`ConfigProvider`
-等简洁名称。不要为了改名去修改生成文件，也不要在业务代码中使用内部 `S*` 名称。
+`src/index.ts` 在包边界导出 `Button`、`Input`、`Dialog`、`Layout`、`Tabs`、`TreeMenu`、`Menubar`、
+`Breadcrumb`、`Popover`、`PageTabs`、`ConfigProvider` 等简洁名称。不要为了改名去修改生成文件，
+也不要在业务代码中使用内部 `S*` 名称。
 
 `PageContainer` 与 `ThemeSettingsPanel` 是本地 `patterns`，不由 sbean 管理。后者只提供主题
-编辑内容；固定入口、弹窗容器和工作区文案由 Web 壳拥有。新增公开组件时同步更新显式
+编辑内容；设置入口、非模态容器和工作区文案由 Web 壳拥有。新增公开组件时同步更新显式
 export、README 和相应契约测试。
 
 ## 新增或更新组件
@@ -71,6 +73,12 @@ UI 实现；每个新增公共组件都必须同步补齐该门面，防止运�
 - `@soybeanjs/theme` 提供语义 token、主题生成、持久化与首屏脚本；
 - `@soybeanjs/ui-uno` 在 Web 构建时生成默认 token 和 reset；
 - `@soybeanjs/ui` 是禁止依赖，`pnpm architecture:check` 会拦截 package dependency 和源码 import。
+
+`Layout` 基于 headless LayoutCompact，公开受控 Sider、区域尺寸、独立 Content 滚动、移动端和
+Header/Tab/Content slots；`LayoutTrigger` 复用同一个上下文。`Tabs`、`TreeMenu`、`Menubar`、
+`Breadcrumb`、`Popover` 与 `PageTabs` 分别包装对应的 Soybean Headless Compact/primitive，保留
+其 WAI-ARIA、键盘、焦点、受控状态和浮层定位语义，本包只负责公共 API 与 UnoCSS recipe。
+应用只从本包公共入口使用它们。
 
 Web 根节点挂载本地 `ConfigProvider` 并启用 `persist-theme`。Provider 同时装配本地 Toast、
 Dialog 和 Progress provider；`useTheme()` 复用同一个上下文，不另建 Pinia 主题 store。

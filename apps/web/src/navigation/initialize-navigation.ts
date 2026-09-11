@@ -1,3 +1,4 @@
+import type { AuthenticatedUser, SessionStatus } from '@jingwei/module-iam/shared'
 import type { NavigationResponse } from '@jingwei/module-navigation/shared'
 
 import { selectInitialLocation } from './initial-location.js'
@@ -5,12 +6,16 @@ import { selectInitialLocation } from './initial-location.js'
 /** Narrow ports keep startup orchestration independent of Vue, Pinia, HTTP and browser globals. */
 export interface NavigationStartupDependencies {
   loadBootstrap: () => Promise<NavigationResponse>
-  loadSession: () => Promise<{ authenticated: boolean }>
+  loadSession: () => Promise<SessionStatus>
   loadAuthenticated: () => Promise<NavigationResponse | null>
   install: (navigation: NavigationResponse) => void
   recognizes: (location: string) => boolean
   replace: (location: string) => Promise<unknown>
-  readonly shell: { navigation: NavigationResponse | null; bootstrapError: string | null }
+  readonly shell: {
+    navigation: NavigationResponse | null
+    currentUser: AuthenticatedUser | null
+    bootstrapError: string | null
+  }
 }
 
 /** Public bootstrap precedes optional user navigation. A 401 race falls back to public navigation. */
@@ -27,6 +32,7 @@ export async function initializeNavigation(
     const navigation = authenticated ?? bootstrap
     dependencies.install(navigation)
     shell.navigation = navigation
+    shell.currentUser = session.authenticated && authenticated !== null ? session.user : null
     await dependencies.replace(
       selectInitialLocation({
         initialLocation,
@@ -36,6 +42,7 @@ export async function initializeNavigation(
       }),
     )
   } catch (error) {
+    shell.currentUser = null
     shell.bootstrapError = error instanceof Error ? error.message : 'Navigation bootstrap failed'
     await dependencies.replace('/__recovery')
   }

@@ -21,6 +21,7 @@ function credential(overrides: Partial<CredentialSnapshot> = {}): CredentialSnap
   return {
     userId,
     displayName: 'Admin',
+    avatarUrl: null,
     status: 'ACTIVE',
     passwordHash: 'real-hash',
     lockedUntil: null,

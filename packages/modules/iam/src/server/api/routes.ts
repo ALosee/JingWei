@@ -14,6 +14,7 @@ import { ApplicationError } from '@jingwei/kernel'
 import { createApiRouter, type ServerAppEnv } from '@jingwei/module-sdk/server'
 
 import type { AuthenticateUser } from '../application/authenticate-user.js'
+import type { ReadCurrentUser } from '../application/read-current-user.js'
 import type { SessionLifecycle } from '../application/session-lifecycle.js'
 import { iamApiRoutes } from './openapi.js'
 
@@ -24,6 +25,7 @@ interface AuthenticationLogger {
 
 export function createIamRoutes(dependencies: {
   readonly authenticateUser: Pick<AuthenticateUser, 'execute'>
+  readonly readCurrentUser: Pick<ReadCurrentUser, 'execute'>
   readonly sessions: Pick<SessionLifecycle, 'logout' | 'refresh'>
   readonly secureCookies: boolean
   readonly logger: AuthenticationLogger
@@ -75,13 +77,15 @@ export function createIamRoutes(dependencies: {
       throw error
     }
   })
-  app.openapi(iamApiRoutes.getSession, (context) => {
+  app.openapi(iamApiRoutes.getSession, async (context) => {
     const auth = context.get('authContext')
     if (auth === null) return context.json({ authenticated: false } as const, 200)
+    const user = await dependencies.readCurrentUser.execute(auth.tenantId, auth.userId)
+    if (user === null) return context.json({ authenticated: false } as const, 200)
     return context.json(
       {
         authenticated: true,
-        user: { id: auth.userId, tenantId: auth.tenantId },
+        user,
       },
       200,
     )

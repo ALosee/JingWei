@@ -15,6 +15,7 @@ import type { UserStatus } from '../domain/user-status.js'
 export interface CredentialSnapshot {
   readonly userId: UserId
   readonly displayName: string
+  readonly avatarUrl: string | null
   readonly status: UserStatus
   readonly passwordHash: string
   readonly lockedUntil: Date | null
@@ -144,6 +145,7 @@ export class AuthenticateUser {
         id: credential.userId,
         tenantId: tenant.id,
         displayName: credential.displayName,
+        avatarUrl: credential.avatarUrl,
       },
     }
   }

@@ -33,10 +33,14 @@ MENU/PAGE 使用绝对 path，不将 parentId 自动转换为嵌套路由。实�
 
 只保留两种：
 
-- base：标准企业工作区，当前实现 header + sidebar + content；tabs 留待后续。
+- base：标准企业工作区；内部可在左侧树菜单和顶部菜单之间切换，并提供 header、页面标签和独立滚动 content。
 - blank：仅 RouterView，页面自行拥有结构。登录、SSO、错误页或沉浸式页面都可以使用它。
 
 Navigation 数据库存储选定 layout；Manifest.layout 是默认值，allowedLayouts 是允许列表。省略 allowedLayouts 表示仅允许默认 layout；不是允许任意布局。目前已有页面均保持各自的默认布局。要允许某页在两种结构间切换，应由页面所有者显式声明并验证 UI 兼容性。
+
+左侧菜单/顶部菜单是 base 壳的本地展示模式，不是新的 Route Layout，不进入数据库和 Manifest。
+BaseLayout 使用平台 UI 的 Headless Layout 包装管理区域尺寸、收缩和 content 独立滚动；不同菜单
+组件通过 Teleport 投放到 header/sider 的稳定挂载点。
 
 ## 4. 路径模板与具体 URL
 
@@ -124,6 +128,6 @@ bootstrap 不是固定返回登录页：它读取真实租户当前发布快照�
 
 保存、发布、回滚和角色 grant 修改均锁住租户 main 根；写入配置、审计和 outbox 在一个 PostgreSQL 事务中完成。expectedEditRevision、expectedPublishedVersionId、expectedCodes 分别处理三类并发冲突。客户端收到 409 应重新加载，不自动重试覆盖。
 
-本轮没有缓存、ETag、实时推送、页签、页面 keep-alive 定义。接口返回 Cache-Control: no-store；发布或授权后下一次请求生效，已打开浏览器需要刷新。后续可以利用 versionId 做一致性检查，但版本机制本身不依赖缓存。
+本轮没有缓存、ETag、实时推送或页面 keep-alive 定义。BaseLayout 页签只记录当前壳生命周期内访问过的 fullPath，不参与服务端导航版本。接口返回 Cache-Control: no-store；发布或授权后下一次请求生效，已打开浏览器需要刷新。后续可以利用 versionId 做一致性检查，但版本机制本身不依赖缓存。
 
 当前管理能力已落地；IAM 完整角色 CRUD、通用数据范围 evaluator 不属于这次导航实现。细节见 [IAM README](../packages/modules/iam/README.md)。

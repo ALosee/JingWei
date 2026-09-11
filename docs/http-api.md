@@ -154,7 +154,7 @@ Refresh 请求在 Access Token 已过期时仍必须校验 Origin 与 CSRF；刷
 
 行为：
 
-- 会话有效时返回 `200 { "authenticated": true, "user": { "id": "...", "tenantId": "..." } }`；
+- 会话有效且用户仍活跃时返回 `200 { "authenticated": true, "user": { "id": "...", "tenantId": "...", "displayName": "...", "avatarUrl": null } }`；
 - 未携带 Access Cookie、令牌摘要不匹配、token 过期或 family 已撤销时返回 `200 { "authenticated": false }`；
 - 不延长会话的规则应由会话服务统一决定，路由不能自行修改。
 

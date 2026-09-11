@@ -23,6 +23,7 @@ interface UserTable {
   username_normalized: string
   email_normalized: string | null
   display_name: string
+  avatar: string | null
   status: UserStatus
   last_login_at: Date | null
   updated_at: Date
@@ -51,6 +52,7 @@ export class PostgresCredentialStore implements CredentialStore, AuthenticationU
       .select([
         'user.id',
         'user.display_name',
+        'user.avatar',
         'user.status',
         'credential.password_hash',
         'credential.locked_until',
@@ -69,6 +71,7 @@ export class PostgresCredentialStore implements CredentialStore, AuthenticationU
       : {
           userId: toUserId(row.id),
           displayName: row.display_name,
+          avatarUrl: row.avatar,
           status: row.status,
           passwordHash: row.password_hash,
           lockedUntil: row.locked_until,

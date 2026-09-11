@@ -7,9 +7,10 @@ Web 构建通过 `unocss/vite` 扫描壳与各模块页面，`src/bootstrap/star
 `@soybeanjs/theme` 生成亮色、暗色、语义颜色、圆角和尺寸变量。组件和页面直接使用 Soybean
 主题语义，不另建一套 CSS 变量。
 
-`App.vue` 挂载 `@jingwei/ui` 源码拥有的 `ConfigProvider`，负责运行时主题和本地持久化；Web 壳的
-`AppThemeSettings` 组合 `ThemeSettingsPanel`，在所有路由提供统一设置入口。Vite 将
-`createThemeInitScript()` 注入 HTML head，
+`App.vue` 挂载 `@jingwei/ui` 源码拥有的 `ConfigProvider`，负责运行时主题和本地持久化；Base
+工作区的 `GlobalSettingsPopover` 组合 `ThemeSettingsPanel` 与布局设置，并以无蒙层的非模态
+Popover 呈现。
+Vite 将 `createThemeInitScript()` 注入 HTML head，
 在应用加载前恢复明暗模式。完整颜色和尺寸在 Provider 挂载时恢复。
 UnoCSS 扫描 `@jingwei/ui` 的本地 Vue/TS 源码，并使用 `presetSoybean` 补齐布局快捷类。
 Web 不依赖 `@soybeanjs/ui` styled 包。升级生成源码时必须复核
@@ -38,6 +39,11 @@ Web 不依赖 `@soybeanjs/ui` styled 包。升级生成源码时必须复核
 ```text
 src/
 ├── bootstrap/start-web.ts     # Vue/Pinia/Router 与实际依赖装配
+├── layouts/
+│   ├── BaseLayout.vue         # 只组合 Headless Layout 与当前模式定义
+│   └── base/
+│       ├── layout-mode-registry.ts # 模式到菜单、Header 内容与几何策略的注册表
+│       └── modules/           # global-brand/header/menu/settings/tab 分模块实现
 ├── navigation/
 │   ├── initialize-navigation.ts # 导航启动流程与失败恢复
 │   └── initial-location.ts   # 纯首屏目标选择
@@ -46,7 +52,9 @@ src/
 │   ├── _generated/            # Elegant Router 生成
 │   ├── dynamic-routes.ts      # 导航节点到真实页面的桥接
 │   └── index.ts              # createApplicationRouter 工厂
-├── stores/shell.ts            # 最小全局壳状态
+├── stores/
+│   ├── shell.ts               # 导航与当前会话用户投影
+│   └── layout.ts              # 本地持久化的工作区布局偏好
 ├── main.ts                    # 只调用 startWebApplication
 └── App.vue
 e2e/                           # Playwright 关键路径测试
@@ -89,7 +97,11 @@ e2e/                           # Playwright 关键路径测试
 `useShellStore` 只保存跨模块壳状态：
 
 - `navigation`：当前完整导航投影，包含版本、入口和节点；
+- `currentUser`：Session API 返回的当前用户安全展示投影；
 - `bootstrapError`：启动恢复所需的安全错误文字。
+
+`useLayoutStore` 独立保存 `base` 工作区的模式、品牌位置、区域尺寸、页签可见性和 Sider
+收缩状态。它使用版本化 localStorage，并在读取时校验枚举、修复缺失字段和限制尺寸范围。
 
 业务实体状态应留在对应模块的 store/composable 中，避免 Web 壳逐渐变成新的业务单体。
 
@@ -97,18 +109,36 @@ e2e/                           # Playwright 关键路径测试
 
 Route Definition 只允许两种页面外部结构：
 
-| Layout                  | 结构                                                               | 适合页面                                                   |
-| ----------------------- | ------------------------------------------------------------------ | ---------------------------------------------------------- |
-| `base` / `BaseLayout`   | 标准企业工作区；当前实现 header + sidebar + content，tabs 暂未实现 | 组织、字典、导航管理、个人账号和普通业务页面               |
-| `blank` / `BlankLayout` | 只有 `RouterView`，页面完全拥有 DOM、尺寸和视觉结构                | 登录、密码重置、MFA、SSO、错误页、大屏、地图和沉浸式编辑器 |
+| Layout                  | 结构                                                                                | 适合页面                                                   |
+| ----------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `base` / `BaseLayout`   | 标准企业工作区；内部可切换左侧菜单或顶部菜单，并提供 Header、页签与独立滚动 Content | 组织、字典、导航管理、个人账号和普通业务页面               |
+| `blank` / `BlankLayout` | 只有 `RouterView`，页面完全拥有 DOM、尺寸和视觉结构                                 | 登录、密码重置、MFA、SSO、错误页、大屏、地图和沉浸式编辑器 |
 
 应用和浏览器 viewport 本身已经占满屏幕，是否隐藏工作区 chrome 才是布局的实际差异。因此不再为 `fullscreen` 建立一个仅增加 `min-height: 100vh` 的独立概念。认证页面也使用 `blank`；多个认证页面若需要共享品牌或表单结构，应抽取普通 Vue 组件，而不是扩展 Router Layout 种类。
 
-NavigationTree 递归显示 DIRECTORY（可折叠）、GROUP（分组标题）、MENU 与 EXTERNAL_LINK；PAGE 不显示。MENU 使用 navigationTarget 生成默认参数跳转，刷新时保留浏览器实际 URL。外链 BLANK 添加 noopener noreferrer。
+`base` 内部的左侧/顶部菜单只是用户展示偏好，不扩展 Navigation 或 Manifest 的 layout 枚举。
+工作区基于 `@jingwei/ui` 的 Soybean Headless Layout 包装，使用 `scrollBehavior=content` 保证页面
+滚动不带动 Header 和 Sider。左侧模式且品牌位于 Header 时使用纵向外层布局，使 Header 横跨
+Sider 与 Content；品牌位于 Sider 时切换为横向外层布局。顶部模式不渲染 Sider。
+
+布局模式由 `layout-mode-registry.ts` 注册菜单组件、Header 上下文组件、Sider 可见性和几何策略，
+`BaseLayout` 只通过动态组件消费定义。新增混合模式时增加定义与对应模块，不扩展 `v-if/else`
+分支链。各菜单区域提供稳定挂载点；`SiderGlobalMenu` 和 `HeaderGlobalMenu` 分别通过 Teleport
+投放 Soybean Headless TreeMenu 与 Menubar，布局骨架不拥有菜单实现。
+
+菜单数据转换层显示 DIRECTORY、GROUP、MENU 与 EXTERNAL_LINK，PAGE 不显示；当前 PAGE 会向上
+解析到最近的可见 MENU，以保持 TreeMenu 展开和选中状态。MENU 使用 `navigationTarget` 生成默认
+参数跳转，刷新时保留浏览器实际 URL；外链由共享 Link 语义补齐安全属性。Header 在左侧模式使用
+Soybean Headless Breadcrumb，在顶部模式承载 Menubar；页签使用 PageTabs；菜单搜索和设置使用
+非模态 Popover；全屏能力使用 VueUse。
+
+页签记录当前 BaseLayout 生命周期内访问过的具体 fullPath，支持切换和关闭；刷新只恢复当前页，
+本期不做 KeepAlive、页面状态缓存和跨窗口页签同步。主题在 blank 页面仍由 ConfigProvider 应用，
+但设置入口只属于 BaseLayout，避免破坏 blank 页面完全拥有结构的约定。
 
 动态安装按 layout 分组；parentId 不决定 RouterView 嵌套。每次安装替换全部旧动态路由，而不是持续追加。布局由数据库配置，但必须处于 Manifest.allowedLayouts 中；省略列表时只允许默认值。
 
-导航管理页面属于 Navigation 模块，不放在壳内。它支持草稿编辑、发布/回滚和角色 code 授权；当前不实现缓存、推送或页签状态，发布后需重新进入工作区读取新配置。
+导航管理页面属于 Navigation 模块，不放在壳内。它支持草稿编辑、发布/回滚和角色 code 授权；当前不实现导航缓存或推送，发布后需重新进入工作区读取新配置。
 
 ## 开发与验证
 

@@ -46,7 +46,8 @@ pnpm ui:diff <component>     # 比较已存在源码
 
 Web 根节点挂载本地 `ConfigProvider`。它拥有主题持久化以及 Toast、Dialog、Progress provider；
 `@jingwei/ui` 的 `ThemeSettingsPanel` 使用同一 `useTheme()` 上下文，不建立第二个 store。
-设置入口、弹窗容器、固定位置和工作区文案由 Web 壳的 `AppThemeSettings` 拥有。架构检查禁止
+设置入口、非模态 Popover、挂载位置和工作区文案由 Web 壳的 `global-settings` 布局模块拥有。
+架构检查禁止
 任何 workspace package 声明 `@soybeanjs/ui` dependency，也禁止 authored source 导入它。
 
 sbean 0.30.0 生成的 Vue prop forwarding 与仓库开启的 `exactOptionalPropertyTypes` 表达不兼容。

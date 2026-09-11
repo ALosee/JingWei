@@ -89,7 +89,7 @@ src/
 
 ### `GET /api/v1/iam/session`
 
-恢复当前 Access Token 状态。有效 token 返回 `200 { authenticated: true, user: { id, tenantId } }`；没有 Cookie、过期或撤销均返回 `200 { authenticated: false }`。Web 客户端可先尝试一次 Refresh Cookie 轮换，再决定是否调用受保护的 `/navigation/me`。
+恢复当前 Access Token 状态。有效 token 返回当前用户安全展示投影 `{ id, tenantId, displayName, avatarUrl }`；读取按 tenantId 与 userId 限定且只接受活跃用户。没有 Cookie、过期、撤销或用户不再活跃均返回 `200 { authenticated: false }`。Web 客户端可先尝试一次 Refresh Cookie 轮换，再决定是否调用受保护的 `/navigation/me`。
 
 ### `POST /api/v1/iam/sessions/refresh`
 

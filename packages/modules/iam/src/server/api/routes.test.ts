@@ -7,7 +7,8 @@ import {
   refreshTokenCookiePath,
   type CreatedSession,
 } from '@jingwei/auth'
-import { newSessionId, newTenantId, newUserId } from '@jingwei/kernel'
+import { newRequestId, newSessionId, newTenantId, newUserId } from '@jingwei/kernel'
+import { createApiRouter } from '@jingwei/module-sdk/server'
 
 import { createIamRoutes } from './routes.js'
 
@@ -35,6 +36,52 @@ const logger = {
 }
 
 describe('IAM session HTTP boundary', () => {
+  it('returns the mutable safe user projection for an authenticated session', async () => {
+    const current = session()
+    const readCurrentUser = vi.fn(() =>
+      Promise.resolve({
+        id: current.userId,
+        tenantId: current.tenantId,
+        displayName: 'Admin',
+        avatarUrl: 'https://example.com/avatar.png',
+      }),
+    )
+    const routes = createIamRoutes({
+      authenticateUser: { execute: vi.fn() },
+      readCurrentUser: { execute: readCurrentUser },
+      sessions: { logout: vi.fn(), refresh: vi.fn() },
+      secureCookies: false,
+      logger,
+    })
+    const app = createApiRouter()
+    app.use('*', async (context, next) => {
+      context.set('requestId', newRequestId())
+      context.set('authContext', {
+        requestId: newRequestId(),
+        sessionId: current.id,
+        tenantId: current.tenantId,
+        userId: current.userId,
+        roleIds: [],
+      })
+      await next()
+    })
+    app.route('/', routes)
+
+    const response = await app.request('/session')
+
+    expect(response.status).toBe(200)
+    expect(await response.json()).toEqual({
+      authenticated: true,
+      user: {
+        id: current.userId,
+        tenantId: current.tenantId,
+        displayName: 'Admin',
+        avatarUrl: 'https://example.com/avatar.png',
+      },
+    })
+    expect(readCurrentUser).toHaveBeenCalledWith(current.tenantId, current.userId)
+  })
+
   it('sets separate hardened access, refresh, and CSRF cookies without returning credentials', async () => {
     const created = session()
     const routes = createIamRoutes({
@@ -46,6 +93,7 @@ describe('IAM session HTTP boundary', () => {
               id: created.userId,
               tenantId: created.tenantId,
               displayName: 'Admin',
+              avatarUrl: null,
             },
           }),
         ),
@@ -54,6 +102,7 @@ describe('IAM session HTTP boundary', () => {
         logout: vi.fn(),
         refresh: vi.fn(),
       },
+      readCurrentUser: { execute: vi.fn() },
       secureCookies: true,
       logger,
     })
@@ -76,6 +125,7 @@ describe('IAM session HTTP boundary', () => {
         id: created.userId,
         tenantId: created.tenantId,
         displayName: 'Admin',
+        avatarUrl: null,
       },
       session: {
         accessExpiresAt: accessExpiresAt.toISOString(),
@@ -110,6 +160,7 @@ describe('IAM session HTTP boundary', () => {
     const routes = createIamRoutes({
       authenticateUser: { execute: vi.fn() },
       sessions: { logout: vi.fn(), refresh },
+      readCurrentUser: { execute: vi.fn() },
       secureCookies: false,
       logger,
     })

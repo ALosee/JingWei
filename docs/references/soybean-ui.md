@@ -67,7 +67,7 @@ Skill 快照与项目固定的 SoybeanUI `0.30.0` 源码模板对齐。当前使
 `ConfigProvider`、`useTheme`、Toast/Dialog/Progress Provider 与主题设置面板均由
 `@jingwei/ui` 源码拥有，不依赖上游 styled 包，也不另建 Pinia 主题 store。内部文件保留
 sbean 的 `SConfigProvider` 名，公共入口导出 `ConfigProvider`。Web 壳拥有主题设置入口与
-弹窗容器。`presetSbean()` 负责构建回退主题，运行时配置与持久化由本地 Provider 管理。
+非模态侧栏容器。`presetSbean()` 负责构建回退主题，运行时配置与持久化由本地 Provider 管理。
 
 Playground 只作为实现参考：本地 `/Users/jack/code/soybean-ui/apps/playground` 的 App.vue、
 theme.ts 和 theme-configurator.vue。本地 checkout 为 0.31.0，实际生成模板与依赖仍固定在

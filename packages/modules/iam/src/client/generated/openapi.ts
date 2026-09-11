@@ -95,6 +95,7 @@ export type components = {
             requestId: string;
         };
         IamAuthenticatedUser: {
+            avatarUrl: string | null;
             displayName: string;
             /** Format: uuid */
             id: string;
@@ -128,12 +129,7 @@ export type components = {
         } | {
             /** @enum {boolean} */
             authenticated: true;
-            user: {
-                /** Format: uuid */
-                id: string;
-                /** Format: uuid */
-                tenantId: string;
-            };
+            user: components["schemas"]["IamAuthenticatedUser"];
         };
     };
     responses: never;

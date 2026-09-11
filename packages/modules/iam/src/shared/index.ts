@@ -13,6 +13,7 @@ export const authenticatedUserSchema = z
     id: z.uuid(),
     tenantId: z.uuid(),
     displayName: z.string(),
+    avatarUrl: z.string().max(512).nullable(),
   })
   .meta({ id: 'IamAuthenticatedUser' })
 
@@ -31,7 +32,7 @@ export const sessionStatusSchema = z
     z.object({ authenticated: z.literal(false) }),
     z.object({
       authenticated: z.literal(true),
-      user: authenticatedUserSchema.pick({ id: true, tenantId: true }),
+      user: authenticatedUserSchema,
     }),
   ])
   .meta({ id: 'IamSessionStatus' })
@@ -44,6 +45,7 @@ export const refreshSessionResultSchema = z
   .meta({ id: 'IamRefreshSessionResult' })
 
 export type LoginInput = z.infer<typeof loginInputSchema>
+export type AuthenticatedUser = z.infer<typeof authenticatedUserSchema>
 export type LoginResult = z.infer<typeof loginResultSchema>
 export type RefreshSessionResult = z.infer<typeof refreshSessionResultSchema>
 export type SessionStatus = z.infer<typeof sessionStatusSchema>
