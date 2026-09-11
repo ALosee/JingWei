@@ -35,6 +35,13 @@ const logger = {
   warn: vi.fn(),
 }
 
+const accountStubs = {
+  readAccount: { execute: vi.fn() },
+  updateAccount: { execute: vi.fn() },
+  changePassword: { execute: vi.fn() },
+  readAccountRoles: { execute: vi.fn() },
+}
+
 describe('IAM session HTTP boundary', () => {
   it('returns the mutable safe user projection for an authenticated session', async () => {
     const current = session()
@@ -50,6 +57,7 @@ describe('IAM session HTTP boundary', () => {
       authenticateUser: { execute: vi.fn() },
       readCurrentUser: { execute: readCurrentUser },
       sessions: { logout: vi.fn(), refresh: vi.fn() },
+      ...accountStubs,
       secureCookies: false,
       logger,
     })
@@ -103,6 +111,7 @@ describe('IAM session HTTP boundary', () => {
         refresh: vi.fn(),
       },
       readCurrentUser: { execute: vi.fn() },
+      ...accountStubs,
       secureCookies: true,
       logger,
     })
@@ -161,6 +170,7 @@ describe('IAM session HTTP boundary', () => {
       authenticateUser: { execute: vi.fn() },
       sessions: { logout: vi.fn(), refresh },
       readCurrentUser: { execute: vi.fn() },
+      ...accountStubs,
       secureCookies: false,
       logger,
     })

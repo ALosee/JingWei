@@ -14,6 +14,9 @@ describe('module OpenAPI documents', () => {
       '/api/v1/iam/session',
       '/api/v1/iam/sessions/refresh',
       '/api/v1/iam/sessions/current',
+      '/api/v1/iam/account',
+      '/api/v1/iam/account/password',
+      '/api/v1/iam/account/roles',
     ])
     expect(document.paths?.['/api/v1/iam/sessions']?.post?.operationId).toBe('iamCreateSession')
   })

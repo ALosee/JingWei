@@ -8,11 +8,17 @@ import {
 } from '@jingwei/api-client'
 
 import {
+  accountProfileSchema,
+  accountRolesSchema,
   loginResultSchema,
   sessionStatusSchema,
+  type AccountProfile,
+  type AccountRoles,
+  type ChangePasswordInput,
   type LoginInput,
   type LoginResult,
   type SessionStatus,
+  type UpdateAccountInput,
 } from '../shared/index.js'
 import type { paths } from './generated/openapi.js'
 
@@ -49,4 +55,51 @@ export async function getSessionStatus(): Promise<SessionStatus> {
 
 export function logout(): Promise<void> {
   return executeApiRequest(() => api.throwingClient.delete('/sessions/current'))
+}
+
+export function getAccountProfile(options?: ApiRequestOptions): Promise<ApiResult<AccountProfile>> {
+  return toApiResult(
+    api.client.get('/account', {
+      schema: accountProfileSchema,
+      ...options,
+    }),
+  )
+}
+
+export function updateAccountProfile(
+  input: UpdateAccountInput,
+  options?: ApiRequestOptions,
+): Promise<ApiResult<AccountProfile>> {
+  const body = {
+    ...(input.displayName === undefined ? {} : { displayName: input.displayName }),
+    ...(input.avatarUrl === undefined ? {} : { avatarUrl: input.avatarUrl }),
+  }
+  return toApiResult(
+    api.client.patch('/account', {
+      body,
+      schema: accountProfileSchema,
+      ...options,
+    }),
+  )
+}
+
+export function changeAccountPassword(
+  input: ChangePasswordInput,
+  options?: ApiRequestOptions,
+): Promise<ApiResult<void>> {
+  return toApiResult(
+    api.client.post('/account/password', {
+      body: input,
+      ...options,
+    }),
+  )
+}
+
+export function getAccountRoles(options?: ApiRequestOptions): Promise<ApiResult<AccountRoles>> {
+  return toApiResult(
+    api.client.get('/account/roles', {
+      schema: accountRolesSchema,
+      ...options,
+    }),
+  )
 }

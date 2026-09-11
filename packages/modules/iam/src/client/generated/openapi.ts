@@ -4,6 +4,64 @@
  */
 
 export type paths = {
+    "/api/v1/iam/account": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 读取当前账号资料
+         * @description 始终读取当前会话用户本人的账号投影，不接受调用方指定的用户 id。
+         */
+        get: operations["iamGetAccount"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** 更新当前账号资料 */
+        patch: operations["iamUpdateAccount"];
+        trace?: never;
+    };
+    "/api/v1/iam/account/password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 修改当前账号密码
+         * @description 校验当前密码后写入新摘要，并撤销该用户全部会话（含当前会话）。
+         */
+        post: operations["iamChangeAccountPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/iam/account/roles": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 读取当前账号的活跃角色 */
+        get: operations["iamGetAccountRoles"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/iam/session": {
         parameters: {
             query?: never;
@@ -94,6 +152,32 @@ export type components = {
             message: string;
             requestId: string;
         };
+        IamAccountProfile: {
+            avatarUrl: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            displayName: string;
+            email: string | null;
+            /** Format: uuid */
+            id: string;
+            /** Format: date-time */
+            lastLoginAt: string | null;
+            /** Format: date-time */
+            passwordChangedAt: string;
+            phone: string | null;
+            /** @enum {string} */
+            status: "INVITED" | "ACTIVE" | "DISABLED" | "LOCKED";
+            username: string;
+        };
+        IamAccountRole: {
+            code: string;
+            name: string;
+            /** @enum {string} */
+            status: "INVITED" | "ACTIVE" | "DISABLED" | "LOCKED";
+        };
+        IamAccountRoles: {
+            roles: components["schemas"]["IamAccountRole"][];
+        };
         IamAuthenticatedUser: {
             avatarUrl: string | null;
             displayName: string;
@@ -101,6 +185,10 @@ export type components = {
             id: string;
             /** Format: uuid */
             tenantId: string;
+        };
+        IamChangePasswordInput: {
+            currentPassword: string;
+            newPassword: string;
         };
         /** @description Credentials used to create an opaque token family */
         IamLoginInput: {
@@ -131,6 +219,10 @@ export type components = {
             authenticated: true;
             user: components["schemas"]["IamAuthenticatedUser"];
         };
+        IamUpdateAccountInput: {
+            avatarUrl?: string | null;
+            displayName?: string;
+        };
     };
     responses: never;
     parameters: never;
@@ -140,6 +232,227 @@ export type components = {
 };
 export type $defs = Record<string, never>;
 export interface operations {
+    iamGetAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 当前账号资料 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IamAccountProfile"];
+                };
+            };
+            /** @description 尚未登录 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 账号不可用 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 服务器内部错误 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    iamUpdateAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IamUpdateAccountInput"];
+            };
+        };
+        responses: {
+            /** @description 更新后的账号资料 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IamAccountProfile"];
+                };
+            };
+            /** @description 请求体无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 尚未登录 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Origin 或 CSRF 校验失败 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 账号不可用 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 服务器内部错误 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    iamChangeAccountPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IamChangePasswordInput"];
+            };
+        };
+        responses: {
+            /** @description 密码已更新，全部会话已撤销 */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description 请求体无效或当前密码不正确 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 尚未登录 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Origin 或 CSRF 校验失败 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 账号不可用 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 服务器内部错误 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    iamGetAccountRoles: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 活跃角色列表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IamAccountRoles"];
+                };
+            };
+            /** @description 尚未登录 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 服务器内部错误 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     iamGetSession: {
         parameters: {
             query?: never;

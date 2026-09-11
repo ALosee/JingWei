@@ -20,26 +20,47 @@ import type { UserStatus } from '../domain/user-status.js'
 interface UserTable {
   id: string
   tenant_id: string
+  username: string
   username_normalized: string
+  email: string | null
   email_normalized: string | null
+  phone: string | null
   display_name: string
   avatar: string | null
   status: UserStatus
   last_login_at: Date | null
+  created_at: Date
   updated_at: Date
 }
 
 interface CredentialTable {
   user_id: string
   password_hash: string
+  password_changed_at: Date
   failed_attempts: number
   locked_until: Date | null
   updated_at: Date
 }
 
+interface RoleTable {
+  id: string
+  tenant_id: string
+  code: string
+  name: string
+  status: UserStatus
+}
+
+interface UserRoleTable {
+  tenant_id: string
+  user_id: string
+  role_id: string
+}
+
 export interface IamDatabase {
   'iam.user': UserTable
   'iam.user_credential': CredentialTable
+  'iam.role': RoleTable
+  'iam.user_role': UserRoleTable
 }
 
 export class PostgresCredentialStore implements CredentialStore, AuthenticationUnitOfWork {

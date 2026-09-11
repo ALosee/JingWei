@@ -99,6 +99,22 @@ src/
 
 撤销当前 token family、删除 access/refresh/CSRF 三个 Cookie，成功返回 `204`。由于是已认证修改请求，它由平台中间件执行 Origin 和 CSRF 校验。
 
+### `GET /api/v1/iam/account`
+
+读取当前会话用户本人的账号资料投影（用户名、显示名、邮箱、手机、头像、状态、最近登录、创建时间、密码最近修改时间）。不接受调用方指定的用户 id。
+
+### `PATCH /api/v1/iam/account`
+
+更新当前用户的显示名与头像 URL，成功返回更新后的资料。要求 Origin 与 CSRF。
+
+### `POST /api/v1/iam/account/password`
+
+校验当前密码后写入新摘要，并撤销该用户全部会话（含当前会话）。成功返回 `204`；客户端应引导重新登录。
+
+### `GET /api/v1/iam/account/roles`
+
+返回当前用户已分配且状态为 ACTIVE 的角色列表。
+
 完整协议见 [HTTP API 手册](../../../docs/http-api.md)。
 
 ## 认证流程
@@ -134,7 +150,9 @@ Web 登录页只调用 `useSignIn()` 绑定字段和提交事件。登录 client
 
 已经实现认证、登录失败计数/临时锁定/成功时间更新、opaque Access/Refresh Token Family 创建/状态恢复/轮换/复用检测/撤销、凭据 PostgreSQL store，以及供 Navigation 使用的真实 IamAccess。IamAccess 每次查询活跃用户/角色，多角色取并集，不使用 is_super 绕过；requirePermission 先检查 Edition registry/capability，仅处理无 Data Scope 的功能权限。它不等于通用 AuthorizationEvaluator。
 
-角色管理 CRUD、通用权限投影同步、完整 Data Scope evaluator 和完整账号资料查询仍是后续工作。开发种子会投影当前 Edition 的功能权限并初始化显式管理员 grant，但不能当作生产权限同步服务。
+角色管理 CRUD、通用权限投影同步、完整 Data Scope evaluator、邮箱/手机变更与验证码、多设备会话列表仍是后续工作。开发种子会投影当前 Edition 的功能权限并初始化显式管理员 grant，但不能当作生产权限同步服务。
+
+个人账号页已支持资料查看/编辑、修改密码（全会话撤销）和角色只读展示；路由使用 `/account?tab=profile|security|roles`，不引入无意义的 path id。
 
 角色导航授权由 Navigation 拥有的 navigation.role_navigation 保存 role UUID 与 navigation code，不在 IAM 中新建路由/菜单表，不建立跨模块外键。导航 grant 不能授予业务 API 权限；Navigation 的角色授权写接口同时要求 navigation.manage 与 iam.role.manage。
 

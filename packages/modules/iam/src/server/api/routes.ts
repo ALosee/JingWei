@@ -13,6 +13,12 @@ import {
 import { ApplicationError } from '@jingwei/kernel'
 import { createApiRouter, type ServerAppEnv } from '@jingwei/module-sdk/server'
 
+import type {
+  ChangeAccountPassword,
+  ReadAccountProfile,
+  ReadAccountRoles,
+  UpdateAccountProfile,
+} from '../application/account-profile.js'
 import type { AuthenticateUser } from '../application/authenticate-user.js'
 import type { ReadCurrentUser } from '../application/read-current-user.js'
 import type { SessionLifecycle } from '../application/session-lifecycle.js'
@@ -27,6 +33,10 @@ export function createIamRoutes(dependencies: {
   readonly authenticateUser: Pick<AuthenticateUser, 'execute'>
   readonly readCurrentUser: Pick<ReadCurrentUser, 'execute'>
   readonly sessions: Pick<SessionLifecycle, 'logout' | 'refresh'>
+  readonly readAccount: Pick<ReadAccountProfile, 'execute'>
+  readonly updateAccount: Pick<UpdateAccountProfile, 'execute'>
+  readonly changePassword: Pick<ChangeAccountPassword, 'execute'>
+  readonly readAccountRoles: Pick<ReadAccountRoles, 'execute'>
   readonly secureCookies: boolean
   readonly logger: AuthenticationLogger
 }) {
@@ -143,7 +153,76 @@ export function createIamRoutes(dependencies: {
     )
     return context.body(null, 204)
   })
+  app.openapi(iamApiRoutes.getAccount, async (context) => {
+    const auth = requireAuth(context)
+    return context.json(
+      await dependencies.readAccount.execute({
+        tenantId: auth.tenantId,
+        userId: auth.userId,
+      }),
+      200,
+    )
+  })
+  app.openapi(iamApiRoutes.updateAccount, async (context) => {
+    const auth = requireAuth(context)
+    const profile = await dependencies.updateAccount.execute(
+      {
+        requestId: auth.requestId,
+        tenantId: auth.tenantId,
+        userId: auth.userId,
+      },
+      context.req.valid('json'),
+    )
+    dependencies.logger.info(
+      {
+        requestId: auth.requestId,
+        tenantId: auth.tenantId,
+        userId: auth.userId,
+        module: 'iam',
+        action: 'account.profile.update',
+      },
+      'iam.account.profile-updated',
+    )
+    return context.json(profile, 200)
+  })
+  app.openapi(iamApiRoutes.changePassword, async (context) => {
+    const auth = requireAuth(context)
+    await dependencies.changePassword.execute(
+      {
+        requestId: auth.requestId,
+        tenantId: auth.tenantId,
+        userId: auth.userId,
+      },
+      context.req.valid('json'),
+    )
+    clearSessionCookies(context)
+    dependencies.logger.info(
+      {
+        requestId: auth.requestId,
+        tenantId: auth.tenantId,
+        userId: auth.userId,
+        module: 'iam',
+        action: 'account.password.change',
+      },
+      'iam.account.password-changed',
+    )
+    return context.body(null, 204)
+  })
+  app.openapi(iamApiRoutes.getAccountRoles, async (context) => {
+    const auth = requireAuth(context)
+    const roles = await dependencies.readAccountRoles.execute({
+      tenantId: auth.tenantId,
+      userId: auth.userId,
+    })
+    return context.json({ roles }, 200)
+  })
   return app
+}
+
+function requireAuth(context: Context<ServerAppEnv>) {
+  const auth = context.get('authContext')
+  if (auth === null) throw unauthenticated()
+  return auth
 }
 
 function setSessionCookies(
