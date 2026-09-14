@@ -1,5 +1,5 @@
 // @unocss-include
-import { scv } from '@soybeanjs/cva';
+import { scv } from '@soybeanjs/cva'
 
 export const collapsibleVariants = scv({
   slots: {
@@ -7,29 +7,29 @@ export const collapsibleVariants = scv({
     trigger: '',
     content: [
       'overflow-hidden transition will-change-auto',
-      'data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up'
-    ]
+      'data-[state=open]:animate-collapsible-down data-[state=closed]:animate-collapsible-up',
+    ],
   },
   variants: {
     size: {
       xs: {
-        root: 'text-2xs'
+        root: 'text-2xs',
       },
       sm: {
-        root: 'text-xs'
+        root: 'text-xs',
       },
       md: {
-        root: 'text-sm'
+        root: 'text-sm',
       },
       lg: {
-        root: 'text-base'
+        root: 'text-base',
       },
       xl: {
-        root: 'text-lg'
+        root: 'text-lg',
       },
       '2xl': {
-        root: 'text-xl'
-      }
-    }
-  }
-});
+        root: 'text-xl',
+      },
+    },
+  },
+})

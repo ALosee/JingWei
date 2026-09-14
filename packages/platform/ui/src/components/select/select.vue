@@ -1,35 +1,36 @@
 <script setup lang="ts" generic="T extends DefinedValue, M extends boolean = false">
-import { computed } from 'vue';
-import { useForwardListeners, useOmitProps } from '@soybeanjs/headless/composables';
-import { SelectCompact, provideSelectUi } from '@soybeanjs/headless/select';
-import { keysOf } from '@soybeanjs/headless/shared';
-import type { DefinedValue } from '@soybeanjs/headless/types';
-import { selectVariants } from '#ui/styles/select';
-import type { SelectProps, SelectEmits, SelectSlots } from './types';
+import { selectVariants } from '#ui/styles/select'
+import { useForwardListeners, useOmitProps } from '@soybeanjs/headless/composables'
+import { SelectCompact, provideSelectUi } from '@soybeanjs/headless/select'
+import { keysOf } from '@soybeanjs/headless/shared'
+import type { DefinedValue } from '@soybeanjs/headless/types'
+import { computed } from 'vue'
+
+import type { SelectProps, SelectEmits, SelectSlots } from './types'
 
 defineOptions({
   name: 'SSelect',
-  inheritAttrs: false
-});
+  inheritAttrs: false,
+})
 
 const props = withDefaults(defineProps<SelectProps<T, M>>(), {
   open: undefined,
-  showTriggerIcon: true
-});
+  showTriggerIcon: true,
+})
 
-const emit = defineEmits<SelectEmits<T, M>>();
+const emit = defineEmits<SelectEmits<T, M>>()
 
-const slots = defineSlots<SelectSlots<T, M>>();
+const slots = defineSlots<SelectSlots<T, M>>()
 
-const forwardedProps = useOmitProps(props, ['class', 'ui', 'size']);
+const forwardedProps = useOmitProps(props, ['class', 'ui', 'size'])
 
-const listeners = useForwardListeners(emit);
+const listeners = useForwardListeners(emit)
 
-const slotNames = computed(() => keysOf(slots));
+const slotNames = computed(() => keysOf(slots))
 
-const ui = computed(() => selectVariants({ size: props.size }, props.ui, { trigger: props.class }));
+const ui = computed(() => selectVariants({ size: props.size }, props.ui, { trigger: props.class }))
 
-provideSelectUi(ui);
+provideSelectUi(ui)
 </script>
 
 <template>

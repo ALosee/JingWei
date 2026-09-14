@@ -1,41 +1,52 @@
-import type { SelectCompactEmits, SelectCompactProps, SelectCompactSlots, SelectUi } from '@soybeanjs/headless/select';
-import type { ClassValue, DefinedValue } from '@soybeanjs/headless/types';
-import type { ThemeSize } from '#ui/theme';
+import type { ThemeSize } from '#ui/theme'
+import type {
+  SelectCompactEmits,
+  SelectCompactProps,
+  SelectCompactSlots,
+  SelectUi,
+} from '@soybeanjs/headless/select'
+import type { ClassValue, DefinedValue } from '@soybeanjs/headless/types'
 
 /**
  * Properties for the Select component.
  */
 export interface SelectProps<
   T extends DefinedValue = DefinedValue,
-  M extends boolean = false
+  M extends boolean = false,
 > extends SelectCompactProps<T, M> {
   /**
    * the class of select trigger
    */
-  class?: ClassValue;
+  class?: ClassValue
   /**
    * Per-slot class overrides for the component.
    */
-  ui?: Partial<SelectUi>;
+  ui?: Partial<SelectUi>
   /**
    * Visual size of the component.
    */
-  size?: ThemeSize;
+  size?: ThemeSize
 }
 
 /**
  * Events for the Select component.
  */
-export type SelectEmits<T extends DefinedValue = DefinedValue, M extends boolean = false> = SelectCompactEmits<T, M>;
+export type SelectEmits<
+  T extends DefinedValue = DefinedValue,
+  M extends boolean = false,
+> = SelectCompactEmits<T, M>
 
 /**
  * Slots for the Select component.
  */
-export type SelectSlots<T extends DefinedValue = DefinedValue, M extends boolean = false> = SelectCompactSlots<T, M>;
+export type SelectSlots<
+  T extends DefinedValue = DefinedValue,
+  M extends boolean = false,
+> = SelectCompactSlots<T, M>
 
 export type {
   SelectSingleOptionData,
   SelectGroupOptionData,
   SelectOptionData,
-  SelectItemEvent
-} from '@soybeanjs/headless/select';
+  SelectItemEvent,
+} from '@soybeanjs/headless/select'

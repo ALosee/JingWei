@@ -1,12 +1,17 @@
-import type { PaletteColorLevel, SimplePaletteKey, TailwindPaletteKey } from '@soybeanjs/colord/palette';
-import type { ColorFormat, ColorValue } from '@soybeanjs/theme';
-import type { ThemeSize } from '../../theme';
+import type {
+  PaletteColorLevel,
+  SimplePaletteKey,
+  TailwindPaletteKey,
+} from '@soybeanjs/colord/palette'
+import type { ColorFormat, ColorValue } from '@soybeanjs/theme'
+
+import type { ThemeSize } from '../../theme'
 
 /**
  * The value of the top-level selector: a custom color, a tailwind palette key,
  * or a simple palette key.
  */
-export type PaletteSelectValue = 'custom' | TailwindPaletteKey | SimplePaletteKey;
+export type PaletteSelectValue = 'custom' | TailwindPaletteKey | SimplePaletteKey
 
 /**
  * The payload emitted by the `paletteChange` event, exposing the full generated
@@ -16,17 +21,17 @@ export interface PaletteChangePayload {
   /**
    * The current `ColorValue` (the committed model value).
    */
-  value: ColorValue;
+  value: ColorValue
   /**
    * The full palette colors indexed by level, in the configured `format`.
    * Empty when a simple palette key is selected.
    */
-  palette: Partial<Record<PaletteColorLevel, string>>;
+  palette: Partial<Record<PaletteColorLevel, string>>
   /**
    * Whether the custom palette is snapped to the nearest tailwind palette
    * (`generateNearestPalette`) — the recommended palette.
    */
-  recommended: boolean;
+  recommended: boolean
 }
 
 /**
@@ -38,13 +43,13 @@ export interface PalettePickerProps {
    *
    * @default 'md'
    */
-  size?: ThemeSize;
+  size?: ThemeSize
   /**
    * Output color space used to serialize the custom color into a `ColorValue`.
    *
    * @default 'hsl'
    */
-  format?: ColorFormat;
+  format?: ColorFormat
 }
 
 /**
@@ -54,9 +59,9 @@ export interface PalettePickerEmits {
   /**
    * Emitted when the model value changes.
    */
-  (e: 'update:modelValue', value: ColorValue): void;
+  (e: 'update:modelValue', value: ColorValue): void
   /**
    * Emitted with the full generated palette whenever the active color changes.
    */
-  (e: 'paletteChange', payload: PaletteChangePayload): void;
+  (e: 'paletteChange', payload: PaletteChangePayload): void
 }

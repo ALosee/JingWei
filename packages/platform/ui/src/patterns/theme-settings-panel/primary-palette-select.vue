@@ -1,35 +1,36 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import type { PaletteColorLevel } from '@soybeanjs/colord/palette';
-import { getRegistry } from '@soybeanjs/theme';
-import type { PrimaryColorKey } from '@soybeanjs/theme';
-import SSelect from '../../components/select/select.vue';
-import type { SelectOptionData } from '../../components/select/types';
-import ColorDecorator from './color-decorator.vue';
-import { useThemeCustomizerLocale } from './use-locale';
+import type { PaletteColorLevel } from '@soybeanjs/colord/palette'
+import { getRegistry } from '@soybeanjs/theme'
+import type { PrimaryColorKey } from '@soybeanjs/theme'
+import { computed } from 'vue'
+
+import SSelect from '../../components/select/select.vue'
+import type { SelectOptionData } from '../../components/select/types'
+import ColorDecorator from './color-decorator.vue'
+import { useThemeCustomizerLocale } from './use-locale'
 
 interface Props {
-  decorateLevels?: PaletteColorLevel[];
+  decorateLevels?: PaletteColorLevel[]
 }
 
-defineProps<Props>();
+defineProps<Props>()
 
-const { resolveOption } = useThemeCustomizerLocale();
+const { resolveOption } = useThemeCustomizerLocale()
 
 const palette = defineModel<PrimaryColorKey>({
-  required: true
-});
+  required: true,
+})
 
-const primaryRegistry = getRegistry().primary;
+const primaryRegistry = getRegistry().primary
 
-const currentColors = computed(() => primaryRegistry[palette.value]?.colors ?? {});
+const currentColors = computed(() => primaryRegistry[palette.value]?.colors ?? {})
 
 const items = computed<SelectOptionData<PrimaryColorKey>[]>(() =>
-  Object.keys(primaryRegistry).map(key => ({
+  Object.keys(primaryRegistry).map((key) => ({
     label: resolveOption('palette', key),
-    value: key
-  }))
-);
+    value: key,
+  })),
+)
 </script>
 
 <template>
@@ -38,7 +39,10 @@ const items = computed<SelectOptionData<PrimaryColorKey>[]>(() =>
       <ColorDecorator :colors="currentColors" :levels="decorateLevels" />
     </template>
     <template #item-leading="{ item }">
-      <ColorDecorator :colors="primaryRegistry[item.value]?.colors ?? {}" :levels="decorateLevels" />
+      <ColorDecorator
+        :colors="primaryRegistry[item.value]?.colors ?? {}"
+        :levels="decorateLevels"
+      />
     </template>
   </SSelect>
 </template>

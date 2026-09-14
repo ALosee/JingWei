@@ -1,4 +1,4 @@
-import type { ThemeSize } from '../../theme';
+import type { ThemeSize } from '../../theme'
 
 /**
  * Properties for the ThemeModeSelect component.
@@ -13,12 +13,12 @@ export interface ThemeModeSelectProps {
    *
    * @default 'md'
    */
-  size?: ThemeSize;
+  size?: ThemeSize
   /**
    * Whether to render a scheme icon (monitor / sun / moon) in the trigger and
    * each option.
    *
    * @default true
    */
-  showIcon?: boolean;
+  showIcon?: boolean
 }

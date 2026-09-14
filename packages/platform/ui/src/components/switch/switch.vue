@@ -1,41 +1,42 @@
 <script setup lang="ts" generic="T extends AcceptableBooleanValue = boolean">
-import { computed } from 'vue';
-import { useOmitProps } from '@soybeanjs/headless/composables';
-import { keysOf } from '@soybeanjs/headless/shared';
-import { SwitchCompact, provideSwitchUi } from '@soybeanjs/headless/switch';
-import type { AcceptableBooleanValue } from '@soybeanjs/headless/types';
-import { switchVariants } from '#ui/styles/switch';
-import type { SwitchProps, SwitchEmits, SwitchSlots } from './types';
+import { switchVariants } from '#ui/styles/switch'
+import { useOmitProps } from '@soybeanjs/headless/composables'
+import { keysOf } from '@soybeanjs/headless/shared'
+import { SwitchCompact, provideSwitchUi } from '@soybeanjs/headless/switch'
+import type { AcceptableBooleanValue } from '@soybeanjs/headless/types'
+import { computed } from 'vue'
+
+import type { SwitchProps, SwitchEmits, SwitchSlots } from './types'
 
 defineOptions({
-  name: 'SSwitch'
-});
+  name: 'SSwitch',
+})
 
 const props = withDefaults(defineProps<SwitchProps<T>>(), {
-  modelValue: undefined
-});
+  modelValue: undefined,
+})
 
-const emit = defineEmits<SwitchEmits<T>>();
+const emit = defineEmits<SwitchEmits<T>>()
 
-const slots = defineSlots<SwitchSlots<T>>();
+const slots = defineSlots<SwitchSlots<T>>()
 
-const forwardedProps = useOmitProps(props, ['class', 'ui', 'color', 'size', 'shape']);
+const forwardedProps = useOmitProps(props, ['class', 'ui', 'color', 'size', 'shape'])
 
-const slotNames = computed(() => keysOf(slots));
+const slotNames = computed(() => keysOf(slots))
 
 const ui = computed(() =>
   switchVariants(
     {
       color: props.color,
       size: props.size,
-      shape: props.shape
+      shape: props.shape,
     },
     props.ui,
-    { root: props.class }
-  )
-);
+    { root: props.class },
+  ),
+)
 
-provideSwitchUi(ui);
+provideSwitchUi(ui)
 </script>
 
 <template>

@@ -1,11 +1,11 @@
+import type { ThemeSize } from '#ui/theme'
 import type {
   InputNumberCompactEmits,
   InputNumberCompactProps,
   InputNumberCompactSlots,
-  InputNumberUi
-} from '@soybeanjs/headless/input-number';
-import type { ClassValue } from '@soybeanjs/headless/types';
-import type { ThemeSize } from '#ui/theme';
+  InputNumberUi,
+} from '@soybeanjs/headless/input-number'
+import type { ClassValue } from '@soybeanjs/headless/types'
 
 /**
  * Properties for the InputNumber component.
@@ -14,29 +14,29 @@ export interface InputNumberProps extends InputNumberCompactProps {
   /**
    * Additional class names applied to the root element.
    */
-  class?: ClassValue;
+  class?: ClassValue
   /**
    * Visual size of the component.
    */
-  size?: ThemeSize;
+  size?: ThemeSize
   /**
    * Per-slot class overrides for the component.
    */
-  ui?: Partial<InputNumberUi>;
+  ui?: Partial<InputNumberUi>
   /**
    * Whether to center the input.
    *
    * @defaultValue false
    */
-  center?: boolean;
+  center?: boolean
 }
 
 /**
  * Events for the InputNumber component.
  */
-export type InputNumberEmits = InputNumberCompactEmits;
+export type InputNumberEmits = InputNumberCompactEmits
 
 /**
  * Slots for the InputNumber component.
  */
-export type InputNumberSlots = InputNumberCompactSlots;
+export type InputNumberSlots = InputNumberCompactSlots

@@ -1,31 +1,34 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { ColorPickerCompact, provideColorPickerUi } from '@soybeanjs/headless/color-picker';
-import { useForwardListeners, useOmitProps } from '@soybeanjs/headless/composables';
-import { colorPickerVariants } from '#ui/styles/color-picker';
-import type { ColorPickerProps, ColorPickerEmits } from './types';
+import { colorPickerVariants } from '#ui/styles/color-picker'
+import { ColorPickerCompact, provideColorPickerUi } from '@soybeanjs/headless/color-picker'
+import { useForwardListeners, useOmitProps } from '@soybeanjs/headless/composables'
+import { computed } from 'vue'
+
+import type { ColorPickerProps, ColorPickerEmits } from './types'
 
 defineOptions({
-  name: 'SColorPicker'
-});
+  name: 'SColorPicker',
+})
 
 const props = withDefaults(defineProps<ColorPickerProps>(), {
   open: undefined,
   showArrow: true,
   showAlpha: true,
   showFields: true,
-  showSwatches: true
-});
+  showSwatches: true,
+})
 
-const emit = defineEmits<ColorPickerEmits>();
+const emit = defineEmits<ColorPickerEmits>()
 
-const forwardedProps = useOmitProps(props, ['class', 'size', 'ui']);
+const forwardedProps = useOmitProps(props, ['class', 'size', 'ui'])
 
-const listeners = useForwardListeners(emit);
+const listeners = useForwardListeners(emit)
 
-const ui = computed(() => colorPickerVariants({ size: props.size }, props.ui, { trigger: props.class }));
+const ui = computed(() =>
+  colorPickerVariants({ size: props.size }, props.ui, { trigger: props.class }),
+)
 
-provideColorPickerUi(ui);
+provideColorPickerUi(ui)
 </script>
 
 <template>

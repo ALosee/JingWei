@@ -1,6 +1,7 @@
-import { computed } from 'vue';
-import type { ComputedRef } from 'vue';
-import { useConfigProvider } from '../../components/config-provider/context';
+import { computed } from 'vue'
+import type { ComputedRef } from 'vue'
+
+import { useConfigProvider } from '../../components/config-provider/context'
 
 /**
  * Shared UI-layer locale messages for the theme components (`ThemeCustomizer`,
@@ -12,162 +13,162 @@ import { useConfigProvider } from '../../components/config-provider/context';
 export interface ThemeLocaleMessages {
   /** Section and control labels (mode / palette / base / radius / …). */
   sections: {
-    mode: string;
-    palette: string;
-    base: string;
-    primary: string;
-    radius: string;
-    size: string;
-    scheme: string;
-    feedback: string;
-    chart: string;
-    sidebar: string;
-    advanced: string;
-    theme: string;
-    custom: string;
-    menu: string;
-    levels: string;
-    lightLevel: string;
-    darkLevel: string;
-    borderOpacity: string;
-    cssVars: string;
-    reset: string;
-  };
+    mode: string
+    palette: string
+    base: string
+    primary: string
+    radius: string
+    size: string
+    scheme: string
+    feedback: string
+    chart: string
+    sidebar: string
+    advanced: string
+    theme: string
+    custom: string
+    menu: string
+    levels: string
+    lightLevel: string
+    darkLevel: string
+    borderOpacity: string
+    cssVars: string
+    reset: string
+  }
   /** Variant group labels (surfaces / hairlines / …). */
   groups: {
-    surfaces: string;
-    palette: string;
-    hairlines: string;
-    sidebar: string;
-    charts: string;
-    feedback: string;
-  };
+    surfaces: string
+    palette: string
+    hairlines: string
+    sidebar: string
+    charts: string
+    feedback: string
+  }
   /** Variant token labels (background / card / primary / …). */
   variants: {
-    background: string;
-    foreground: string;
-    card: string;
-    cardForeground: string;
-    popover: string;
-    popoverForeground: string;
-    primary: string;
-    primaryForeground: string;
-    ring: string;
-    secondary: string;
-    secondaryForeground: string;
-    muted: string;
-    mutedForeground: string;
-    accent: string;
-    accentForeground: string;
-    border: string;
-    input: string;
-    sidebar: string;
-    sidebarForeground: string;
-    sidebarPrimary: string;
-    sidebarPrimaryForeground: string;
-    sidebarAccent: string;
-    sidebarAccentForeground: string;
-    sidebarBorder: string;
-    sidebarRing: string;
-    chart1: string;
-    chart2: string;
-    chart3: string;
-    chart4: string;
-    chart5: string;
-    destructive: string;
-    destructiveForeground: string;
-    success: string;
-    successForeground: string;
-    warning: string;
-    warningForeground: string;
-    info: string;
-    infoForeground: string;
-    carbon: string;
-    carbonForeground: string;
-  };
+    background: string
+    foreground: string
+    card: string
+    cardForeground: string
+    popover: string
+    popoverForeground: string
+    primary: string
+    primaryForeground: string
+    ring: string
+    secondary: string
+    secondaryForeground: string
+    muted: string
+    mutedForeground: string
+    accent: string
+    accentForeground: string
+    border: string
+    input: string
+    sidebar: string
+    sidebarForeground: string
+    sidebarPrimary: string
+    sidebarPrimaryForeground: string
+    sidebarAccent: string
+    sidebarAccentForeground: string
+    sidebarBorder: string
+    sidebarRing: string
+    chart1: string
+    chart2: string
+    chart3: string
+    chart4: string
+    chart5: string
+    destructive: string
+    destructiveForeground: string
+    success: string
+    successForeground: string
+    warning: string
+    warningForeground: string
+    info: string
+    infoForeground: string
+    carbon: string
+    carbonForeground: string
+  }
   /** Select option labels (feedback / chart / sidebar schemes and menu settings). */
   options: {
     mode: {
-      auto: string;
-      light: string;
-      dark: string;
-    };
+      auto: string
+      light: string
+      dark: string
+    }
     level: {
-      lightness: string;
-      darkness: string;
-    };
+      lightness: string
+      darkness: string
+    }
     size: {
-      xs: string;
-      sm: string;
-      md: string;
-      lg: string;
-      xl: string;
-      xl2: string;
-    };
+      xs: string
+      sm: string
+      md: string
+      lg: string
+      xl: string
+      xl2: string
+    }
     palette: {
-      slate: string;
-      mist: string;
-      gray: string;
-      zinc: string;
-      neutral: string;
-      stone: string;
-      taupe: string;
-      olive: string;
-      mauve: string;
-      red: string;
-      orange: string;
-      amber: string;
-      yellow: string;
-      lime: string;
-      green: string;
-      emerald: string;
-      teal: string;
-      cyan: string;
-      sky: string;
-      blue: string;
-      indigo: string;
-      violet: string;
-      purple: string;
-      fuchsia: string;
-      pink: string;
-      rose: string;
-    };
+      slate: string
+      mist: string
+      gray: string
+      zinc: string
+      neutral: string
+      stone: string
+      taupe: string
+      olive: string
+      mauve: string
+      red: string
+      orange: string
+      amber: string
+      yellow: string
+      lime: string
+      green: string
+      emerald: string
+      teal: string
+      cyan: string
+      sky: string
+      blue: string
+      indigo: string
+      violet: string
+      purple: string
+      fuchsia: string
+      pink: string
+      rose: string
+    }
     feedback: {
-      classic: string;
-      vivid: string;
-      subtle: string;
-      modern: string;
-      professional: string;
-    };
+      classic: string
+      vivid: string
+      subtle: string
+      modern: string
+      professional: string
+    }
     chart: {
-      vivid: string;
-      cool: string;
-      warm: string;
-      natural: string;
-      minimal: string;
-    };
+      vivid: string
+      cool: string
+      warm: string
+      natural: string
+      minimal: string
+    }
     sidebar: {
-      derived: string;
-      invertedDark: string;
-      soft: string;
-      contrast: string;
-    };
-  };
+      derived: string
+      invertedDark: string
+      soft: string
+      contrast: string
+    }
+  }
   /** Labels used by the `PalettePicker` component. */
   palettePicker: {
     /** Label for the custom color option. */
-    custom: string;
+    custom: string
     /** Label for the recommended palette switch. */
-    recommendedPalette: string;
+    recommendedPalette: string
     /** Labels for the simple palette keys (inherit / current / transparent / black / white). */
     simpleKeys: {
-      inherit: string;
-      current: string;
-      transparent: string;
-      black: string;
-      white: string;
-    };
-  };
+      inherit: string
+      current: string
+      transparent: string
+      black: string
+      white: string
+    }
+  }
 }
 
 const themeLocaleEn: ThemeLocaleMessages = {
@@ -191,7 +192,7 @@ const themeLocaleEn: ThemeLocaleMessages = {
     darkLevel: 'Dark Level',
     borderOpacity: 'Border Opacity',
     cssVars: 'CSS Variable Theme',
-    reset: 'Reset'
+    reset: 'Reset',
   },
   groups: {
     surfaces: 'Surfaces',
@@ -199,7 +200,7 @@ const themeLocaleEn: ThemeLocaleMessages = {
     hairlines: 'Hairlines',
     sidebar: 'Sidebar',
     charts: 'Charts',
-    feedback: 'Feedback'
+    feedback: 'Feedback',
   },
   variants: {
     background: 'Background',
@@ -241,17 +242,17 @@ const themeLocaleEn: ThemeLocaleMessages = {
     info: 'Info',
     infoForeground: 'Info Foreground',
     carbon: 'Carbon',
-    carbonForeground: 'Carbon Foreground'
+    carbonForeground: 'Carbon Foreground',
   },
   options: {
     mode: {
       auto: 'Auto',
       light: 'Light',
-      dark: 'Dark'
+      dark: 'Dark',
     },
     level: {
       lightness: 'Lightness',
-      darkness: 'Darkness'
+      darkness: 'Darkness',
     },
     size: {
       xs: 'XS',
@@ -259,7 +260,7 @@ const themeLocaleEn: ThemeLocaleMessages = {
       md: 'MD',
       lg: 'LG',
       xl: 'XL',
-      xl2: '2XL'
+      xl2: '2XL',
     },
     palette: {
       slate: 'Slate',
@@ -287,28 +288,28 @@ const themeLocaleEn: ThemeLocaleMessages = {
       purple: 'Purple',
       fuchsia: 'Fuchsia',
       pink: 'Pink',
-      rose: 'Rose'
+      rose: 'Rose',
     },
     feedback: {
       classic: 'Classic',
       vivid: 'Vivid',
       subtle: 'Subtle',
       modern: 'Modern',
-      professional: 'Professional'
+      professional: 'Professional',
     },
     chart: {
       vivid: 'Vivid',
       cool: 'Cool',
       warm: 'Warm',
       natural: 'Natural',
-      minimal: 'Minimal'
+      minimal: 'Minimal',
     },
     sidebar: {
       derived: 'Derived',
       invertedDark: 'Inverted Dark',
       soft: 'Soft',
-      contrast: 'Contrast'
-    }
+      contrast: 'Contrast',
+    },
   },
   palettePicker: {
     custom: 'Custom',
@@ -318,10 +319,10 @@ const themeLocaleEn: ThemeLocaleMessages = {
       current: 'Current',
       transparent: 'Transparent',
       black: 'Black',
-      white: 'White'
-    }
-  }
-};
+      white: 'White',
+    },
+  },
+}
 
 const themeLocaleZh: ThemeLocaleMessages = {
   sections: {
@@ -344,7 +345,7 @@ const themeLocaleZh: ThemeLocaleMessages = {
     darkLevel: '深色层级',
     borderOpacity: '边框透明度',
     cssVars: 'CSS变量主题',
-    reset: '重置'
+    reset: '重置',
   },
   groups: {
     surfaces: '表面',
@@ -352,7 +353,7 @@ const themeLocaleZh: ThemeLocaleMessages = {
     hairlines: '描边',
     sidebar: '侧边栏',
     charts: '图表',
-    feedback: '反馈'
+    feedback: '反馈',
   },
   variants: {
     background: '背景',
@@ -394,17 +395,17 @@ const themeLocaleZh: ThemeLocaleMessages = {
     info: '信息',
     infoForeground: '信息前景',
     carbon: '炭黑',
-    carbonForeground: '炭黑前景'
+    carbonForeground: '炭黑前景',
   },
   options: {
     mode: {
       auto: '自动',
       light: '浅色',
-      dark: '深色'
+      dark: '深色',
     },
     level: {
       lightness: '亮度',
-      darkness: '暗度'
+      darkness: '暗度',
     },
     size: {
       xs: '特小',
@@ -412,7 +413,7 @@ const themeLocaleZh: ThemeLocaleMessages = {
       md: '中',
       lg: '大',
       xl: '特大',
-      xl2: '超大'
+      xl2: '超大',
     },
     palette: {
       slate: '石板灰',
@@ -440,28 +441,28 @@ const themeLocaleZh: ThemeLocaleMessages = {
       purple: '紫',
       fuchsia: '品红',
       pink: '粉',
-      rose: '玫红'
+      rose: '玫红',
     },
     feedback: {
       classic: '经典',
       vivid: '鲜明',
       subtle: '柔和',
       modern: '现代',
-      professional: '专业'
+      professional: '专业',
     },
     chart: {
       vivid: '鲜明',
       cool: '冷色',
       warm: '暖色',
       natural: '自然',
-      minimal: '极简'
+      minimal: '极简',
     },
     sidebar: {
       derived: '派生',
       invertedDark: '反转深色',
       soft: '柔和',
-      contrast: '高对比'
-    }
+      contrast: '高对比',
+    },
   },
   palettePicker: {
     custom: '自定义',
@@ -471,10 +472,10 @@ const themeLocaleZh: ThemeLocaleMessages = {
       current: '当前',
       transparent: '透明',
       black: '黑色',
-      white: '白色'
-    }
-  }
-};
+      white: '白色',
+    },
+  },
+}
 
 /**
  * Resolve the shared theme locale messages for the current UI locale.
@@ -483,11 +484,11 @@ const themeLocaleZh: ThemeLocaleMessages = {
  * (including the default `en`) falls back to English.
  */
 export function useThemeLocale(): ComputedRef<ThemeLocaleMessages> {
-  const config = useConfigProvider();
+  const config = useConfigProvider()
 
   return computed(() => {
-    const locale = config?.locale.value ?? 'zh-CN';
+    const locale = config?.locale.value ?? 'zh-CN'
 
-    return locale.startsWith('zh') ? themeLocaleZh : themeLocaleEn;
-  });
+    return locale.startsWith('zh') ? themeLocaleZh : themeLocaleEn
+  })
 }

@@ -1,7 +1,7 @@
-import type { SeparatorCompactProps, SeparatorUi } from '@soybeanjs/headless/separator';
-import type { Align, ClassValue } from '@soybeanjs/headless/types';
-import type { SeparatorBorder } from '#ui/styles/separator';
-import type { ThemeSize } from '#ui/theme';
+import type { SeparatorBorder } from '#ui/styles/separator'
+import type { ThemeSize } from '#ui/theme'
+import type { SeparatorCompactProps, SeparatorUi } from '@soybeanjs/headless/separator'
+import type { Align, ClassValue } from '@soybeanjs/headless/types'
 
 /**
  * Properties for the Separator component.
@@ -10,21 +10,21 @@ export interface SeparatorProps extends SeparatorCompactProps {
   /**
    * Additional class names applied to the root element.
    */
-  class?: ClassValue;
+  class?: ClassValue
   /**
    * Visual size of the component.
    */
-  size?: ThemeSize;
+  size?: ThemeSize
   /**
    * Per-slot class overrides for the component.
    */
-  ui?: Partial<SeparatorUi>;
+  ui?: Partial<SeparatorUi>
   /**
    * Align.
    */
-  align?: Align;
+  align?: Align
   /**
    * Border.
    */
-  border?: SeparatorBorder;
+  border?: SeparatorBorder
 }

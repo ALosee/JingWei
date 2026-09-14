@@ -1,10 +1,11 @@
-import type { ClassValue } from '@soybeanjs/headless/types';
-import type { ThemeSize } from '../../theme';
+import type { ClassValue } from '@soybeanjs/headless/types'
+
+import type { ThemeSize } from '../../theme'
 
 /**
  * the selectable sections of the theme customizer.
  */
-export type ThemeCustomizerSection = 'mode' | 'palette' | 'radius' | 'size' | 'scheme' | 'advanced';
+export type ThemeCustomizerSection = 'mode' | 'palette' | 'radius' | 'size' | 'scheme' | 'advanced'
 
 /**
  * Properties for the ThemeCustomizer component.
@@ -16,29 +17,29 @@ export interface ThemeCustomizerProps {
   /**
    * Additional class names applied to the root element.
    */
-  class?: ClassValue;
+  class?: ClassValue
   /**
    * The sections to show (defaults to all).
    */
-  sections?: ThemeCustomizerSection[];
+  sections?: ThemeCustomizerSection[]
   /**
    * The size forwarded to the underlying controls.
    */
-  size?: ThemeSize;
+  size?: ThemeSize
   /**
    * Whether to persist changes to storage.
    *
    * @default true
    */
-  persist?: boolean;
+  persist?: boolean
   /**
    * Whether to show the bottom action row (save preset / reset).
    *
    * @default true
    */
-  showActions?: boolean;
+  showActions?: boolean
   /**
    * Resolve a label key (section / group / variant token) to a display string.
    */
-  labelResolver?: (key: string) => string;
+  labelResolver?: (key: string) => string
 }

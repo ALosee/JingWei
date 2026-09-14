@@ -31,12 +31,12 @@ import type {
   MenuOptionData,
 } from './components/dropdown-menu/types'
 import type { IconProps, IconValue } from './components/icon/types'
-import type { InputEmits, InputProps, InputSlots } from './components/input/types'
 import type {
   InputNumberEmits,
   InputNumberProps,
   InputNumberSlots,
 } from './components/input-number/types'
+import type { InputEmits, InputProps, InputSlots } from './components/input/types'
 import type {
   LayoutCollapsible,
   LayoutEmits,
@@ -73,13 +73,13 @@ import type {
 import type { SeparatorProps } from './components/separator/types'
 import type { SliderEmits, SliderProps } from './components/slider/types'
 import type { SwitchEmits, SwitchProps, SwitchShape, SwitchSlots } from './components/switch/types'
+import type { TabsEmits, TabsOptionData, TabsProps, TabsSlots } from './components/tabs/types'
+import type { ToastProviderProps } from './components/toast/types'
+import type { TreeMenuEmits, TreeMenuProps, TreeMenuSlots } from './components/tree-menu/types'
 import type {
   ThemeCustomizerProps,
   ThemeCustomizerSection,
 } from './patterns/theme-settings-panel/types'
-import type { TabsEmits, TabsOptionData, TabsProps, TabsSlots } from './components/tabs/types'
-import type { ToastProviderProps } from './components/toast/types'
-import type { TreeMenuEmits, TreeMenuProps, TreeMenuSlots } from './components/tree-menu/types'
 
 type UiComponent<Props = object> = DefineComponent<Props>
 

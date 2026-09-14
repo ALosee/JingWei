@@ -1,38 +1,37 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { useForwardListeners, useOmitProps } from '@soybeanjs/headless/composables';
-import { SliderCompact, provideSliderUi } from '@soybeanjs/headless/slider';
-import { sliderVariants } from '#ui/styles/slider';
-import type { SliderProps, SliderEmits } from './types';
+import { sliderVariants } from '#ui/styles/slider'
+import { useForwardListeners, useOmitProps } from '@soybeanjs/headless/composables'
+import { SliderCompact, provideSliderUi } from '@soybeanjs/headless/slider'
+import { computed } from 'vue'
+
+import type { SliderProps, SliderEmits, SliderSlots } from './types'
 
 defineOptions({
-  name: 'SSlider'
-});
+  name: 'SSlider',
+})
 
-const props = defineProps<SliderProps>();
+const props = defineProps<SliderProps>()
 
-const emit = defineEmits<SliderEmits>();
+const emit = defineEmits<SliderEmits>()
 
-const slots = defineSlots<{
-  default?: (props: { modelValue: number[]; index: number; value: number }) => any;
-}>();
+const slots = defineSlots<SliderSlots>()
 
-const listeners = useForwardListeners(emit);
+const listeners = useForwardListeners(emit)
 
-const forwardedProps = useOmitProps(props, ['class', 'color', 'size', 'ui']);
+const forwardedProps = useOmitProps(props, ['class', 'color', 'size', 'ui'])
 
 const ui = computed(() =>
   sliderVariants(
     {
       color: props.color,
-      size: props.size
+      size: props.size,
     },
     props.ui,
-    { root: props.class }
-  )
-);
+    { root: props.class },
+  ),
+)
 
-provideSliderUi(ui);
+provideSliderUi(ui)
 </script>
 
 <template>

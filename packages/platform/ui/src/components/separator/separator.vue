@@ -1,21 +1,22 @@
 <script setup lang="ts">
-import { computed, useSlots } from 'vue';
-import { useOmitProps } from '@soybeanjs/headless/composables';
-import { SeparatorCompact, provideSeparatorUi } from '@soybeanjs/headless/separator';
-import { separatorVariants } from '#ui/styles/separator';
-import type { SeparatorProps } from './types';
+import { separatorVariants } from '#ui/styles/separator'
+import { useOmitProps } from '@soybeanjs/headless/composables'
+import { SeparatorCompact, provideSeparatorUi } from '@soybeanjs/headless/separator'
+import { computed, useSlots } from 'vue'
+
+import type { SeparatorProps } from './types'
 
 defineOptions({
-  name: 'SSeparator'
-});
+  name: 'SSeparator',
+})
 
 const props = withDefaults(defineProps<SeparatorProps>(), {
-  orientation: 'horizontal'
-});
+  orientation: 'horizontal',
+})
 
-const slots = useSlots();
+const slots = useSlots()
 
-const forwardedProps = useOmitProps(props, ['class', 'size', 'ui', 'align', 'border']);
+const forwardedProps = useOmitProps(props, ['class', 'size', 'ui', 'align', 'border'])
 
 const ui = computed(() =>
   separatorVariants(
@@ -23,14 +24,14 @@ const ui = computed(() =>
       size: props.size,
       orientation: props.orientation,
       align: props.align,
-      border: props.border
+      border: props.border,
     },
     props.ui,
-    { root: props.class }
-  )
-);
+    { root: props.class },
+  ),
+)
 
-provideSeparatorUi(ui);
+provideSeparatorUi(ui)
 </script>
 
 <template>

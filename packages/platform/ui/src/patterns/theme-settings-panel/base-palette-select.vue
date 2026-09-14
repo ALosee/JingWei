@@ -1,35 +1,36 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import type { PaletteColorLevel } from '@soybeanjs/colord/palette';
-import { getRegistry } from '@soybeanjs/theme';
-import type { BaseColorKey } from '@soybeanjs/theme';
-import SSelect from '../../components/select/select.vue';
-import type { SelectOptionData } from '../../components/select/types';
-import ColorDecorator from './color-decorator.vue';
-import { useThemeCustomizerLocale } from './use-locale';
+import type { PaletteColorLevel } from '@soybeanjs/colord/palette'
+import { getRegistry } from '@soybeanjs/theme'
+import type { BaseColorKey } from '@soybeanjs/theme'
+import { computed } from 'vue'
+
+import SSelect from '../../components/select/select.vue'
+import type { SelectOptionData } from '../../components/select/types'
+import ColorDecorator from './color-decorator.vue'
+import { useThemeCustomizerLocale } from './use-locale'
 
 interface Props {
-  decorateLevels?: PaletteColorLevel[];
+  decorateLevels?: PaletteColorLevel[]
 }
 
-defineProps<Props>();
+defineProps<Props>()
 
-const { resolveOption } = useThemeCustomizerLocale();
+const { resolveOption } = useThemeCustomizerLocale()
 
 const palette = defineModel<BaseColorKey>({
-  required: true
-});
+  required: true,
+})
 
-const baseRegistry = getRegistry().base;
+const baseRegistry = getRegistry().base
 
-const currentColors = computed(() => baseRegistry[palette.value]?.colors ?? {});
+const currentColors = computed(() => baseRegistry[palette.value]?.colors ?? {})
 
 const items = computed<SelectOptionData<BaseColorKey>[]>(() =>
-  Object.keys(baseRegistry).map(key => ({
+  Object.keys(baseRegistry).map((key) => ({
     label: resolveOption('palette', key),
-    value: key
-  }))
-);
+    value: key,
+  })),
+)
 </script>
 
 <template>

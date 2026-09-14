@@ -1,66 +1,67 @@
 <script setup lang="ts">
-import { computed } from 'vue';
-import { getRegistry, resolveColorValue } from '@soybeanjs/theme';
-import type { ColorValue, PaletteColorLevel, ChartSchemeKey } from '@soybeanjs/theme';
-import SSelect from '../../components/select/select.vue';
-import type { SelectOptionData } from '../../components/select/types';
-import ColorDecorator from './color-decorator.vue';
-import { useThemeCustomizerLocale } from './use-locale';
+import { getRegistry, resolveColorValue } from '@soybeanjs/theme'
+import type { ColorValue, PaletteColorLevel, ChartSchemeKey } from '@soybeanjs/theme'
+import { computed } from 'vue'
+
+import SSelect from '../../components/select/select.vue'
+import type { SelectOptionData } from '../../components/select/types'
+import ColorDecorator from './color-decorator.vue'
+import { useThemeCustomizerLocale } from './use-locale'
 
 const palette = defineModel<ChartSchemeKey>({
-  required: true
-});
+  required: true,
+})
 
-const { resolveOption } = useThemeCustomizerLocale();
+const { resolveOption } = useThemeCustomizerLocale()
 
-const chartRegistry = getRegistry().chart;
+const chartRegistry = getRegistry().chart
 
 const currentColors = computed(() => {
-  const entry = chartRegistry[palette.value];
+  const entry = chartRegistry[palette.value]
 
-  return entry ? createColors(entry.light) : {};
-});
+  return entry ? createColors(entry.light) : {}
+})
 
-const colorLevels: PaletteColorLevel[] = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950];
+const colorLevels: PaletteColorLevel[] = [50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950]
 
-const decorateLevels: PaletteColorLevel[] = [];
+const decorateLevels: PaletteColorLevel[] = []
 
 const allColors = Object.entries(chartRegistry)
   .map(([key, value]) => ({
     key,
-    colors: createColors(value.light)
+    colors: createColors(value.light),
   }))
   .reduce(
     (prev, cur) => ({ ...prev, [cur.key]: cur.colors }),
-    {} as Record<ChartSchemeKey, Record<PaletteColorLevel, string>>
-  );
+    {} as Record<ChartSchemeKey, Record<PaletteColorLevel, string>>,
+  )
 
 function createColors(value: Record<string, ColorValue>) {
-  const colors: Partial<Record<PaletteColorLevel, string>> = {};
+  const colors: Partial<Record<PaletteColorLevel, string>> = {}
 
   Object.values(value).forEach((color, index) => {
-    const level = colorLevels[index];
+    const level = colorLevels[index]
 
     if (level === undefined) {
-      return;
+      return
     }
 
-    colors[level] = resolveColorValue(color, 'hsl');
+    colors[level] = resolveColorValue(color, 'hsl')
 
     if (!decorateLevels.includes(level)) {
-      decorateLevels.push(level);
+      decorateLevels.push(level)
     }
-  });
+  })
 
-  return colors;
+  return colors
 }
 
 const items = computed<SelectOptionData<ChartSchemeKey>[]>(() =>
-  Object.keys(chartRegistry).map(key => ({
+  Object.keys(chartRegistry).map((key) => ({
     label: resolveOption('chart', key),
-    value: key
-  }))
-);
+    value: key,
+  })),
+)
 </script>
 
 <template>

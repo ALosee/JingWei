@@ -107,14 +107,16 @@ export type { TabsEmits, TabsOptionData, TabsProps, TabsSlots } from './componen
 export { STreeMenu as TreeMenu } from './components/tree-menu/index.js'
 export type { TreeMenuEmits, TreeMenuProps, TreeMenuSlots } from './components/tree-menu/index.js'
 export { SSwitch as Switch } from './components/switch/index.js'
-export type { SwitchEmits, SwitchProps, SwitchShape, SwitchSlots } from './components/switch/index.js'
+export type {
+  SwitchEmits,
+  SwitchProps,
+  SwitchShape,
+  SwitchSlots,
+} from './components/switch/index.js'
 export { SConfigProvider as ConfigProvider, useTheme } from './components/config-provider/index.js'
 export type { ConfigProviderProps, ThemeContext } from './components/config-provider/index.js'
 export { default as PageContainer } from './patterns/page-container/page-container.vue'
-export {
-  ThemeCustomizer,
-  ThemeSettingsPanel,
-} from './patterns/theme-settings-panel/index.js'
+export { ThemeCustomizer, ThemeSettingsPanel } from './patterns/theme-settings-panel/index.js'
 export type {
   ThemeCustomizerProps,
   ThemeCustomizerSection,

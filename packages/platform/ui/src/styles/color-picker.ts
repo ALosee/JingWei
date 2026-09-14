@@ -1,14 +1,15 @@
 // @unocss-include
-import { alias, scv } from '@soybeanjs/cva';
-import { overlayPopup } from './_overlay';
-import { buttonVariants } from './button';
-import { colorAreaVariants } from './color-area';
-import { colorFieldVariants } from './color-field';
-import { colorSwatchVariants } from './color-swatch';
-import { colorSwatchPickerVariants } from './color-swatch-picker';
-import { popoverVariants } from './popover';
-import { sliderVariants } from './slider';
-import { tabsVariants } from './tabs';
+import { alias, scv } from '@soybeanjs/cva'
+
+import { overlayPopup } from './_overlay'
+import { buttonVariants } from './button'
+import { colorAreaVariants } from './color-area'
+import { colorFieldVariants } from './color-field'
+import { colorSwatchVariants } from './color-swatch'
+import { colorSwatchPickerVariants } from './color-swatch-picker'
+import { popoverVariants } from './popover'
+import { sliderVariants } from './slider'
+import { tabsVariants } from './tabs'
 
 export const colorPickerVariants = scv({
   extend: [
@@ -16,30 +17,30 @@ export const colorPickerVariants = scv({
     alias(colorAreaVariants, {
       root: 'areaRoot',
       area: 'areaSurface',
-      thumb: 'areaThumb'
+      thumb: 'areaThumb',
     }),
     alias(colorFieldVariants, {
       root: 'fieldRoot',
-      input: 'fieldInput'
-    })
+      input: 'fieldInput',
+    }),
   ],
   extendIgnore: ['popup'],
-  extendBase: props => {
-    const slider = sliderVariants({ size: props.size });
+  extendBase: (props) => {
+    const slider = sliderVariants({ size: props.size })
     const segment = tabsVariants({
       size: props.size,
       orientation: 'horizontal',
       shape: 'square',
       fill: 'auto',
-      enableIndicator: true
-    });
-    const swatch = colorSwatchVariants({ size: props.size, shape: 'circle' });
-    const swatchPicker = colorSwatchPickerVariants({ size: props.size, shape: 'circle' });
+      enableIndicator: true,
+    })
+    const swatch = colorSwatchVariants({ size: props.size, shape: 'circle' })
+    const swatchPicker = colorSwatchPickerVariants({ size: props.size, shape: 'circle' })
 
     return {
       trigger: buttonVariants({
         size: props.size,
-        variant: 'pure'
+        variant: 'pure',
       }),
       sliderControl: slider.root,
       sliderTrack: slider.track,
@@ -57,8 +58,8 @@ export const colorPickerVariants = scv({
       swatchPickerItemIndicator: swatchPicker.itemIndicator,
       swatchPickerSwatchRoot: swatchPicker.swatchRoot,
       swatchPickerSwatchChecker: swatchPicker.swatchChecker,
-      swatchPickerSwatchFill: swatchPicker.swatchFill
-    };
+      swatchPickerSwatchFill: swatchPicker.swatchFill,
+    }
   },
   slots: {
     popup: ['w-auto', ...overlayPopup],
@@ -88,7 +89,7 @@ export const colorPickerVariants = scv({
     swatchPickerItemIndicator: '',
     swatchPickerSwatchRoot: '',
     swatchPickerSwatchChecker: '',
-    swatchPickerSwatchFill: ''
+    swatchPickerSwatchFill: '',
   },
   variants: {
     size: {
@@ -98,7 +99,7 @@ export const colorPickerVariants = scv({
         areaRoot: 'h-30',
         sliderSwatch: 'gap-1.5',
         fields: 'gap-1.5',
-        alphaField: 'w-12'
+        alphaField: 'w-12',
       },
       sm: {
         popup: 'p-1.75 text-xs',
@@ -106,7 +107,7 @@ export const colorPickerVariants = scv({
         areaRoot: 'h-35',
         sliderSwatch: 'gap-1.75',
         fields: 'gap-1.75',
-        alphaField: 'w-15'
+        alphaField: 'w-15',
       },
       md: {
         popup: 'p-2 text-sm',
@@ -114,7 +115,7 @@ export const colorPickerVariants = scv({
         areaRoot: 'h-40',
         sliderSwatch: 'gap-2',
         fields: 'gap-2',
-        alphaField: 'w-16'
+        alphaField: 'w-16',
       },
       lg: {
         popup: 'p-2.5 text-base',
@@ -122,7 +123,7 @@ export const colorPickerVariants = scv({
         areaRoot: 'h-42.5',
         sliderSwatch: 'gap-2.5',
         fields: 'gap-2.5',
-        alphaField: 'w-18'
+        alphaField: 'w-18',
       },
       xl: {
         popup: 'p-3 text-lg',
@@ -130,7 +131,7 @@ export const colorPickerVariants = scv({
         areaRoot: 'h-45',
         sliderSwatch: 'gap-3',
         fields: 'gap-3',
-        alphaField: 'w-20'
+        alphaField: 'w-20',
       },
       '2xl': {
         popup: 'p-4 text-xl',
@@ -138,11 +139,11 @@ export const colorPickerVariants = scv({
         areaRoot: 'h-50',
         sliderSwatch: 'gap-4',
         fields: 'gap-4',
-        alphaField: 'w-25'
-      }
-    }
+        alphaField: 'w-25',
+      },
+    },
   },
   defaultVariants: {
-    size: 'md'
-  }
-});
+    size: 'md',
+  },
+})

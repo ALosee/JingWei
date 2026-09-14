@@ -1,28 +1,28 @@
 <script setup lang="ts">
-import type { PaletteColorLevel } from '@soybeanjs/colord/palette';
+import type { PaletteColorLevel } from '@soybeanjs/colord/palette'
 
-type DecorateColors = Partial<Record<PaletteColorLevel, string | { hsl: string }>>;
+type DecorateColors = Partial<Record<PaletteColorLevel, string | { hsl: string }>>
 
 interface Props {
-  colors: DecorateColors;
-  levels?: PaletteColorLevel[];
+  colors: DecorateColors
+  levels?: PaletteColorLevel[]
 }
 
 withDefaults(defineProps<Props>(), {
-  levels: () => [100, 900, 300, 800, 600]
-});
+  levels: () => [100, 900, 300, 800, 600],
+})
 
 const isHslObject = (value?: string | { hsl: string }): value is { hsl: string } => {
-  return typeof value === 'object' && 'hsl' in value;
-};
+  return typeof value === 'object' && 'hsl' in value
+}
 
 const getColorValue = (value?: string | { hsl: string }) => {
   if (isHslObject(value)) {
-    return value.hsl;
+    return value.hsl
   }
 
-  return value ?? 'transparent';
-};
+  return value ?? 'transparent'
+}
 </script>
 
 <template>
@@ -32,7 +32,7 @@ const getColorValue = (value?: string | { hsl: string }) => {
       :key="level"
       class="size-4 -ml-1 rounded-full"
       :style="{
-        backgroundColor: getColorValue(colors[level])
+        backgroundColor: getColorValue(colors[level]),
       }"
     ></div>
   </div>

@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue';
-import { THEME_RADIUS, themeRadiusKeys, themeSizeKeys } from '@soybeanjs/theme';
+import { THEME_RADIUS, themeRadiusKeys, themeSizeKeys } from '@soybeanjs/theme'
 import type {
   BaseColorKey,
   ChartSchemeKey,
@@ -12,200 +11,206 @@ import type {
   PrimaryColorKey,
   SidebarSchemeKey,
   ThemeRadius,
-  ThemeSize
-} from '@soybeanjs/theme';
-import { useThemeSettings } from '../../theme/use-theme-settings';
-import { useThemeVariants } from '../../theme/use-theme-variants';
-import SButton from '../../components/button/button.vue';
-import { useTheme } from '../../components/config-provider/use-theme';
-import SIcon from '../../components/icon/icon.vue';
-import SPalettePicker from './palette-picker.vue';
-import SSegment from '../../components/segment/segment.vue';
-import type { SegmentOptionData } from '../../components/segment/types';
-import SSelect from '../../components/select/select.vue';
-import type { SelectOptionData } from '../../components/select/types';
-import SSlider from '../../components/slider/slider.vue';
-import ThemeModeSelect from './theme-mode-select.vue';
-import BasePaletteSelect from './base-palette-select.vue';
-import ChartSchemaSelect from './chart-schema-select.vue';
-import FeedbackSchemaSelect from './feedback-schema-select.vue';
-import PrimaryPaletteSelect from './primary-palette-select.vue';
-import SectionItem from './section-item.vue';
-import SidebarSchemaSelect from './sidebar-schema-select.vue';
-import type { ThemeCustomizerProps, ThemeCustomizerSection } from './types';
-import { useThemeCustomizerLocale } from './use-locale';
+  ThemeSize,
+} from '@soybeanjs/theme'
+import { computed, ref, watch } from 'vue'
+
+import SButton from '../../components/button/button.vue'
+import { useTheme } from '../../components/config-provider/use-theme'
+import SIcon from '../../components/icon/icon.vue'
+import SSegment from '../../components/segment/segment.vue'
+import type { SegmentOptionData } from '../../components/segment/types'
+import SSelect from '../../components/select/select.vue'
+import type { SelectOptionData } from '../../components/select/types'
+import SSlider from '../../components/slider/slider.vue'
+import { useThemeSettings } from '../../theme/use-theme-settings'
+import { useThemeVariants } from '../../theme/use-theme-variants'
+import BasePaletteSelect from './base-palette-select.vue'
+import ChartSchemaSelect from './chart-schema-select.vue'
+import FeedbackSchemaSelect from './feedback-schema-select.vue'
+import SPalettePicker from './palette-picker.vue'
+import PrimaryPaletteSelect from './primary-palette-select.vue'
+import SectionItem from './section-item.vue'
+import SidebarSchemaSelect from './sidebar-schema-select.vue'
+import ThemeModeSelect from './theme-mode-select.vue'
+import type { ThemeCustomizerProps, ThemeCustomizerSection } from './types'
+import { useThemeCustomizerLocale } from './use-locale'
 
 defineOptions({
-  name: 'SThemeCustomizer'
-});
+  name: 'SThemeCustomizer',
+})
 
 const props = withDefaults(defineProps<ThemeCustomizerProps>(), {
   sections: () => ['mode', 'palette', 'radius', 'size', 'scheme', 'advanced'],
   size: 'md',
   persist: true,
-  showActions: true
-});
+  showActions: true,
+})
 
 // —— 文案国际化：跟随 ConfigProvider.locale，切换语言即时刷新 ——
-const { resolveLabel: resolveBaseLabel, resolveOption } = useThemeCustomizerLocale();
+const { resolveLabel: resolveBaseLabel, resolveOption } = useThemeCustomizerLocale()
 
-const resolveLabel = (key: string): string => (props.labelResolver ? props.labelResolver(key) : resolveBaseLabel(key));
+const resolveLabel = (key: string): string =>
+  props.labelResolver ? props.labelResolver(key) : resolveBaseLabel(key)
 
 // —— 运行时主题上下文 ——
-const themeContext = useTheme();
+const themeContext = useTheme()
 
 if (!themeContext) {
-  throw new Error('ThemeCustomizer must be rendered inside ConfigProvider');
+  throw new Error('ThemeCustomizer must be rendered inside ConfigProvider')
 }
 
-const theme = themeContext;
+const theme = themeContext
 
 // —— 状态核心：初始化自当前主题，改动即时 commit 到运行时 ——
 const settings = useThemeSettings({
   persist: props.persist,
   initial: {
     ...theme.theme.value,
-    mode: theme.mode.value
+    mode: theme.mode.value,
   },
-  apply: state => {
-    theme.setThemeState(state);
-  }
-});
+  apply: (state) => {
+    theme.setThemeState(state)
+  },
+})
 
 // —— 基础 token 绑定 ——
 // mode 偏好由 <ThemeModeSelect> 直接绑定主题上下文，此处无需重复状态。
 const baseValue = computed<BaseColorKey>({
   get: () => settings.state.value.base ?? 'zinc',
-  set: value => settings.setState({ base: value })
-});
+  set: (value) => settings.setState({ base: value }),
+})
 
 const primaryValue = computed<PrimaryColorKey>({
   get: () => settings.state.value.primary ?? 'indigo',
-  set: value => settings.setState({ primary: value })
-});
+  set: (value) => settings.setState({ primary: value }),
+})
 
 const radiusValue = computed<ThemeRadius>({
   get: () => (settings.state.value.radius ?? 'md') as ThemeRadius,
-  set: value => settings.setState({ radius: value })
-});
+  set: (value) => settings.setState({ radius: value }),
+})
 const radiusIndex = computed(() => {
-  const matched = themeRadiusKeys.indexOf(radiusValue.value);
-  return [matched >= 0 ? matched : themeRadiusKeys.indexOf('md')];
-});
+  const matched = themeRadiusKeys.indexOf(radiusValue.value)
+  return [matched >= 0 ? matched : themeRadiusKeys.indexOf('md')]
+})
 const radiusFromIndex = computed(() => {
-  const key = themeRadiusKeys[radiusIndex.value[0] ?? 3];
-  return key ?? 'md';
-});
-const radiusLabel = computed(() => THEME_RADIUS[radiusFromIndex.value]);
+  const key = themeRadiusKeys[radiusIndex.value[0] ?? 3]
+  return key ?? 'md'
+})
+const radiusLabel = computed(() => THEME_RADIUS[radiusFromIndex.value])
 const setRadiusValue = (values: number[]) => {
-  const index = values[0];
-  radiusValue.value = themeRadiusKeys[index ?? 3] ?? 'md';
-};
+  const index = values[0]
+  radiusValue.value = themeRadiusKeys[index ?? 3] ?? 'md'
+}
 
 const sizeValue = computed<ThemeSize>({
   get: () => (settings.state.value.size ?? 'md') as ThemeSize,
-  set: value => settings.setState({ size: value })
-});
+  set: (value) => settings.setState({ size: value }),
+})
 
 const feedbackValue = computed<FeedbackSchemeKey>({
   get: () => settings.state.value.feedback ?? 'classic',
-  set: value => settings.setState({ feedback: value })
-});
+  set: (value) => settings.setState({ feedback: value }),
+})
 
 const chartValue = computed<ChartSchemeKey>({
   get: () => settings.state.value.chart ?? 'vivid',
-  set: value => settings.setState({ chart: value })
-});
+  set: (value) => settings.setState({ chart: value }),
+})
 
 const sidebarValue = computed<SidebarSchemeKey>({
   get: () => settings.state.value.sidebar ?? 'derived',
-  set: value => settings.setState({ sidebar: value })
-});
+  set: (value) => settings.setState({ sidebar: value }),
+})
 
 const lightLevelValue = computed<LightLevelOffset>({
   get: () => settings.state.value.lightLevel ?? 0,
-  set: value => settings.setState({ lightLevel: value })
-});
+  set: (value) => settings.setState({ lightLevel: value }),
+})
 
 const darkLevelValue = computed<DarkLevelOffset>({
   get: () => settings.state.value.darkLevel ?? 0,
-  set: value => settings.setState({ darkLevel: value })
-});
+  set: (value) => settings.setState({ darkLevel: value }),
+})
 
 const borderOpacityValue = computed<number>({
   get: () => settings.state.value.borderOpacity ?? 1,
-  set: value => settings.setState({ borderOpacity: value })
-});
+  set: (value) => settings.setState({ borderOpacity: value }),
+})
 
 const sizeOptions = computed<SelectOptionData<ThemeSize>[]>(() =>
-  themeSizeKeys.map(key => ({
+  themeSizeKeys.map((key) => ({
     label: resolveOption('size', key),
-    value: key
-  }))
-);
+    value: key,
+  })),
+)
 
 // —— 编辑分片：level（Base 表面层级）与 custom（variant 分组）各自独立选择 light/dark ——
-const levelMode = ref<'light' | 'dark'>('light');
-const customMode = ref<'light' | 'dark'>('light');
+const levelMode = ref<'light' | 'dark'>('light')
+const customMode = ref<'light' | 'dark'>('light')
 
 const variantModeOptions = computed<SegmentOptionData<'light' | 'dark'>[]>(() => [
   { label: resolveOption('mode', 'light'), value: 'light' },
-  { label: resolveOption('mode', 'dark'), value: 'dark' }
-]);
+  { label: resolveOption('mode', 'dark'), value: 'dark' },
+])
 
 /** Base 表面层级分片：语义为 Lightness / Darkness 偏移，非主题亮/暗模式。 */
 const levelModeOptions = computed<SegmentOptionData<'light' | 'dark'>[]>(() => [
   { label: resolveOption('level', 'lightness'), value: 'light' },
-  { label: resolveOption('level', 'darkness'), value: 'dark' }
-]);
+  { label: resolveOption('level', 'darkness'), value: 'dark' },
+])
 
-const variants = useThemeVariants({ settings, mode: customMode });
+const variants = useThemeVariants({ settings, mode: customMode })
 
 /** 写入某个 variant token 的 override（配合 `final` 值显示，反映当前派生结果） */
 const setVariant = (key: ColorKey, value: string): void => {
-  settings.setOverride(customMode.value, key, value as ColorValue);
-};
+  settings.setOverride(customMode.value, key, value as ColorValue)
+}
 
 // —— base 表面层级：lightLevel/darkLevel 由 Base 区域独立的 levelMode 分片决定 ——
 // 标签与滑块范围随分片切换：light → Lightness(0-2)，dark → Darkness(0-3)。
-const levelValue = computed<number>(() => (levelMode.value === 'light' ? lightLevelValue.value : darkLevelValue.value));
-const levelMax = computed(() => (levelMode.value === 'light' ? 2 : 3));
-const levelIndex = computed(() => [levelValue.value]);
+const levelValue = computed<number>(() =>
+  levelMode.value === 'light' ? lightLevelValue.value : darkLevelValue.value,
+)
+const levelMax = computed(() => (levelMode.value === 'light' ? 2 : 3))
+const levelIndex = computed(() => [levelValue.value])
 const setLevelValue = (values: number[]) => {
-  const index = values[0] as LightLevelOffset;
+  const index = values[0] as LightLevelOffset
   if (levelMode.value === 'light') {
-    lightLevelValue.value = index;
+    lightLevelValue.value = index
   } else {
-    darkLevelValue.value = index;
+    darkLevelValue.value = index
   }
-};
+}
 
 // —— 高级分区：默认折叠，避免与外层「主题/布局」Tabs 叠成双层导航 ——
-const advancedOpen = ref(false);
+const advancedOpen = ref(false)
 
-const sectionVisible = (section: ThemeCustomizerSection): boolean => props.sections.includes(section);
+const sectionVisible = (section: ThemeCustomizerSection): boolean =>
+  props.sections.includes(section)
 
-const hasAdvanced = computed(() => sectionVisible('advanced'));
-const showLevels = computed(() => sectionVisible('advanced') && sectionVisible('palette'));
-const showBorderOpacity = computed(() => sectionVisible('advanced'));
-const showCustomTokens = computed(() => sectionVisible('advanced'));
+const hasAdvanced = computed(() => sectionVisible('advanced'))
+const showLevels = computed(() => sectionVisible('advanced') && sectionVisible('palette'))
+const showBorderOpacity = computed(() => sectionVisible('advanced'))
+const showCustomTokens = computed(() => sectionVisible('advanced'))
 
-watch(settings.state, () => settings.commit());
+watch(settings.state, () => settings.commit())
 
 // —— mode 偏好由 <ThemeModeSelect> 直接绑定主题上下文（theme.mode），settings.state.mode
 //    仅在初始化时快照。若不随 theme.mode 同步，则任何配置改动（如切换 base）触发 commit
 //    时会把过期的 settings.state.mode（light）写回 theme，导致 mode 被重置 ——
 watch(
   () => theme.mode.value,
-  value => {
-    settings.setState({ mode: value });
-  }
-);
+  (value) => {
+    settings.setState({ mode: value })
+  },
+)
 
 function resetTheme(): void {
-  settings.reset();
-  settings.commit();
-  theme.setMode('light');
+  settings.reset()
+  settings.commit()
+  theme.setMode('light')
 }
 </script>
 
@@ -217,7 +222,11 @@ function resetTheme(): void {
         <ThemeModeSelect class="w-35" />
       </SectionItem>
 
-      <SectionItem v-if="sectionVisible('palette')" :title="resolveLabel('palette')" orientation="vertical">
+      <SectionItem
+        v-if="sectionVisible('palette')"
+        :title="resolveLabel('palette')"
+        orientation="vertical"
+      >
         <SectionItem :label="resolveLabel('base')">
           <BasePaletteSelect v-model="baseValue" class="w-50" />
         </SectionItem>
@@ -226,7 +235,11 @@ function resetTheme(): void {
         </SectionItem>
       </SectionItem>
 
-      <SectionItem v-if="sectionVisible('scheme')" :title="resolveLabel('scheme')" orientation="vertical">
+      <SectionItem
+        v-if="sectionVisible('scheme')"
+        :title="resolveLabel('scheme')"
+        orientation="vertical"
+      >
         <SectionItem :label="resolveLabel('feedback')">
           <FeedbackSchemaSelect v-model="feedbackValue" class="w-50" />
         </SectionItem>
@@ -252,7 +265,9 @@ function resetTheme(): void {
             class="w-full"
             @update:model-value="setRadiusValue"
           />
-          <span class="w-15 shrink-0 text-right text-xs text-muted-foreground">{{ radiusLabel }}</span>
+          <span class="w-15 shrink-0 text-right text-xs text-muted-foreground">{{
+            radiusLabel
+          }}</span>
         </div>
       </SectionItem>
 
@@ -286,7 +301,9 @@ function resetTheme(): void {
                 class="w-full"
                 @update:model-value="setLevelValue"
               />
-              <span class="w-6 shrink-0 text-right text-xs text-muted-foreground">{{ levelValue }}</span>
+              <span class="w-6 shrink-0 text-right text-xs text-muted-foreground">{{
+                levelValue
+              }}</span>
             </div>
           </SectionItem>
 
@@ -298,7 +315,7 @@ function resetTheme(): void {
                 :max="100"
                 :step="5"
                 class="w-full"
-                @update:model-value="value => (borderOpacityValue = (value[0] ?? 100) / 100)"
+                @update:model-value="(value) => (borderOpacityValue = (value[0] ?? 100) / 100)"
               />
               <span class="w-10 shrink-0 text-right text-xs text-muted-foreground">
                 {{ Math.round(borderOpacityValue * 100) }}%
@@ -314,13 +331,17 @@ function resetTheme(): void {
 
             <section v-for="group in variants.groups" :key="group.key" class="space-y-2">
               <h4 class="text-xs font-medium text-foreground">{{ resolveLabel(group.i18n) }}</h4>
-              <div v-for="meta in group.tokens" :key="meta.key" class="flex-y-center justify-between gap-3">
+              <div
+                v-for="meta in group.tokens"
+                :key="meta.key"
+                class="flex-y-center justify-between gap-3"
+              >
                 <span class="text-xs text-foreground">{{ resolveLabel(meta.i18n) }}</span>
                 <SPalettePicker
                   :size="size"
                   :model-value="variants.final.value[meta.key] ?? 'transparent'"
                   class="w-50"
-                  @update:model-value="value => setVariant(meta.key, value)"
+                  @update:model-value="(value) => setVariant(meta.key, value)"
                 />
               </div>
             </section>
@@ -330,7 +351,13 @@ function resetTheme(): void {
     </div>
 
     <section v-if="showActions" class="shrink-0 border-t border-border pt-3">
-      <SButton :size="size" color="destructive" variant="outline" class="w-full" @click="resetTheme">
+      <SButton
+        :size="size"
+        color="destructive"
+        variant="outline"
+        class="w-full"
+        @click="resetTheme"
+      >
         {{ resolveLabel('reset') }}
       </SButton>
     </section>

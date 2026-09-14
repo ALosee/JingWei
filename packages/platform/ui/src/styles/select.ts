@@ -1,20 +1,21 @@
 // @unocss-include
-import { scv } from '@soybeanjs/cva';
-import type { VariantProps } from '@soybeanjs/cva';
+import { scv } from '@soybeanjs/cva'
+import type { VariantProps } from '@soybeanjs/cva'
+
 import {
   fieldAffordanceIcon,
   fieldChrome,
   fieldClearReveal,
   fieldDisabled,
   fieldSize,
-  fieldTriggerFocus
-} from './_field';
-import { overlayArrow, overlayMotion, overlayShadow, overlaySurface } from './_overlay';
-import { miniButtonIconVariants } from './button';
+  fieldTriggerFocus,
+} from './_field'
+import { overlayArrow, overlayMotion, overlayShadow, overlaySurface } from './_overlay'
+import { miniButtonIconVariants } from './button'
 
 export const selectVariants = scv({
-  extendBase: props => ({
-    clear: miniButtonIconVariants({ size: props.size, shape: 'circle' })
+  extendBase: (props) => ({
+    clear: miniButtonIconVariants({ size: props.size, shape: 'circle' }),
   }),
   slots: {
     trigger: [
@@ -22,7 +23,7 @@ export const selectVariants = scv({
       ...fieldChrome,
       ...fieldTriggerFocus,
       ...fieldDisabled,
-      'placeholder:text-muted-foreground data-[placeholder]:text-muted-foreground'
+      'placeholder:text-muted-foreground data-[placeholder]:text-muted-foreground',
     ],
     triggerIcon: fieldAffordanceIcon,
     value: 'grow truncate text-start',
@@ -34,14 +35,14 @@ export const selectVariants = scv({
     groupLabel: `font-medium text-muted-foreground`,
     item: [
       `relative flex items-center w-full rounded-sm outline-none cursor-pointer select-none`,
-      `focus:bg-accent focus:text-accent-foreground data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50`
+      `focus:bg-accent focus:text-accent-foreground data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50`,
     ],
     itemText: '',
     itemIndicator: `ms-auto shrink-0 text-muted-foreground`,
     separator: `-mx-1 my-1 h-px bg-muted`,
     scrollUpButton: `flex items-center justify-center cursor-default`,
     scrollDownButton: `flex items-center justify-center cursor-default`,
-    arrow: overlayArrow
+    arrow: overlayArrow,
   },
   variants: {
     size: {
@@ -54,7 +55,7 @@ export const selectVariants = scv({
         separator: '-mx-0.75 my-0.375',
         scrollUpButton: 'py-0.75',
         scrollDownButton: 'py-0.75',
-        arrow: 'text-3xs'
+        arrow: 'text-3xs',
       },
       sm: {
         popup: 'max-h-75 text-xs',
@@ -65,7 +66,7 @@ export const selectVariants = scv({
         groupLabel: 'p-1.25 text-2xs',
         scrollUpButton: 'py-0.875',
         scrollDownButton: 'py-0.875',
-        arrow: 'text-2xs'
+        arrow: 'text-2xs',
       },
       md: {
         popup: 'max-h-80 text-sm',
@@ -76,7 +77,7 @@ export const selectVariants = scv({
         groupLabel: 'p-1.75 text-xs',
         scrollUpButton: 'py-1',
         scrollDownButton: 'py-1',
-        arrow: 'text-xs'
+        arrow: 'text-xs',
       },
       lg: {
         popup: 'max-h-90 text-base',
@@ -87,7 +88,7 @@ export const selectVariants = scv({
         groupLabel: 'p-2 text-sm',
         scrollUpButton: 'py-1.25',
         scrollDownButton: 'py-1.25',
-        arrow: 'text-sm'
+        arrow: 'text-sm',
       },
       xl: {
         popup: 'max-h-100 text-lg',
@@ -98,7 +99,7 @@ export const selectVariants = scv({
         groupLabel: 'p-2.5 text-base',
         scrollUpButton: 'py-1.5',
         scrollDownButton: 'py-1.5',
-        arrow: 'text-base'
+        arrow: 'text-base',
       },
       '2xl': {
         popup: 'max-h-115 text-xl',
@@ -109,23 +110,23 @@ export const selectVariants = scv({
         groupLabel: 'p-3 text-lg',
         scrollUpButton: 'py-1.75',
         scrollDownButton: 'py-1.75',
-        arrow: 'text-lg'
-      }
+        arrow: 'text-lg',
+      },
     },
     position: {
       popper: {
         popup: `data-[side=bottom]:translate-y-1 data-[side=left]:-translate-x-1 data-[side=right]:translate-x-1 data-[side=top]:-translate-y-1`,
-        viewport: `h-[--soybean-select-trigger-height] w-full min-w-[--soybean-select-trigger-width]`
+        viewport: `h-[--soybean-select-trigger-height] w-full min-w-[--soybean-select-trigger-width]`,
       },
-      'item-aligned': {}
-    }
+      'item-aligned': {},
+    },
   },
   defaultVariants: {
     size: 'md',
-    position: 'popper'
-  }
-});
+    position: 'popper',
+  },
+})
 
-type SelectVariants = VariantProps<typeof selectVariants>;
+type SelectVariants = VariantProps<typeof selectVariants>
 
-export type SelectPosition = NonNullable<SelectVariants['position']>;
+export type SelectPosition = NonNullable<SelectVariants['position']>
