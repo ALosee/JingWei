@@ -32,12 +32,13 @@ src/
 ## 公开 API
 
 `components` 内保留 sbean 生成的 `SButton`、`SInput` 等上游命名，以便升级时直接比较；
-`src/index.ts` 在包边界导出 `Button`、`Input`、`Dialog`、`Layout`、`Tabs`、`TreeMenu`、`Menubar`、
-`Breadcrumb`、`Popover`、`PageTabs`、`ConfigProvider` 等简洁名称。不要为了改名去修改生成文件，
-也不要在业务代码中使用内部 `S*` 名称。
+`src/index.ts` 在包边界导出 `Button`、`Input`、`InputNumber`、`Switch`、`Segment`、`Select`、
+`Slider`、`Separator`、`Dialog`、`Layout`、`Tabs`、`TreeMenu`、`Menubar`、`Breadcrumb`、`Popover`、
+`PageTabs`、`ConfigProvider` 等简洁名称。不要为了改名去修改生成文件，也不要在业务代码中使用内部 `S*` 名称。
 
-`PageContainer` 与 `ThemeSettingsPanel` 是本地 `patterns`，不由 sbean 管理。后者只提供主题
-编辑内容；设置入口、非模态容器和工作区文案由 Web 壳拥有。新增公开组件时同步更新显式
+`PageContainer` 与 `ThemeSettingsPanel`（上游 ThemeCustomizer 源码移植，保持唯一 headless + 本地 styled 源码）是本地 `patterns`，不由 sbean 管理。后者提供完整主题定制：显示模式、调色板、
+配色方案、尺寸/圆角、高级层级与 Custom 逐 token 调色。`palette-picker` / `theme-mode-select` 为
+pattern 内私有实现。设置入口、非模态容器和工作区文案由 Web 壳拥有。新增公开组件时同步更新显式
 export、README 和相应契约测试。
 
 ## 新增或更新组件

@@ -17,7 +17,7 @@ const tabs = [
     :modal="false"
     :show-arrow="false"
     placement="bottom-end"
-    class="max-h-[calc(100vh-5rem)] w-[min(26rem,calc(100vw-1rem))] overflow-y-auto p-4"
+    class="max-h-[calc(100vh-5rem)] w-[min(28rem,calc(100vw-1rem))] overflow-y-auto p-4"
     :popup-props="{ 'aria-label': '工作区设置' }"
   >
     <template #trigger>

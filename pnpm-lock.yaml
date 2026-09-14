@@ -24,6 +24,9 @@ catalogs:
     '@scalar/hono-api-reference':
       specifier: 0.12.1
       version: 0.12.1
+    '@soybeanjs/colord':
+      specifier: 0.7.1
+      version: 0.7.1
     '@soybeanjs/cva':
       specifier: 0.1.1
       version: 0.1.1
@@ -718,6 +721,9 @@ importers:
       '@iconify/vue':
         specifier: 'catalog:'
         version: 5.0.1(vue@3.5.42(typescript@5.9.3))
+      '@soybeanjs/colord':
+        specifier: 'catalog:'
+        version: 0.7.1
       '@soybeanjs/cva':
         specifier: 'catalog:'
         version: 0.1.1

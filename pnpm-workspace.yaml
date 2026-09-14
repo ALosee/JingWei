@@ -10,6 +10,7 @@ catalog:
   '@hono/node-server': 2.1.1
   '@hono/zod-openapi': 1.6.3
   '@playwright/test': 1.62.1
+  '@soybeanjs/colord': 0.7.1
   '@soybeanjs/cva': 0.1.1
   '@soybeanjs/fetch': 0.1.0
   '@soybeanjs/headless': 0.30.0

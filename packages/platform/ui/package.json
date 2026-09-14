@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@iconify/vue": "catalog:",
+    "@soybeanjs/colord": "catalog:",
     "@soybeanjs/cva": "catalog:",
     "@soybeanjs/headless": "catalog:",
     "@soybeanjs/theme": "catalog:",

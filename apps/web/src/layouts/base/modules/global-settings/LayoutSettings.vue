@@ -1,121 +1,159 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
 
-import { Button } from '@jingwei/ui'
+import { Button, InputNumber, Segment, Separator, Switch } from '@jingwei/ui'
+import type { SegmentOptionData } from '@jingwei/ui'
 
-import {
-  defaultLayoutPreferences,
-  useLayoutStore,
-  type BrandPlacement,
-  type LayoutMode,
-} from '../../../../stores/layout.js'
+import { useLayoutStore, type BrandPlacement, type LayoutMode } from '../../../../stores/layout.js'
 
 const layout = useLayoutStore()
 const { preferences } = storeToRefs(layout)
 
-function updateMode(event: Event): void {
-  layout.patch({ mode: (event.target as HTMLSelectElement).value as LayoutMode })
+const headerLimits = { min: 48, max: 96, step: 4 }
+const siderLimits = { min: 192, max: 360, step: 8 }
+
+const modeOptions: { value: LayoutMode; label: string }[] = [
+  { value: 'left', label: '左侧菜单模式' },
+  { value: 'top', label: '顶部菜单模式' },
+]
+
+const brandOptions: SegmentOptionData<BrandPlacement>[] = [
+  { value: 'header', label: '顶栏' },
+  { value: 'sider', label: '侧栏' },
+]
+
+function setMode(mode: LayoutMode): void {
+  layout.patch({ mode })
 }
 
-function updateBrandPlacement(event: Event): void {
-  layout.patch({ brandPlacement: (event.target as HTMLSelectElement).value as BrandPlacement })
+function setBrandPlacement(value: BrandPlacement | null): void {
+  if (value == null) return
+  layout.patch({ brandPlacement: value })
 }
 
-function updateHeaderHeight(event: Event): void {
-  layout.patch({ headerHeight: Number((event.target as HTMLInputElement).value) })
+function setHeaderHeight(value: number | null): void {
+  if (value == null || !Number.isFinite(value)) return
+  layout.patch({ headerHeight: value })
 }
 
-function updateSiderWidth(event: Event): void {
-  layout.patch({ siderWidth: Number((event.target as HTMLInputElement).value) })
+function setSiderWidth(value: number | null): void {
+  if (value == null || !Number.isFinite(value)) return
+  layout.patch({ siderWidth: value })
 }
 
-function updateTabs(event: Event): void {
-  layout.patch({ showTabs: (event.target as HTMLInputElement).checked })
+function setShowTabs(value: boolean): void {
+  layout.patch({ showTabs: value })
 }
 </script>
 
 <template>
-  <form class="grid gap-5" @submit.prevent>
-    <label class="grid gap-2 text-sm text-foreground font-600">
-      布局模式
-      <select
-        :value="preferences.mode"
-        class="min-h-10 border border-input rounded-md bg-background px-3 text-foreground font-[inherit]"
-        @change="updateMode"
-      >
-        <option value="left">左侧菜单模式</option>
-        <option value="top">顶部菜单模式</option>
-      </select>
-    </label>
+  <form class="grid gap-6 pt-2" @submit.prevent>
+    <section class="grid gap-5">
+      <Separator align="center">布局模式</Separator>
+      <div class="grid grid-cols-2 gap-x-4 gap-y-3" role="radiogroup" aria-label="布局模式">
+        <button
+          v-for="option in modeOptions"
+          :key="option.value"
+          type="button"
+          role="radio"
+          class="group flex flex-col items-center gap-1.5 rounded-md outline-none focus-visible:ring-3 focus-visible:ring-primary/30"
+          :aria-checked="preferences.mode === option.value"
+          @click="setMode(option.value)"
+        >
+          <span
+            class="flex h-18 w-full gap-1 border-2 rounded-lg p-1 transition-colors"
+            :class="
+              preferences.mode === option.value
+                ? 'border-primary bg-primary/5'
+                : 'border-border bg-card group-hover:border-primary/40'
+            "
+            aria-hidden="true"
+          >
+            <template v-if="option.value === 'left'">
+              <span class="w-1/3 rounded-sm bg-primary/80" />
+              <span class="flex flex-1 flex-col gap-1">
+                <span class="h-1/3 rounded-sm bg-primary/80" />
+                <span class="flex-1 rounded-sm bg-primary/30" />
+              </span>
+            </template>
+            <template v-else>
+              <span class="flex h-full w-full flex-col gap-1">
+                <span class="h-1/3 rounded-sm bg-primary/80" />
+                <span class="flex-1 rounded-sm bg-primary/30" />
+              </span>
+            </template>
+          </span>
+          <span
+            class="text-xs font-medium"
+            :class="preferences.mode === option.value ? 'text-primary' : 'text-foreground'"
+          >
+            {{ option.label }}
+          </span>
+        </button>
+      </div>
+    </section>
 
-    <label class="grid gap-2 text-sm text-foreground font-600">
-      品牌位置
-      <select
-        :value="preferences.brandPlacement"
-        class="min-h-10 border border-input rounded-md bg-background px-3 text-foreground font-[inherit]"
-        @change="updateBrandPlacement"
-      >
-        <option value="header">Header</option>
-        <option value="sider">Sider</option>
-      </select>
-      <small v-if="preferences.mode === 'top'" class="text-muted-foreground font-400">
-        顶部菜单模式没有 Sider，品牌固定显示在 Header。
-      </small>
-    </label>
+    <section class="grid gap-3">
+      <Separator align="center">标签栏设置</Separator>
+      <div class="flex items-center justify-between gap-4 px-1">
+        <span class="text-sm text-foreground">显示标签栏</span>
+        <Switch
+          :model-value="preferences.showTabs"
+          :control-props="{ 'aria-label': '显示页面标签' }"
+          @update:model-value="setShowTabs"
+        />
+      </div>
+    </section>
 
-    <label class="grid gap-2 text-sm text-foreground font-600">
-      <span class="flex justify-between gap-4">
-        Header 高度
-        <output class="text-muted-foreground font-400">{{ preferences.headerHeight }}px</output>
-      </span>
-      <input
-        :value="preferences.headerHeight"
-        type="range"
-        class="w-full accent-primary"
-        aria-label="Header 高度"
-        min="48"
-        max="96"
-        step="4"
-        @input="updateHeaderHeight"
-      />
-    </label>
+    <section class="grid gap-3">
+      <Separator align="center">头部设置</Separator>
+      <div class="flex items-center justify-between gap-4 px-1">
+        <span class="text-sm text-foreground">头部高度</span>
+        <InputNumber
+          :model-value="preferences.headerHeight"
+          :min="headerLimits.min"
+          :max="headerLimits.max"
+          :step="headerLimits.step"
+          :step-snapping="false"
+          center
+          size="sm"
+          class="w-28"
+          aria-label="Header 高度"
+          @update:model-value="setHeaderHeight"
+        />
+      </div>
+    </section>
 
-    <label class="grid gap-2 text-sm text-foreground font-600">
-      <span class="flex justify-between gap-4">
-        Sider 宽度
-        <output class="text-muted-foreground font-400">{{ preferences.siderWidth }}px</output>
-      </span>
-      <input
-        :value="preferences.siderWidth"
-        type="range"
-        class="w-full accent-primary"
-        aria-label="Sider 宽度"
-        min="192"
-        max="360"
-        step="8"
-        @input="updateSiderWidth"
-      />
-    </label>
+    <section class="grid gap-3">
+      <Separator align="center">侧边栏设置</Separator>
+      <div class="flex items-center justify-between gap-4 px-1">
+        <span class="text-sm text-foreground">侧边栏宽度</span>
+        <InputNumber
+          :model-value="preferences.siderWidth"
+          :min="siderLimits.min"
+          :max="siderLimits.max"
+          :step="siderLimits.step"
+          :step-snapping="false"
+          center
+          size="sm"
+          class="w-28"
+          aria-label="Sider 宽度"
+          @update:model-value="setSiderWidth"
+        />
+      </div>
+      <div v-if="preferences.mode === 'left'" class="flex items-center justify-between gap-4 px-1">
+        <span class="text-sm text-foreground">品牌位置</span>
+        <Segment
+          :model-value="preferences.brandPlacement"
+          :items="brandOptions"
+          size="sm"
+          @update:model-value="setBrandPlacement"
+        />
+      </div>
+    </section>
 
-    <label class="flex items-center justify-between gap-4 border border-border rounded-md p-3">
-      <span class="grid gap-1">
-        <strong class="text-sm text-foreground">显示页面标签</strong>
-        <small class="text-xs text-muted-foreground">在 Header 下方显示当前访问过的页面。</small>
-      </span>
-      <input
-        :checked="preferences.showTabs"
-        type="checkbox"
-        class="size-4.5 accent-primary"
-        @change="updateTabs"
-      />
-    </label>
-
-    <div class="flex items-center justify-between gap-4 border-t border-border pt-4">
-      <Button type="button" variant="outline" @click="layout.reset">恢复默认布局</Button>
-      <small class="text-right text-xs text-muted-foreground">
-        默认 {{ defaultLayoutPreferences.headerHeight }}px Header ·
-        {{ defaultLayoutPreferences.siderWidth }}px Sider
-      </small>
+    <div class="flex justify-start border-t border-border pt-4">
+      <Button type="button" variant="outline" size="sm" @click="layout.reset">重置配置</Button>
     </div>
   </form>
 </template>
