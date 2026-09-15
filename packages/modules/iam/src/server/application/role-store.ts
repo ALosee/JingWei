@@ -4,7 +4,6 @@ import type {
   CreateIamRole,
   IamRole,
   RolePermissionGrant,
-  RolePermissionGrantView,
   UpdateIamRole,
 } from '../../shared/index.js'
 
@@ -16,7 +15,7 @@ export interface RoleStore {
   insert(context: ApplicationContext, role: IamRole): Promise<void>
   update(context: ApplicationContext, id: string, patch: UpdateIamRole): Promise<void>
   delete(context: ApplicationContext, id: string): Promise<void>
-  listGrants(tenantId: TenantId, roleId: string): Promise<RolePermissionGrantView[]>
+  listGrants(tenantId: TenantId, roleId: string): Promise<RolePermissionGrant[]>
   replaceGrants(
     context: ApplicationContext,
     roleId: string,

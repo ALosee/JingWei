@@ -8,7 +8,6 @@ import type {
   IamRole,
   RoleDataScopeType,
   RolePermissionGrant,
-  RolePermissionGrantView,
   RoleStatus,
   UpdateIamRole,
 } from '../../shared/index.js'
@@ -173,31 +172,16 @@ export class PostgresRoleStore implements RoleStore {
       .execute()
   }
 
-  async listGrants(tenantId: TenantId, roleId: string): Promise<RolePermissionGrantView[]> {
+  async listGrants(tenantId: TenantId, roleId: string): Promise<RolePermissionGrant[]> {
     const rows = await this.db
-      .selectFrom('iam.role_permission as grant')
-      .innerJoin(
-        'iam.permission_definition as definition',
-        'definition.code',
-        'grant.permission_code',
-      )
-      .select([
-        'grant.permission_code',
-        'grant.scope_type',
-        'definition.module_id',
-        'definition.name',
-        'definition.supports_data_scope',
-      ])
-      .where('grant.tenant_id', '=', tenantId)
-      .where('grant.role_id', '=', roleId)
-      .orderBy('definition.module_id')
-      .orderBy('grant.permission_code')
+      .selectFrom('iam.role_permission')
+      .select(['permission_code', 'scope_type'])
+      .where('tenant_id', '=', tenantId)
+      .where('role_id', '=', roleId)
+      .orderBy('permission_code')
       .execute()
     return rows.map((row) => ({
       permissionCode: row.permission_code,
-      moduleId: row.module_id,
-      name: row.name,
-      supportsDataScope: row.supports_data_scope,
       scopeType: row.scope_type as RoleDataScopeType,
     }))
   }

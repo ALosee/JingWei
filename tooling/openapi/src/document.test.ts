@@ -17,6 +17,14 @@ describe('module OpenAPI documents', () => {
       '/api/v1/iam/account',
       '/api/v1/iam/account/password',
       '/api/v1/iam/account/roles',
+      '/api/v1/iam/roles',
+      '/api/v1/iam/roles/{roleId}',
+      '/api/v1/iam/permissions',
+      '/api/v1/iam/roles/{roleId}/permissions',
+      '/api/v1/iam/users',
+      '/api/v1/iam/users/{userId}',
+      '/api/v1/iam/users/{userId}/password',
+      '/api/v1/iam/users/{userId}/roles',
     ])
     expect(document.paths?.['/api/v1/iam/sessions']?.post?.operationId).toBe('iamCreateSession')
   })

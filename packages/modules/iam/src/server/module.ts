@@ -20,7 +20,6 @@ import { SessionLifecycle } from './application/session-lifecycle.js'
 import { PostgresAccountStore } from './infrastructure/account-store.pg.js'
 import { PostgresCredentialStore, type IamDatabase } from './infrastructure/credential-reader.pg.js'
 import { PostgresCurrentUserReader } from './infrastructure/current-user-reader.pg.js'
-import { syncPermissionDefinitions } from './infrastructure/permission-projection.pg.js'
 import { PostgresRoleStore, PostgresRoleUnitOfWork } from './infrastructure/role-store.pg.js'
 import {
   PostgresUserAdminStore,
@@ -32,7 +31,6 @@ export const serverModule: ServerModule = {
   manifest,
   async install(context) {
     const database = context.database.view<IamDatabase>()
-    await syncPermissionDefinitions(database, context.moduleRegistry)
     const credentials = new PostgresCredentialStore(database)
     const currentUsers = new PostgresCurrentUserReader(database)
     const accounts = new PostgresAccountStore(database)

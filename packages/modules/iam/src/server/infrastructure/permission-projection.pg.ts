@@ -6,8 +6,9 @@ import type { RoleDatabase } from './role-store.pg.js'
 
 /**
  * Projects enabled edition permissions into `iam.permission_definition`.
- * Runtime authorization still reads the ModuleRegistry; this table is the durable
- * projection used by role UI joins and seed tooling.
+ * Runtime authorization and grant display read ModuleRegistry; this durable projection
+ * is for seed/ops tooling only. Do not call it from module install — install must not
+ * require a live database.
  */
 export async function syncPermissionDefinitions(
   database: Kysely<RoleDatabase>,

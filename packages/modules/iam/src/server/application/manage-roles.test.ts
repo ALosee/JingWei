@@ -10,12 +10,7 @@ import {
 } from '@jingwei/kernel'
 import { ModuleRegistry, type ResolvedEdition } from '@jingwei/module-sdk'
 
-import type {
-  IamRole,
-  RolePermissionGrant,
-  RolePermissionGrantView,
-  UpdateIamRole,
-} from '../../shared/index.js'
+import type { IamRole, RolePermissionGrant, UpdateIamRole } from '../../shared/index.js'
 import type { IamAccess } from '../public/navigation-access.js'
 import { ManageIamRoles } from './manage-roles.js'
 import { ReadPermissionCatalog } from './permission-catalog.js'
@@ -31,7 +26,7 @@ const context: AuthContext = {
 
 class MemoryRoleStore implements RoleStore {
   roles = new Map<string, IamRole>()
-  grants = new Map<string, RolePermissionGrantView[]>()
+  grants = new Map<string, RolePermissionGrant[]>()
   assigned = new Set<string>()
 
   list() {
@@ -81,16 +76,7 @@ class MemoryRoleStore implements RoleStore {
     roleId: string,
     grants: readonly RolePermissionGrant[],
   ) {
-    this.grants.set(
-      roleId,
-      grants.map((grant) => ({
-        permissionCode: grant.permissionCode,
-        moduleId: 'iam',
-        name: grant.permissionCode,
-        supportsDataScope: false,
-        scopeType: grant.scopeType,
-      })),
-    )
+    this.grants.set(roleId, [...grants])
     return Promise.resolve()
   }
 }

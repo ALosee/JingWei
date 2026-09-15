@@ -39,11 +39,11 @@ IAM 不负责：
 
 ### 页面路由
 
-| Route key     | 页面         | 访问模式               | 要求                                  |
-| ------------- | ------------ | ---------------------- | ------------------------------------- |
-| `iam.login`   | `IamLogin`   | `blank` / PUBLIC       | `iam.authentication`                  |
-| `iam.account` | `IamAccount` | `base` / AUTHENTICATED | `iam.authentication`                  |
-| `iam.roles`   | `IamRoles`   | `base` / PERMISSION    | `iam.authorization` + `iam.role.view` |
+| Route key     | 页面         | 访问模式               | 要求                                   |
+| ------------- | ------------ | ---------------------- | -------------------------------------- |
+| `iam.login`   | `IamLogin`   | `blank` / PUBLIC       | `iam.authentication`                   |
+| `iam.account` | `IamAccount` | `base` / AUTHENTICATED | `iam.authentication`                   |
+| `iam.roles`   | `IamRoles`   | `base` / PERMISSION    | `iam.authorization` + `iam.role.view`  |
 | `iam.users`   | `IamUsers`   | `base` / PERMISSION    | `iam.authentication` + `iam.user.view` |
 
 IAM 没有必需业务模块依赖，因此是多个 foundation 模块的依赖根。
@@ -220,7 +220,7 @@ Web 登录页只调用 `useSignIn()` 绑定字段和提交事件。登录 client
 
 已经实现认证、登录失败计数/临时锁定/成功时间更新、opaque Access/Refresh Token Family 创建/状态恢复/轮换/复用检测/撤销、凭据 PostgreSQL store，以及供 Navigation 使用的真实 IamAccess。IamAccess 每次查询活跃用户/角色，多角色取并集，不使用 is_super 绕过；requirePermission 先检查 Edition registry/capability，仅处理无 Data Scope 的功能权限。它不等于通用 AuthorizationEvaluator。
 
-角色管理（CRUD、权限目录、整组替换授权）与用户管理（列表、创建、资料/状态更新、重置密码、角色分配）及对应管理页已实现；服务端启动时将 Edition 权限投影到 `iam.permission_definition`。完整 Data Scope evaluator、邮箱/手机变更与验证码、多设备会话列表仍是后续工作。开发种子会投影当前 Edition 的功能权限并初始化显式管理员 grant，但不能当作生产权限同步服务。
+角色管理（CRUD、权限目录、整组替换授权）与用户管理（列表、创建、资料/状态更新、重置密码、角色分配）及对应管理页已实现。授权展示与校验以 Module Registry 为 Source of Truth；`iam.permission_definition` 仍可由 seed/运维投影，但服务端安装不再强制写库。完整 Data Scope evaluator、邮箱/手机变更与验证码、多设备会话列表仍是后续工作。开发种子会投影当前 Edition 的功能权限并初始化显式管理员 grant，但不能当作生产权限同步服务。
 
 个人账号页已支持资料查看/编辑、修改密码（全会话撤销）和角色只读展示；路由使用 `/account?tab=profile|security|roles`，不引入无意义的 path id。
 

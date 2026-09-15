@@ -6,6 +6,8 @@ import type {
   IamRole,
   PermissionCatalog,
   ReplaceRolePermissions,
+  RolePermissionGrant,
+  RolePermissionGrantView,
   RolePermissionList,
   UpdateIamRole,
 } from '../../shared/index.js'
@@ -103,7 +105,29 @@ export class ManageIamRoles {
     await this.authorize(context, 'view')
     const role = await this.store.get(context.tenantId, id)
     if (role === null) fail('IAM_ROLE_NOT_FOUND', '角色不存在', 404)
-    return { permissions: await this.store.listGrants(context.tenantId, id) }
+    return { permissions: this.projectGrants(await this.store.listGrants(context.tenantId, id)) }
+  }
+
+  private projectGrants(grants: readonly RolePermissionGrant[]): RolePermissionGrantView[] {
+    const catalog = new Map(
+      this.catalog.list().permissions.map((permission) => [permission.code, permission]),
+    )
+    return grants
+      .map((grant) => {
+        const definition = catalog.get(grant.permissionCode)
+        return {
+          permissionCode: grant.permissionCode,
+          moduleId: definition?.moduleId ?? 'unknown',
+          name: definition?.name ?? grant.permissionCode,
+          supportsDataScope: definition?.supportsDataScope ?? false,
+          scopeType: grant.scopeType,
+        }
+      })
+      .toSorted((left, right) =>
+        left.moduleId === right.moduleId
+          ? left.permissionCode.localeCompare(right.permissionCode)
+          : left.moduleId.localeCompare(right.moduleId),
+      )
   }
 
   async replacePermissions(
@@ -141,7 +165,7 @@ export class ManageIamRoles {
 
       const before = await tx.store.listGrants(context.tenantId, id)
       await tx.store.replaceGrants(context, id, input.permissions)
-      const permissions = await tx.store.listGrants(context.tenantId, id)
+      const permissions = this.projectGrants(await tx.store.listGrants(context.tenantId, id))
       await tx.record(
         context,
         'role_permissions_replaced',
