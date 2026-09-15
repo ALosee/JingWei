@@ -3,7 +3,7 @@ import { scv } from '@soybeanjs/cva'
 
 import {
   fieldChrome,
-  fieldClearReveal,
+  fieldClearRevealValue,
   fieldDisabled,
   fieldNestedAction,
   fieldSize,
@@ -22,7 +22,7 @@ export const inputVariants = scv({
       'disabled:cursor-not-allowed',
       'file:border-0 file:bg-transparent file:font-medium',
     ],
-    clear: fieldClearReveal,
+    clear: fieldClearRevealValue,
     visible: ['shrink-0 cursor-pointer', fieldNestedAction],
   },
   variants: {

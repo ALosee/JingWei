@@ -59,6 +59,11 @@
     "onlyBuiltDependencies": [
       "argon2",
       "esbuild"
-    ]
+    ],
+    "overrides": {
+      "@unocss/extractor-arbitrary-variants": "66.10.2",
+      "@unocss/preset-mini": "66.10.2",
+      "unocss": "66.10.2"
+    }
   }
 }

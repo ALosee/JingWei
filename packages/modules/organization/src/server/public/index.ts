@@ -11,3 +11,9 @@ export interface OrganizationSnapshot {
 export interface OrganizationQuery {
   descendantsOf(tenantId: string, organizationIds: readonly string[]): Promise<readonly string[]>
 }
+
+export {
+  createOrganizationManagement,
+  createOrganizationQuery,
+  createOrganizationSnapshot,
+} from './create-management.js'

@@ -106,6 +106,15 @@ export { STabs as Tabs } from './components/tabs/index.js'
 export type { TabsEmits, TabsOptionData, TabsProps, TabsSlots } from './components/tabs/index.js'
 export { STreeMenu as TreeMenu } from './components/tree-menu/index.js'
 export type { TreeMenuEmits, TreeMenuProps, TreeMenuSlots } from './components/tree-menu/index.js'
+export { STree as Tree, STreeItem as TreeItem } from './components/tree/index.js'
+export type {
+  FlattenedItem,
+  TreeItemData,
+  TreeItemProps,
+  TreeRootEmits as TreeEmits,
+  TreeRootProps as TreeProps,
+  TreeSlots,
+} from './components/tree/index.js'
 export { SSwitch as Switch } from './components/switch/index.js'
 export type {
   SwitchEmits,

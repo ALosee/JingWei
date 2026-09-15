@@ -2,6 +2,13 @@ import type { InputClearProps } from '@soybeanjs/headless/input'
 import type { LayoutTriggerProps } from '@soybeanjs/headless/layout'
 import type { ProgressProviderProps } from '@soybeanjs/headless/progress'
 import type { ToastProviderProps as HeadlessToastProviderProps } from '@soybeanjs/headless/toast'
+import type {
+  FlattenedItem,
+  TreeItemData,
+  TreeItemProps,
+  TreeRootEmits,
+  TreeRootProps,
+} from '@soybeanjs/headless/tree'
 import type { DefineComponent } from 'vue'
 
 import type {
@@ -76,6 +83,7 @@ import type { SwitchEmits, SwitchProps, SwitchShape, SwitchSlots } from './compo
 import type { TabsEmits, TabsOptionData, TabsProps, TabsSlots } from './components/tabs/types'
 import type { ToastProviderProps } from './components/toast/types'
 import type { TreeMenuEmits, TreeMenuProps, TreeMenuSlots } from './components/tree-menu/types'
+import type { TreeSlots } from './components/tree/types'
 import type {
   ThemeCustomizerProps,
   ThemeCustomizerSection,
@@ -120,6 +128,8 @@ export declare const Tooltip: UiComponent
 export declare const ToastProvider: UiComponent<HeadlessToastProviderProps & ToastProviderProps>
 export declare const Tabs: UiComponent<TabsProps<TabsOptionData>>
 export declare const TreeMenu: UiComponent<TreeMenuProps>
+export declare const Tree: UiComponent<TreeRootProps>
+export declare const TreeItem: UiComponent<TreeItemProps>
 export declare const Switch: UiComponent<SwitchProps>
 
 export { dialog } from '@soybeanjs/headless/dialog'
@@ -204,4 +214,10 @@ export type {
   TreeMenuEmits,
   TreeMenuProps,
   TreeMenuSlots,
+  TreeItemData,
+  TreeItemProps,
+  TreeRootEmits as TreeEmits,
+  TreeRootProps as TreeProps,
+  TreeSlots,
+  FlattenedItem,
 }

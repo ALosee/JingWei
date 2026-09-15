@@ -12,6 +12,7 @@
     "@jingwei/http-contract": "workspace:*",
     "@jingwei/module-iam": "workspace:*",
     "@jingwei/module-navigation": "workspace:*",
+    "@jingwei/module-organization": "workspace:*",
     "openapi-typescript": "catalog:"
   },
   "devDependencies": {

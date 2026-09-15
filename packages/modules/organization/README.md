@@ -47,6 +47,38 @@ Organization 不负责：
 
 `is_primary` 的唯一性目前未由迁移中的部分索引强制，后续实现写用例时必须用事务和数据库约束保证每个用户最多一个主组织/主岗位。
 
+## HTTP API
+
+前缀：`/api/v1/organization`。所有路由要求已登录会话；写操作要求 CSRF。
+
+### 组织单元
+
+| 方法   | 路径              | 权限                  | 说明                                       |
+| ------ | ----------------- | --------------------- | ------------------------------------------ |
+| GET    | `/org-units`      | `organization.view`   | 返回扁平单元列表，客户端按 `parentId` 组树 |
+| POST   | `/org-units`      | `organization.manage` | 创建组织（`parentId` 可为 null 表示根）    |
+| PATCH  | `/org-units/{id}` | `organization.manage` | 更新字段；可改 `parentId` 移动             |
+| DELETE | `/org-units/{id}` | `organization.manage` | 仅空叶子可删                               |
+
+删除门禁：无子节点、无 `user_org` 成员、无 `position`。否则返回 409，应改为禁用。
+
+移动规则：目标 parent 必须同租户存在；不能移到自身或自身后代（服务端 recursive CTE + 显式 self 检查）。
+
+稳定错误码：`ORGANIZATION_UNIT_NOT_FOUND`、`ORGANIZATION_PARENT_NOT_FOUND`、`ORGANIZATION_CODE_CONFLICT`、`ORGANIZATION_MOVE_CYCLE`、`ORGANIZATION_HAS_CHILDREN`、`ORGANIZATION_HAS_MEMBERS`、`ORGANIZATION_HAS_POSITIONS`。
+
+### 岗位
+
+| 方法   | 路径                                             | 权限                  | 说明                         |
+| ------ | ------------------------------------------------ | --------------------- | ---------------------------- |
+| GET    | `/org-units/{id}/positions`                      | `organization.view`   | 列出该组织下岗位             |
+| POST   | `/org-units/{id}/positions`                      | `organization.manage` | 创建岗位                     |
+| PATCH  | `/org-units/{id}/positions/{positionId}`         | `organization.manage` | 更新岗位                     |
+| DELETE | `/org-units/{id}/positions/{positionId}`         | `organization.manage` | 无用户占用时可删，否则停用   |
+
+岗位编码在 `tenant + org_unit` 内唯一。删除前检查 `user_position`。
+
+稳定错误码：`ORGANIZATION_POSITION_NOT_FOUND`、`ORGANIZATION_POSITION_CODE_CONFLICT`、`ORGANIZATION_POSITION_HAS_MEMBERS`。
+
 ## Public API
 
 `@jingwei/module-organization/server/public`：
@@ -57,7 +89,7 @@ Organization 不负责：
 
 ### `OrganizationQuery.descendantsOf(tenantId, organizationIds)`
 
-返回给定组织集合及/或后代 ID（具体是否包含根节点要在实现和测试中固定契约）。预期用 PostgreSQL recursive CTE 实现，用于 IAM 的 `ORGANIZATION_AND_DESCENDANTS` 数据范围展开。
+返回给定组织集合及后代 ID（**包含根节点输入**），用 PostgreSQL recursive CTE 实现，用于 IAM 的 `ORGANIZATION_AND_DESCENDANTS` 数据范围展开。
 
 调用规则：
 
@@ -67,11 +99,19 @@ Organization 不负责：
 - 发现跨租户或循环脏数据时安全失败；
 - 调用方不直接读取 Organization 表。
 
+工厂：`createOrganizationQuery(database)`、`createOrganizationManagement(database, registry)`、`createOrganizationSnapshot(database)`。
+
+## Web
+
+`OrganizationUnits`：左树 + 右详情（基本信息 / 岗位 Tab）。支持组织搜索、展开折叠、新建/编辑/移动/启停与空叶子删除；选中组织后可维护岗位列表。写按钮仅为 UX；安全边界始终在服务端权限校验。
+
 ## 当前实现状态
 
-已定义 manifest、迁移、组织类型、公共查询契约和 Web 页面骨架。Server 路由、PostgreSQL 查询实现、组织/岗位 CRUD、树移动规则、主归属约束和事件尚未实现，当前 `/api/v1/organization` 为空路由集合。
+组织树 P0：查询、创建、更新（含移动防环）、空叶子删除、IAM 权限、审计、OpenAPI client、Web 管理页与应用层单测。
 
-实现树移动时要防止把节点移动到自身后代，并评估大树 recursive CTE、锁与并发修改。
+岗位 P0：按组织列出、创建、更新、启停、无占用删除；应用层单测覆盖唯一码与删除门禁。
+
+尚未实现：用户组织/岗位归属与主归属约束、outbox 集成事件、组织树 PostgreSQL 集成测试、数据范围执行器对接。
 
 ## 建议事件
 

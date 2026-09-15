@@ -74,17 +74,22 @@ export const fieldAffordanceIcon = 'shrink-0 text-muted-foreground opacity-70'
  */
 export const fieldNestedAction = 'data-[disabled]:opacity-100!'
 
-/** Hover-reveal clear control, used with `group` on the field surface. */
+/**
+ * Hover/focus reveal clear control, used with `group` on the field surface.
+ * `hidden`/`inline-flex` need important so they win over Button base `inline-flex`.
+ */
 export const fieldClearReveal = [
-  'hidden shrink-0 opacity-50',
-  'group-hover:inline-flex group-focus-within:inline-flex hover:opacity-100 focus-visible:opacity-100',
+  'hidden! shrink-0 opacity-50',
+  'group-hover:inline-flex! group-focus-within:inline-flex! hover:opacity-100 focus-visible:opacity-100',
   fieldNestedAction,
 ]
 
-/** Same as `fieldClearReveal`, gated on the field `data-has-value`. */
+/**
+ * Gated on field `data-has-value`. Shows whenever the field has a value
+ * (no hover/focus required) so the control is reliable and always reachable.
+ */
 export const fieldClearRevealValue = [
-  'hidden shrink-0 opacity-50',
-  'group-data-[has-value]:group-hover:inline-flex group-data-[has-value]:group-focus-within:inline-flex',
-  'hover:opacity-100 focus-visible:opacity-100',
+  'hidden! shrink-0 opacity-70 hover:opacity-100 focus-visible:opacity-100',
+  'group-data-[has-value]:inline-flex!',
   fieldNestedAction,
 ]
