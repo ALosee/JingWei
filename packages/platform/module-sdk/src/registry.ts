@@ -1,6 +1,11 @@
 import type { ResolvedEdition } from './edition.js'
 import type { PermissionDefinition, RouteDefinition } from './manifest.js'
 
+/** Permission as exposed by the resolved edition, including its owner module. */
+export interface CatalogPermission extends PermissionDefinition {
+  readonly moduleId: string
+}
+
 /**
  * Read-only runtime projection of a resolved Edition.
  *
@@ -54,5 +59,22 @@ export class ModuleRegistry {
 
   routes(): readonly RouteDefinition[] {
     return [...this.#routes.values()]
+  }
+
+  permissions(): readonly CatalogPermission[] {
+    const permissions: CatalogPermission[] = []
+    for (const module of this.#edition.modules) {
+      for (const permission of module.manifest.permissions) {
+        permissions.push({
+          code: permission.code,
+          name: permission.name,
+          moduleId: module.manifest.id,
+          ...(permission.supportsDataScope === undefined
+            ? {}
+            : { supportsDataScope: permission.supportsDataScope }),
+        })
+      }
+    }
+    return permissions
   }
 }

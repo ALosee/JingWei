@@ -31,5 +31,21 @@ export const manifest = defineModule({
       allowedAccessModes: ['AUTHENTICATED'],
       requiredCapability: 'iam.authentication',
     },
+    {
+      key: 'iam.roles',
+      page: 'IamRoles',
+      layout: 'base',
+      allowedAccessModes: ['PERMISSION'],
+      requiredCapability: 'iam.authorization',
+      requiredPermission: 'iam.role.view',
+    },
+    {
+      key: 'iam.users',
+      page: 'IamUsers',
+      layout: 'base',
+      allowedAccessModes: ['PERMISSION'],
+      requiredCapability: 'iam.authentication',
+      requiredPermission: 'iam.user.view',
+    },
   ],
 })

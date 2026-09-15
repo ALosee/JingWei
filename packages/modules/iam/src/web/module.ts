@@ -7,5 +7,7 @@ export const webModule: WebModule = {
   pages: [
     { routeKey: 'iam.login', pageKey: 'IamLogin' },
     { routeKey: 'iam.account', pageKey: 'IamAccount' },
+    { routeKey: 'iam.roles', pageKey: 'IamRoles' },
+    { routeKey: 'iam.users', pageKey: 'IamUsers' },
   ],
 }

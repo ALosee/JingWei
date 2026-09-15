@@ -39,10 +39,12 @@ IAM 不负责：
 
 ### 页面路由
 
-| Route key     | 页面         | 访问模式               | 要求                 |
-| ------------- | ------------ | ---------------------- | -------------------- |
-| `iam.login`   | `IamLogin`   | `blank` / PUBLIC       | `iam.authentication` |
-| `iam.account` | `IamAccount` | `base` / AUTHENTICATED | `iam.authentication` |
+| Route key     | 页面         | 访问模式               | 要求                                  |
+| ------------- | ------------ | ---------------------- | ------------------------------------- |
+| `iam.login`   | `IamLogin`   | `blank` / PUBLIC       | `iam.authentication`                  |
+| `iam.account` | `IamAccount` | `base` / AUTHENTICATED | `iam.authentication`                  |
+| `iam.roles`   | `IamRoles`   | `base` / PERMISSION    | `iam.authorization` + `iam.role.view` |
+| `iam.users`   | `IamUsers`   | `base` / PERMISSION    | `iam.authentication` + `iam.user.view` |
 
 IAM 没有必需业务模块依赖，因此是多个 foundation 模块的依赖根。
 
@@ -65,19 +67,27 @@ IAM 不直接拥有会话表。Organization 的 org ID 作为跨模块标识保�
 ```text
 src/
 ├── manifest.ts
-├── shared/                    # 登录 Zod schema 和共享 DTO
+├── shared/                    # 登录/账号/角色 Zod schema 和共享 DTO
 ├── client/                    # Web typed client
 ├── server/
 │   ├── api/routes.ts
 │   ├── application/authenticate-user.ts
 │   ├── application/session-lifecycle.ts
+│   ├── application/manage-roles.ts
+│   ├── application/manage-users.ts
+│   ├── application/permission-catalog.ts
 │   ├── domain/user-status.ts
 │   ├── infrastructure/credential-reader.pg.ts # 凭据状态读写适配器
+│   ├── infrastructure/role-store.pg.ts
+│   ├── infrastructure/user-admin-store.pg.ts
+│   ├── infrastructure/permission-projection.pg.ts
 │   ├── public/authorization.ts
 │   └── module.ts
 └── web/
-    ├── pages/                 # 登录/账号页面展示
+    ├── pages/                 # 登录/账号/角色/用户管理页面展示
     ├── composables/use-sign-in.ts # 登录表单状态和提交流程
+    ├── composables/use-iam-role-management.ts
+    ├── composables/use-iam-user-management.ts
     └── module.ts              # PageBinding
 ```
 
@@ -115,6 +125,66 @@ src/
 
 返回当前用户已分配且状态为 ACTIVE 的角色列表。
 
+### `GET /api/v1/iam/roles`
+
+读取当前租户角色列表，含分配人数。要求 `iam.role.view`。
+
+### `POST /api/v1/iam/roles`
+
+创建角色。`code` 租户内唯一且创建后不可改。要求 `iam.role.manage`。
+
+### `GET /api/v1/iam/roles/:roleId`
+
+读取角色详情。要求 `iam.role.view`。
+
+### `PATCH /api/v1/iam/roles/:roleId`
+
+更新名称、描述与状态。要求 `iam.role.manage`。
+
+### `DELETE /api/v1/iam/roles/:roleId`
+
+删除角色。系统角色或仍有用户分配的角色不能删除。要求 `iam.role.manage`。
+
+### `GET /api/v1/iam/permissions`
+
+返回当前 Edition 可分配的功能权限目录（来自 Module Registry）。要求 `iam.role.view`。
+
+### `GET /api/v1/iam/roles/:roleId/permissions`
+
+读取角色已获授的权限与数据范围。要求 `iam.role.view`。
+
+### `PUT /api/v1/iam/roles/:roleId/permissions`
+
+整组替换角色权限。权限必须存在于当前 Edition；不支持数据范围的权限只能使用 `ALL`。要求 `iam.role.manage`。
+
+### `GET /api/v1/iam/users`
+
+读取租户用户列表。要求 `iam.user.view`。
+
+### `POST /api/v1/iam/users`
+
+创建用户。用户名租户内唯一；可带初始密码与角色。要求 `iam.user.manage`。
+
+### `GET /api/v1/iam/users/:userId`
+
+读取用户详情。要求 `iam.user.view`。
+
+### `PATCH /api/v1/iam/users/:userId`
+
+更新资料或状态。禁用会撤销全部会话；不能禁用自己或最后一个管理员。要求 `iam.user.manage`。
+
+### `POST /api/v1/iam/users/:userId/password`
+
+管理员重置密码并撤销该用户全部会话。要求 `iam.user.manage`。
+
+### `GET /api/v1/iam/users/:userId/roles`
+
+读取用户角色分配。要求 `iam.user.view`。
+
+### `PUT /api/v1/iam/users/:userId/roles`
+
+整组替换用户角色。要求 `iam.user.manage`。
+
 完整协议见 [HTTP API 手册](../../../docs/http-api.md)。
 
 ## 认证流程
@@ -150,7 +220,7 @@ Web 登录页只调用 `useSignIn()` 绑定字段和提交事件。登录 client
 
 已经实现认证、登录失败计数/临时锁定/成功时间更新、opaque Access/Refresh Token Family 创建/状态恢复/轮换/复用检测/撤销、凭据 PostgreSQL store，以及供 Navigation 使用的真实 IamAccess。IamAccess 每次查询活跃用户/角色，多角色取并集，不使用 is_super 绕过；requirePermission 先检查 Edition registry/capability，仅处理无 Data Scope 的功能权限。它不等于通用 AuthorizationEvaluator。
 
-角色管理 CRUD、通用权限投影同步、完整 Data Scope evaluator、邮箱/手机变更与验证码、多设备会话列表仍是后续工作。开发种子会投影当前 Edition 的功能权限并初始化显式管理员 grant，但不能当作生产权限同步服务。
+角色管理（CRUD、权限目录、整组替换授权）与用户管理（列表、创建、资料/状态更新、重置密码、角色分配）及对应管理页已实现；服务端启动时将 Edition 权限投影到 `iam.permission_definition`。完整 Data Scope evaluator、邮箱/手机变更与验证码、多设备会话列表仍是后续工作。开发种子会投影当前 Edition 的功能权限并初始化显式管理员 grant，但不能当作生产权限同步服务。
 
 个人账号页已支持资料查看/编辑、修改密码（全会话撤销）和角色只读展示；路由使用 `/account?tab=profile|security|roles`，不引入无意义的 path id。
 

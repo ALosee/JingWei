@@ -12,16 +12,27 @@ import {
   UpdateAccountProfile,
 } from './application/account-profile.js'
 import { AuthenticateUser } from './application/authenticate-user.js'
+import { ManageIamRoles } from './application/manage-roles.js'
+import { ManageIamUsers } from './application/manage-users.js'
+import { ReadPermissionCatalog } from './application/permission-catalog.js'
 import { ReadCurrentUser } from './application/read-current-user.js'
 import { SessionLifecycle } from './application/session-lifecycle.js'
 import { PostgresAccountStore } from './infrastructure/account-store.pg.js'
 import { PostgresCredentialStore, type IamDatabase } from './infrastructure/credential-reader.pg.js'
 import { PostgresCurrentUserReader } from './infrastructure/current-user-reader.pg.js'
+import { syncPermissionDefinitions } from './infrastructure/permission-projection.pg.js'
+import { PostgresRoleStore, PostgresRoleUnitOfWork } from './infrastructure/role-store.pg.js'
+import {
+  PostgresUserAdminStore,
+  PostgresUserAdminUnitOfWork,
+} from './infrastructure/user-admin-store.pg.js'
+import { createIamAccess } from './public/create-access.js'
 
 export const serverModule: ServerModule = {
   manifest,
   async install(context) {
     const database = context.database.view<IamDatabase>()
+    await syncPermissionDefinitions(database, context.moduleRegistry)
     const credentials = new PostgresCredentialStore(database)
     const currentUsers = new PostgresCurrentUserReader(database)
     const accounts = new PostgresAccountStore(database)
@@ -39,6 +50,22 @@ export const serverModule: ServerModule = {
       policy: context.config.login,
     })
     const sessionLifecycle = new SessionLifecycle({ sessions: context.sessionService, audit })
+    const access = createIamAccess(context.database, context.moduleRegistry)
+    const manageRoles = new ManageIamRoles(
+      new PostgresRoleStore(database),
+      new PostgresRoleUnitOfWork(database),
+      access,
+      context.moduleRegistry,
+      new ReadPermissionCatalog(context.moduleRegistry),
+    )
+    const manageUsers = new ManageIamUsers(
+      new PostgresUserAdminStore(database),
+      new PostgresUserAdminUnitOfWork(database),
+      access,
+      passwords,
+      context.sessionService,
+      systemClock,
+    )
 
     return {
       id: manifest.id,
@@ -56,6 +83,8 @@ export const serverModule: ServerModule = {
           clock: systemClock,
         }),
         readAccountRoles: new ReadAccountRoles(accounts),
+        manageRoles,
+        manageUsers,
         secureCookies: context.config.environment === 'production',
         logger: context.logger,
       }),

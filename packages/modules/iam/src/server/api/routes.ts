@@ -20,6 +20,8 @@ import type {
   UpdateAccountProfile,
 } from '../application/account-profile.js'
 import type { AuthenticateUser } from '../application/authenticate-user.js'
+import type { ManageIamRoles } from '../application/manage-roles.js'
+import type { ManageIamUsers } from '../application/manage-users.js'
 import type { ReadCurrentUser } from '../application/read-current-user.js'
 import type { SessionLifecycle } from '../application/session-lifecycle.js'
 import { iamApiRoutes } from './openapi.js'
@@ -37,6 +39,21 @@ export function createIamRoutes(dependencies: {
   readonly updateAccount: Pick<UpdateAccountProfile, 'execute'>
   readonly changePassword: Pick<ChangeAccountPassword, 'execute'>
   readonly readAccountRoles: Pick<ReadAccountRoles, 'execute'>
+  readonly manageRoles: Pick<
+    ManageIamRoles,
+    | 'list'
+    | 'get'
+    | 'create'
+    | 'update'
+    | 'remove'
+    | 'listPermissions'
+    | 'listRolePermissions'
+    | 'replacePermissions'
+  >
+  readonly manageUsers: Pick<
+    ManageIamUsers,
+    'list' | 'get' | 'create' | 'update' | 'resetPassword' | 'listRoles' | 'replaceRoles'
+  >
   readonly secureCookies: boolean
   readonly logger: AuthenticationLogger
 }) {
@@ -216,6 +233,114 @@ export function createIamRoutes(dependencies: {
     })
     return context.json({ roles }, 200)
   })
+  app.openapi(iamApiRoutes.listRoles, async (context) =>
+    context.json(await dependencies.manageRoles.list(requireAuth(context)), 200),
+  )
+  app.openapi(iamApiRoutes.createRole, async (context) =>
+    context.json(
+      await dependencies.manageRoles.create(requireAuth(context), context.req.valid('json')),
+      201,
+    ),
+  )
+  app.openapi(iamApiRoutes.getRole, async (context) =>
+    context.json(
+      await dependencies.manageRoles.get(requireAuth(context), context.req.valid('param').roleId),
+      200,
+    ),
+  )
+  app.openapi(iamApiRoutes.updateRole, async (context) =>
+    context.json(
+      await dependencies.manageRoles.update(
+        requireAuth(context),
+        context.req.valid('param').roleId,
+        context.req.valid('json'),
+      ),
+      200,
+    ),
+  )
+  app.openapi(iamApiRoutes.deleteRole, async (context) =>
+    context.json(
+      await dependencies.manageRoles.remove(
+        requireAuth(context),
+        context.req.valid('param').roleId,
+      ),
+      200,
+    ),
+  )
+  app.openapi(iamApiRoutes.listPermissionCatalog, async (context) =>
+    context.json(await dependencies.manageRoles.listPermissions(requireAuth(context)), 200),
+  )
+  app.openapi(iamApiRoutes.listRolePermissions, async (context) =>
+    context.json(
+      await dependencies.manageRoles.listRolePermissions(
+        requireAuth(context),
+        context.req.valid('param').roleId,
+      ),
+      200,
+    ),
+  )
+  app.openapi(iamApiRoutes.replaceRolePermissions, async (context) =>
+    context.json(
+      await dependencies.manageRoles.replacePermissions(
+        requireAuth(context),
+        context.req.valid('param').roleId,
+        context.req.valid('json'),
+      ),
+      200,
+    ),
+  )
+  app.openapi(iamApiRoutes.listUsers, async (context) =>
+    context.json(await dependencies.manageUsers.list(requireAuth(context)), 200),
+  )
+  app.openapi(iamApiRoutes.createUser, async (context) =>
+    context.json(
+      await dependencies.manageUsers.create(requireAuth(context), context.req.valid('json')),
+      201,
+    ),
+  )
+  app.openapi(iamApiRoutes.getUser, async (context) =>
+    context.json(
+      await dependencies.manageUsers.get(requireAuth(context), context.req.valid('param').userId),
+      200,
+    ),
+  )
+  app.openapi(iamApiRoutes.updateUser, async (context) =>
+    context.json(
+      await dependencies.manageUsers.update(
+        requireAuth(context),
+        context.req.valid('param').userId,
+        context.req.valid('json'),
+      ),
+      200,
+    ),
+  )
+  app.openapi(iamApiRoutes.resetUserPassword, async (context) => {
+    await dependencies.manageUsers.resetPassword(
+      requireAuth(context),
+      context.req.valid('param').userId,
+      context.req.valid('json'),
+    )
+    return context.body(null, 204)
+  })
+  app.openapi(iamApiRoutes.listUserRoles, async (context) =>
+    context.json(
+      await dependencies.manageUsers.listRoles(
+        requireAuth(context),
+        context.req.valid('param').userId,
+      ),
+      200,
+    ),
+  )
+  app.openapi(iamApiRoutes.replaceUserRoles, async (context) =>
+    context.json(
+      await dependencies.manageUsers.replaceRoles(
+        requireAuth(context),
+        context.req.valid('param').userId,
+        context.req.valid('json'),
+      ),
+      200,
+    ),
+  )
   return app
 }
 

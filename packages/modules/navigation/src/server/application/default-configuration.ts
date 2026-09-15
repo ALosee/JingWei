@@ -28,6 +28,8 @@ export function createDefaultConfiguration(registry: ModuleRegistry): Navigation
   const labels: Readonly<Record<string, string>> = {
     'iam.login': '登录',
     'iam.account': '个人账号',
+    'iam.roles': '角色管理',
+    'iam.users': '用户管理',
     'navigation.manage': '导航管理',
     'organization.units': '组织架构',
     'dictionary.entries': '数据字典',

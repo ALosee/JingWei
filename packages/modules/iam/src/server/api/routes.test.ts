@@ -40,6 +40,25 @@ const accountStubs = {
   updateAccount: { execute: vi.fn() },
   changePassword: { execute: vi.fn() },
   readAccountRoles: { execute: vi.fn() },
+  manageRoles: {
+    list: vi.fn(),
+    get: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    remove: vi.fn(),
+    listPermissions: vi.fn(),
+    listRolePermissions: vi.fn(),
+    replacePermissions: vi.fn(),
+  },
+  manageUsers: {
+    list: vi.fn(),
+    get: vi.fn(),
+    create: vi.fn(),
+    update: vi.fn(),
+    resetPassword: vi.fn(),
+    listRoles: vi.fn(),
+    replaceRoles: vi.fn(),
+  },
 }
 
 describe('IAM session HTTP boundary', () => {

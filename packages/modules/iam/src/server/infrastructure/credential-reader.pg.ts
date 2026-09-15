@@ -30,7 +30,9 @@ interface UserTable {
   status: UserStatus
   last_login_at: Date | null
   created_at: Date
+  created_by: string | null
   updated_at: Date
+  updated_by: string | null
 }
 
 interface CredentialTable {
@@ -39,6 +41,7 @@ interface CredentialTable {
   password_changed_at: Date
   failed_attempts: number
   locked_until: Date | null
+  created_at: Date
   updated_at: Date
 }
 
@@ -47,13 +50,42 @@ interface RoleTable {
   tenant_id: string
   code: string
   name: string
-  status: UserStatus
+  description: string | null
+  status: 'ACTIVE' | 'DISABLED'
+  is_system: boolean
+  is_super: boolean
+  created_at: Date
+  created_by: string | null
+  updated_at: Date
+  updated_by: string | null
 }
 
 interface UserRoleTable {
   tenant_id: string
   user_id: string
   role_id: string
+  created_at: Date
+  created_by: string | null
+}
+
+interface RolePermissionTable {
+  tenant_id: string
+  role_id: string
+  permission_code: string
+  scope_type: string
+  created_at: Date
+  created_by: string | null
+}
+
+interface PermissionDefinitionTable {
+  code: string
+  module_id: string
+  name: string
+  description: string | null
+  supports_data_scope: boolean
+  active: boolean
+  created_at: Date
+  updated_at: Date
 }
 
 export interface IamDatabase {
@@ -61,6 +93,8 @@ export interface IamDatabase {
   'iam.user_credential': CredentialTable
   'iam.role': RoleTable
   'iam.user_role': UserRoleTable
+  'iam.role_permission': RolePermissionTable
+  'iam.permission_definition': PermissionDefinitionTable
 }
 
 export class PostgresCredentialStore implements CredentialStore, AuthenticationUnitOfWork {
