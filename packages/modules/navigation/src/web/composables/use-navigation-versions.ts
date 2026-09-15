@@ -5,6 +5,12 @@ import type { AdminNavigation, NavigationVersion } from '../../shared/index.js'
 import type { NavigationEditor } from './use-navigation-editor.js'
 import type { NavigationFeedback } from './use-navigation-feedback.js'
 
+export interface NavigationIssue {
+  code: string
+  nodeId?: string
+  message: string
+}
+
 type VersionClient = Pick<
   typeof Client,
   | 'getNavigationAdmin'
@@ -13,6 +19,7 @@ type VersionClient = Pick<
   | 'saveNavigationDraft'
   | 'validateNavigationVersion'
   | 'publishNavigationVersion'
+  | 'deleteNavigationDraft'
 >
 
 /** Version workflow owns persistence/concurrency, not local field editing or role grant state. */
@@ -29,11 +36,13 @@ export function useNavigationVersions(
     saveNavigationDraft,
     validateNavigationVersion,
     publishNavigationVersion,
+    deleteNavigationDraft,
   } = api
   const { version, dirty, selected, selectNode, applyJson } = editor
   const { run, message, error } = feedback
   const admin = ref<AdminNavigation>({ publishedVersionId: null, versions: [] })
   const published = ref<NavigationVersion | null>(null)
+  const issues = ref<NavigationIssue[]>([])
   async function loadIndex() {
     admin.value = await getNavigationAdmin()
     published.value =
@@ -44,6 +53,7 @@ export function useNavigationVersions(
   async function selectVersion(id: string) {
     if (dirty.value && !confirm('当前修改尚未保存，是否放弃？')) return
     await run(async () => {
+      issues.value = []
       version.value = await getNavigationVersion(id)
       dirty.value = false
       selectNode(version.value.nodes[0]?.id ?? '')
@@ -54,6 +64,7 @@ export function useNavigationVersions(
     await run(async () => {
       version.value = await createNavigationDraft(version.value?.id ?? null)
       dirty.value = false
+      issues.value = []
       selectNode(version.value.nodes[0]?.id ?? '')
       await loadIndex()
       message.value = '已创建草稿；普通用户仍使用当前发布版本。'
@@ -80,6 +91,7 @@ export function useNavigationVersions(
     await run(async () => {
       if (version.value === null) return
       const result = await validateNavigationVersion(version.value.id)
+      issues.value = result.issues
       if (result.issues.length > 0)
         error.value = result.issues.map((issue) => issue.message).join('\n')
       else message.value = '已保存版本校验通过。'
@@ -109,5 +121,37 @@ export function useNavigationVersions(
       message.value = '导航已生效。重新进入工作区可加载新的菜单与路径。'
     })
   }
-  return { admin, published, loadIndex, selectVersion, newDraft, save, validate, publish }
+  async function deleteDraft() {
+    if (version.value?.status !== 'DRAFT') return
+    if (dirty.value && !confirm('当前修改尚未保存，删除草稿后将一并丢弃。仍要删除？')) return
+    if (!dirty.value && !confirm('删除此未发布草稿？线上导航不受影响。')) return
+    const deletedId = version.value.id
+    await run(async () => {
+      await deleteNavigationDraft(deletedId)
+      version.value = null
+      dirty.value = false
+      issues.value = []
+      await loadIndex()
+      const nextId = admin.value.publishedVersionId ?? admin.value.versions[0]?.id
+      if (nextId === undefined) {
+        message.value = '草稿已删除；当前没有可查看的版本。'
+        return
+      }
+      version.value = await getNavigationVersion(nextId)
+      selectNode(version.value.nodes[0]?.id ?? '')
+      message.value = '草稿已删除。'
+    })
+  }
+  return {
+    admin,
+    published,
+    issues,
+    loadIndex,
+    selectVersion,
+    newDraft,
+    save,
+    validate,
+    publish,
+    deleteDraft,
+  }
 }

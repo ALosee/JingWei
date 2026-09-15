@@ -42,7 +42,7 @@ export function createDefaultConfiguration(registry: ModuleRegistry): Navigation
       type: 'DIRECTORY',
       parentId: groupId,
       sortOrder: 20,
-      icon: 'settings',
+      icon: 'lucide:settings',
     },
   ]
   for (const [index, route] of registry.routes().entries()) {
@@ -60,7 +60,7 @@ export function createDefaultConfiguration(registry: ModuleRegistry): Navigation
       layout: route.layout,
       accessMode: route.allowedAccessModes[0],
       sortOrder: index * 10,
-      icon: login ? null : account ? 'user' : 'grid',
+      icon: login ? null : account ? 'lucide:user-round' : 'lucide:layout-grid',
     })
   }
   return { authEntryCode: 'iam.login', homeCode: 'iam.account', nodes }

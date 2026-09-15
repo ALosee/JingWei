@@ -217,6 +217,27 @@ export const navigationApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
+  deleteDraft: createRoute({
+    method: 'delete',
+    path: '/versions/{id}',
+    operationId: 'navigationDeleteDraft',
+    tags: ['Navigation'],
+    summary: '删除未发布的导航草稿',
+    security: mutation,
+    request: { params: versionParam },
+    responses: {
+      200: {
+        description: '已删除的草稿版本 ID',
+        content: json(z.object({ id: z.uuid() }).strict()),
+      },
+      400: error('版本 ID 无效'),
+      401: error('尚未登录'),
+      403: error('权限、Origin 或 CSRF 校验失败'),
+      404: error('版本不存在'),
+      409: error('仅能删除未发布的草稿版本'),
+      500: error('服务器内部错误'),
+    },
+  }),
   getRoleGrants: createRoute({
     method: 'get',
     path: '/roles/{roleId}/grants',

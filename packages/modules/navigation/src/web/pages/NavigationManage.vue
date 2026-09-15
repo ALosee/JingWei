@@ -1,7 +1,15 @@
 <script setup lang="ts">
-import { Button, PageContainer } from '@jingwei/ui'
+import { computed, ref, watch } from 'vue'
 
-import { isContainer, isInternal, navigationNodeTypes } from '../../shared/index.js'
+import { Icon, Tabs, toast } from '@jingwei/ui'
+
+import type { NavigationNode, NavigationNodeType } from '../../shared/index.js'
+import NavigationNodeForm from '../components/navigation-node-form.vue'
+import NavigationPreviewPanel from '../components/navigation-preview-panel.vue'
+import NavigationRoleGrantsPanel from '../components/navigation-role-grants-panel.vue'
+import NavigationStructureTree from '../components/navigation-structure-tree.vue'
+import NavigationValidationPanel from '../components/navigation-validation-panel.vue'
+import NavigationVersionBar from '../components/navigation-version-bar.vue'
 import { useNavigationManagement } from '../composables/use-navigation-management.js'
 
 const { catalog, feedback, editor, versions, roles } = useNavigationManagement()
@@ -13,354 +21,291 @@ const {
   dirty,
   paramsText,
   queryText,
+  search,
+  highlightId,
   readOnly,
+  rows,
+  parentOptions,
   selectNode,
   changeType,
   changeRoute,
-  addNode,
+  addNodeAs,
+  addSiblingNode,
   removeNode,
+  moveNode,
+  moveNodeToParent,
+  toggleExpanded,
+  expandAll,
+  collapseAll,
+  revealNode,
 } = editor
-const { admin, selectVersion, newDraft, save, validate, publish } = versions
-const { roleId, loadedRoleId, grants, assignable, retiredCodes, loadRole, saveGrants } = roles
+const { admin, published, issues, selectVersion, newDraft, save, validate, publish, deleteDraft } =
+  versions
+const {
+  roleId,
+  loadedRoleId,
+  grants,
+  assignable,
+  retiredCodes,
+  previewCodesByRole,
+  previewLoadingRoleId,
+  ensurePreviewCodes,
+  loadRole,
+  saveGrants,
+} = roles
+
+const sideTab = ref<'preview' | 'grants' | 'validation'>('preview')
+const sideTabs = [
+  { value: 'preview', label: '预览' },
+  { value: 'grants', label: '角色授权' },
+  { value: 'validation', label: '校验' },
+]
+
+function onPreviewRoleId(id: string): void {
+  if (!id) return
+  void ensurePreviewCodes(id)
+}
+
+const internalOptions = computed(() =>
+  (version.value?.nodes ?? [])
+    .filter((node) => node.type === 'MENU' || node.type === 'PAGE')
+    .map((node) => ({ code: node.code, label: `${node.name} · ${node.code}` })),
+)
+
+/** Login entry must be an enabled PUBLIC internal page (server NAVIGATION_AUTH_ENTRY_INVALID). */
+const authEntryOptions = computed(() =>
+  (version.value?.nodes ?? [])
+    .filter(
+      (node) =>
+        (node.type === 'MENU' || node.type === 'PAGE') &&
+        node.accessMode === 'PUBLIC' &&
+        node.status === 'ENABLED',
+    )
+    .map((node) => ({ code: node.code, label: `${node.name} · ${node.code}` })),
+)
+
+const codeBaseline = ref(new Map<string, string>())
+const dirtyCodeWarning = computed(() => {
+  const node = selected.value
+  if (node === undefined) return false
+  const original = codeBaseline.value.get(node.id)
+  return original !== undefined && original !== node.code
+})
+
+watch(
+  () => version.value?.id,
+  (id) => {
+    if (id === undefined || version.value === null) {
+      codeBaseline.value = new Map()
+      return
+    }
+    codeBaseline.value = new Map(version.value.nodes.map((node) => [node.id, node.code]))
+  },
+  { immediate: true },
+)
+
+function onReveal(nodeId: string): void {
+  revealNode(nodeId)
+}
+
+function onLocate(nodeId: string): void {
+  revealNode(nodeId)
+}
+
+async function runSave(): Promise<void> {
+  await save()
+  if (feedback.error.value === '') {
+    if (version.value !== null) {
+      codeBaseline.value = new Map(version.value.nodes.map((node) => [node.id, node.code]))
+    }
+    toast.success('草稿已保存')
+  }
+}
+
+async function runValidate(): Promise<void> {
+  await validate()
+  sideTab.value = 'validation'
+  if (feedback.error.value === '') toast.success('校验通过')
+}
+
+async function runPublish(rollback: boolean): Promise<void> {
+  await publish(rollback)
+  if (feedback.error.value === '') toast.success(rollback ? '已回滚' : '导航已发布')
+}
+
+async function runDeleteDraft(): Promise<void> {
+  await deleteDraft()
+  if (feedback.error.value === '') toast.success('草稿已删除')
+}
+
+function addChild(type: NavigationNodeType): void {
+  addNodeAs(type)
+}
+
+function onAddSibling(): void {
+  addSiblingNode()
+}
+
+function onParamsUpdate(value: string): void {
+  paramsText.value = value
+  dirty.value = true
+}
+
+function onQueryUpdate(value: string): void {
+  queryText.value = value
+  dirty.value = true
+}
+
+function onUpdateRoleId(id: string): void {
+  roleId.value = id
+  void loadRole()
+}
+
+function onUpdateGrants(codes: string[]): void {
+  grants.value = codes
+}
+
+function onUpdateAuthEntry(value: string): void {
+  if (version.value === null) return
+  version.value.authEntryCode = value
+  dirty.value = true
+}
+
+function onUpdateHomeCode(value: string | null): void {
+  if (version.value === null) return
+  version.value.homeCode = value
+  dirty.value = true
+}
+
+function onUpdateNode(patch: Partial<NavigationNode>): void {
+  if (selected.value === undefined) return
+  Object.assign(selected.value, patch)
+  dirty.value = true
+}
+
+function onMarkDirty(): void {
+  dirty.value = true
+}
+
+function onChangeType(type: NavigationNodeType): void {
+  changeType(type)
+}
+
+function onChangeRoute(routeKey: string | null): void {
+  changeRoute(routeKey)
+}
 </script>
 
 <template>
-  <PageContainer title="导航管理" description="统一节点 · 版本发布 · 按 navigation code 授权">
-    <p v-if="error" role="alert" class="notice error">
+  <div class="grid gap-4">
+    <p
+      v-if="error"
+      role="alert"
+      class="m-0 whitespace-pre-wrap rounded-md border border-destructive/25 bg-destructive/8 px-3 py-2 text-sm text-destructive"
+    >
       {{ error }}
     </p>
-    <p v-if="message" role="status" class="notice">
+    <p
+      v-if="message"
+      role="status"
+      class="m-0 rounded-md border border-primary/20 bg-primary/8 px-3 py-2 text-sm text-foreground"
+    >
       {{ message }}
     </p>
-    <div class="toolbar">
-      <label
-        >查看版本
-        <select
-          :value="version?.id ?? ''"
-          :disabled="busy"
-          @change="selectVersion(($event.target as HTMLSelectElement).value)"
-        >
-          <option v-if="admin.versions.length === 0" value="">尚无版本</option>
-          <option v-for="item in admin.versions" :key="item.id" :value="item.id">
-            V{{ item.revision }} · {{ item.status === 'DRAFT' ? '草稿' : '已发布快照'
-            }}{{ item.id === admin.publishedVersionId ? ' · 当前使用' : '' }}
-          </option>
-        </select>
-      </label>
-      <Button :disabled="busy" variant="outline" @click="newDraft"> 基于所选版本创建草稿 </Button>
-      <a href="/">重新进入工作区</a>
-    </div>
-    <section v-if="version" class="panel">
-      <div class="toolbar">
-        <strong
-          >V{{ version.revision }} / 编辑修订 {{ version.editRevision
-          }}{{ dirty ? ' · 未保存' : '' }}</strong
-        >
-        <Button :disabled="readOnly" @click="save">保存草稿</Button>
-        <Button :disabled="busy || dirty" variant="outline" @click="validate">
-          校验已保存版本
-        </Button>
-        <Button :disabled="readOnly || dirty" @click="publish(false)">发布</Button>
-        <Button
-          :disabled="
-            busy || version.status !== 'PUBLISHED' || version.id === admin.publishedVersionId
-          "
-          color="destructive"
-          @click="publish(true)"
-        >
-          回滚到此版本
-        </Button>
-      </div>
-      <fieldset :disabled="readOnly" class="entries" @input="dirty = true" @change="dirty = true">
-        <label>登录入口 code<input v-model="version.authEntryCode" /></label>
-        <label
-          >默认首页
-          <select v-model="version.homeCode">
-            <option :value="null">首个可见菜单</option>
-            <option
-              v-for="node in version.nodes.filter(isInternal)"
-              :key="node.id"
-              :value="node.code"
-            >
-              {{ node.name }} · {{ node.code }}
-            </option>
-          </select>
-        </label>
-      </fieldset>
-      <div class="editor">
-        <div>
-          <div class="toolbar">
-            <Button :disabled="readOnly" variant="outline" @click="addNode">新增节点</Button>
-            <Button :disabled="readOnly || !selected" color="destructive" @click="removeNode">
-              删除节点
-            </Button>
-          </div>
-          <div class="node-list">
-            <Button
-              v-for="node in version.nodes"
-              :key="node.id"
-              class="node"
-              :class="{ selected: node.id === selectedId }"
-              size="sm"
-              variant="ghost"
-              @click="selectNode(node.id)"
-            >
-              <strong>{{ node.name }}</strong
-              ><small>{{ node.type }} · {{ node.code }} · {{ node.status }}</small>
-            </Button>
-          </div>
-        </div>
-        <fieldset
-          v-if="selected"
-          :disabled="readOnly"
-          class="fields"
-          @input="dirty = true"
-          @change="dirty = true"
-        >
-          <label>名称<input v-model="selected.name" /></label>
-          <label>稳定 code<input v-model="selected.code" /></label>
-          <label
-            >类型<select v-model="selected.type" @change="changeType">
-              <option v-for="type in navigationNodeTypes" :key="type">{{ type }}</option>
-            </select></label
-          >
-          <label
-            >状态<select v-model="selected.status">
-              <option>ENABLED</option>
-              <option>DISABLED</option>
-            </select></label
-          >
-          <label
-            >父节点<select v-model="selected.parentId">
-              <option :value="null">根节点</option>
-              <option
-                v-for="node in version.nodes.filter(
-                  (n) =>
-                    n.id !== selected?.id &&
-                    (isContainer(n) || (selected?.type === 'PAGE' && isInternal(n))),
-                )"
-                :key="node.id"
-                :value="node.id"
-              >
-                {{ node.name }} · {{ node.code }}
-              </option>
-            </select></label
-          >
-          <label>同级排序<input v-model.number="selected.sortOrder" type="number" /></label>
-          <label
-            >图标 key<input
-              v-model="selected.icon"
-              placeholder="settings / user / grid / folder / link / book"
-          /></label>
-          <label v-if="!isContainer(selected)"
-            >访问模式<select v-model="selected.accessMode">
-              <option>PUBLIC</option>
-              <option>AUTHENTICATED</option>
-              <option>PERMISSION</option>
-            </select></label
-          >
-          <template v-if="isInternal(selected)">
-            <label
-              >routeKey<select v-model="selected.routeKey" @change="changeRoute">
-                <option :value="null">选择页面</option>
-                <option v-for="route in catalog.routes" :key="route.key" :value="route.key">
-                  {{ route.key }}
-                </option>
-              </select></label
-            >
-            <label
-              >布局<select v-model="selected.layout">
-                <option
-                  v-for="layout in catalog.routes.find((r) => r.key === selected?.routeKey)
-                    ?.allowedLayouts ?? ['base', 'blank']"
-                  :key="layout"
-                >
-                  {{ layout }}
-                </option>
-              </select></label
-            >
-            <label class="wide"
-              >路径模式<input v-model="selected.path" placeholder="/example/:id"
-            /></label>
-            <label
-              >默认 params（JSON）<textarea v-model="paramsText" rows="4" spellcheck="false" />
-            </label>
-            <label
-              >默认 query（JSON）<textarea v-model="queryText" rows="4" spellcheck="false" />
-            </label>
-          </template>
-          <template v-if="selected.type === 'EXTERNAL_LINK'">
-            <label class="wide">HTTPS 外链<input v-model="selected.href" type="url" /></label>
-            <label
-              >打开方式<select v-model="selected.externalTarget">
-                <option>BLANK</option>
-                <option>SELF</option>
-              </select></label
-            >
-          </template>
-        </fieldset>
-        <p v-else>选择一个节点编辑。</p>
-      </div>
-    </section>
-    <section class="panel">
-      <h2>角色导航授权</h2>
-      <p>
-        只控制导航可见性。目录/分组自动保留；业务 API 权限仍独立鉴权。授权使用当前发布版本的稳定
-        code。
-      </p>
-      <div class="toolbar">
-        <label
-          >角色<select v-model="roleId" :disabled="busy" @change="loadRole">
-            <option value="">选择角色</option>
-            <option v-for="role in catalog.roles" :key="role.id" :value="role.id">
-              {{ role.name }} · {{ role.code }}
-            </option>
-          </select></label
-        >
-        <Button :disabled="busy || !roleId || loadedRoleId !== roleId" @click="saveGrants">
-          保存角色导航授权
-        </Button>
-      </div>
-      <div v-if="roleId && loadedRoleId === roleId" class="grants">
-        <label v-for="node in assignable" :key="node.code"
-          ><input v-model="grants" type="checkbox" :value="node.code" :disabled="busy" />{{
-            node.name
-          }}
-          <code>{{ node.code }}</code></label
-        >
-        <label v-for="code in retiredCodes" :key="code" class="error"
-          ><input
-            v-model="grants"
-            type="checkbox"
-            :value="code"
-          />已不在当前可授权节点中，请取消：{{ code }}</label
-        >
-      </div>
-    </section>
-  </PageContainer>
-</template>
 
-<style scoped>
-.panel {
-  border: 1px solid hsl(var(--border) / var(--border-alpha, 1));
-  border-radius: var(--radius);
-  padding: 1rem;
-  background: hsl(var(--card));
-  color: hsl(var(--card-foreground));
-  margin-top: 1rem;
-}
-.toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.7rem;
-  align-items: end;
-  margin-bottom: 0.9rem;
-}
-.toolbar strong {
-  margin-right: auto;
-  align-self: center;
-}
-label {
-  display: grid;
-  gap: 0.35rem;
-  font-size: 0.82rem;
-  color: hsl(var(--muted-foreground));
-}
-input,
-select,
-textarea {
-  font: inherit;
-  padding: 0.55rem 0.65rem;
-  border: 1px solid hsl(var(--input) / var(--input-alpha, 1));
-  background: hsl(var(--background));
-  color: hsl(var(--foreground));
-  border-radius: var(--radius);
-  max-width: 100%;
-}
-fieldset {
-  border: 0;
-  margin: 0;
-  padding: 0;
-  min-width: 0;
-}
-.entries,
-.fields {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.8rem;
-}
-.entries {
-  margin-bottom: 1rem;
-}
-.editor {
-  display: grid;
-  grid-template-columns: minmax(13rem, 1fr) minmax(0, 2fr);
-  gap: 1rem;
-}
-.node-list {
-  display: grid;
-  gap: 0.35rem;
-  max-height: 36rem;
-  overflow: auto;
-}
-.node {
-  display: grid;
-  text-align: left;
-  gap: 0.3rem;
-  width: 100%;
-}
-.node.selected {
-  background: hsl(var(--primary) / 0.1);
-  border-color: hsl(var(--primary));
-}
-small {
-  font-size: 0.7rem;
-  overflow-wrap: anywhere;
-}
-.wide {
-  grid-column: 1 / -1;
-}
-.notice {
-  white-space: pre-wrap;
-  padding: 0.8rem;
-  background: hsl(var(--info) / 0.1);
-  border-radius: var(--radius);
-}
-.error {
-  color: hsl(var(--destructive));
-}
-.grants {
-  display: grid;
-  gap: 0.5rem;
-}
-.grants label {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-}
-code {
-  font-size: 0.75rem;
-}
-h2 {
-  margin: 0 0 0.5rem;
-  font-size: 1.1rem;
-}
-p {
-  font-size: 0.85rem;
-  color: hsl(var(--muted-foreground));
-}
-@media (max-width: 1050px) {
-  .editor {
-    grid-template-columns: 1fr;
-  }
-  .node-list {
-    max-height: 15rem;
-  }
-}
-@media (max-width: 600px) {
-  .entries,
-  .fields {
-    grid-template-columns: 1fr;
-  }
-}
-</style>
+    <NavigationVersionBar
+      :admin="admin"
+      :version="version"
+      :busy="busy"
+      :read-only="readOnly"
+      :dirty="dirty"
+      :internal-options="internalOptions"
+      :auth-entry-options="authEntryOptions"
+      @select-version="selectVersion"
+      @new-draft="newDraft"
+      @save="runSave"
+      @validate="runValidate"
+      @publish="runPublish"
+      @delete-draft="runDeleteDraft"
+      @update-auth-entry="onUpdateAuthEntry"
+      @update-home-code="onUpdateHomeCode"
+    />
+
+    <div
+      class="grid gap-4 xl:grid-cols-[minmax(16rem,1.1fr)_minmax(18rem,1.4fr)_minmax(16rem,1fr)]"
+    >
+      <NavigationStructureTree
+        :rows="rows"
+        :selected-id="selectedId"
+        :highlight-id="highlightId"
+        :search="search"
+        :read-only="readOnly"
+        :busy="busy"
+        @update-search="(value) => (search = value)"
+        @select="selectNode"
+        @toggle="toggleExpanded"
+        @expand-all="expandAll"
+        @collapse-all="collapseAll"
+        @add-child="addChild"
+        @add-sibling="onAddSibling"
+        @remove="removeNode"
+        @move="moveNode"
+      />
+
+      <NavigationNodeForm
+        :selected="selected"
+        :read-only="readOnly"
+        :params-text="paramsText"
+        :query-text="queryText"
+        :route-options="catalog.routes"
+        :parent-options="parentOptions"
+        :dirty-code-warning="dirtyCodeWarning"
+        @change-type="onChangeType"
+        @change-route="onChangeRoute"
+        @change-parent="moveNodeToParent"
+        @update-node="onUpdateNode"
+        @update-params-text="onParamsUpdate"
+        @update-query-text="onQueryUpdate"
+        @mark-dirty="onMarkDirty"
+      />
+
+      <section class="flex min-h-0 flex-col gap-3 rounded-lg border border-border bg-card/40 p-3">
+        <Tabs v-model="sideTab" :items="sideTabs" size="sm" fill="full">
+          <template #content="{ value }">
+            <div class="min-w-0 pt-2">
+              <NavigationPreviewPanel
+                v-if="value === 'preview'"
+                :nodes="version?.nodes ?? []"
+                :roles="catalog.roles"
+                :granted-codes-by-role="previewCodesByRole"
+                :loading-role-id="previewLoadingRoleId"
+                @reveal="onReveal"
+                @update-role-id="onPreviewRoleId"
+              />
+              <NavigationRoleGrantsPanel
+                v-else-if="value === 'grants'"
+                :roles="catalog.roles"
+                :role-id="roleId"
+                :loaded-role-id="loadedRoleId"
+                :grants="grants"
+                :assignable="assignable"
+                :retired-codes="retiredCodes"
+                :busy="busy"
+                @update-role-id="onUpdateRoleId"
+                @load-role="loadRole"
+                @update-grants="onUpdateGrants"
+                @save="saveGrants"
+              />
+              <NavigationValidationPanel v-else :issues="issues" @locate="onLocate" />
+            </div>
+          </template>
+        </Tabs>
+
+        <p v-if="published" class="m-0 flex items-center gap-1 text-xs text-muted-foreground">
+          <Icon icon="lucide:radio" class="size-3.5" />
+          当前线上为 V{{ published.revision }}，普通用户不会看到未发布草稿的改动。
+        </p>
+      </section>
+    </div>
+  </div>
+</template>

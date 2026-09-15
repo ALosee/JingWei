@@ -28,6 +28,28 @@ export function useRoleNavigationGrants(
   const retiredCodes = computed(() =>
     grants.value.filter((code) => !assignable.value.some((node) => node.code === code)),
   )
+  /** Preview uses published grants only; independent of the editor's unsaved draft. */
+  const previewCodesByRole = ref(new Map<string, ReadonlySet<string>>())
+  const previewLoadingRoleId = ref('')
+
+  async function ensurePreviewCodes(id: string) {
+    if (!id || previewCodesByRole.value.has(id)) return
+    previewLoadingRoleId.value = id
+    try {
+      const result = await getRoleNavigation(id)
+      previewCodesByRole.value.set(id, new Set(result.codes))
+    } catch {
+      previewCodesByRole.value.set(id, new Set())
+    } finally {
+      if (previewLoadingRoleId.value === id) previewLoadingRoleId.value = ''
+    }
+  }
+
+  function refreshPreviewCodes(id: string, codes: readonly string[]) {
+    if (!id) return
+    previewCodesByRole.value.set(id, new Set(codes))
+  }
+
   async function loadRole() {
     await run(async () => {
       // Failed reads must not leave another role's editable grants on screen.
@@ -39,6 +61,7 @@ export function useRoleNavigationGrants(
       grants.value = [...result.codes]
       originalGrants.value = [...result.codes]
       loadedRoleId.value = roleId.value
+      refreshPreviewCodes(roleId.value, result.codes)
     })
   }
   async function saveGrants() {
@@ -51,8 +74,20 @@ export function useRoleNavigationGrants(
       })
       grants.value = [...result.codes]
       originalGrants.value = [...result.codes]
+      refreshPreviewCodes(roleId.value, result.codes)
       message.value = '角色导航授权已保存，不会改变业务 API 权限。'
     })
   }
-  return { roleId, loadedRoleId, grants, assignable, retiredCodes, loadRole, saveGrants }
+  return {
+    roleId,
+    loadedRoleId,
+    grants,
+    assignable,
+    retiredCodes,
+    previewCodesByRole,
+    previewLoadingRoleId,
+    ensurePreviewCodes,
+    loadRole,
+    saveGrants,
+  }
 }

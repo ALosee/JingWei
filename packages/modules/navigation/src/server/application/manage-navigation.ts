@@ -136,6 +136,18 @@ export class ManageNavigation {
       return this.requiredVersion(tx.store, context, id)
     })
   }
+  /** Delete an unpublished draft under the root lock; published snapshots are never removable. */
+  async deleteDraft(context: AuthContext, id: string) {
+    await this.authorize(context, 'manage')
+    return this.work.run(async (tx) => {
+      await tx.store.root(context.tenantId, true)
+      const version = await this.requiredVersion(tx.store, context, id)
+      if (version.status !== 'DRAFT') fail('NAVIGATION_VERSION_STATE', '仅能删除未发布的草稿版本')
+      await tx.store.deleteDraft(context, id)
+      await tx.record(context, 'draft_deleted', id, { revision: version.revision }, null)
+      return { id }
+    })
+  }
   async roleCodes(context: AuthContext, roleId: string) {
     await this.authorize(context, 'view')
     await this.assertRole(context, roleId)

@@ -66,6 +66,9 @@ export function createNavigationRoutes(
   app.openapi(navigationApiRoutes.rollbackVersion, async (c) =>
     c.json(await manage.publish(auth(c), c.req.valid('param').id, c.req.valid('json'), true), 200),
   )
+  app.openapi(navigationApiRoutes.deleteDraft, async (c) =>
+    c.json(await manage.deleteDraft(auth(c), c.req.valid('param').id), 200),
+  )
   app.openapi(navigationApiRoutes.getRoleGrants, async (c) =>
     c.json(await manage.roleCodes(auth(c), c.req.valid('param').roleId), 200),
   )

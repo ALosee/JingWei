@@ -78,6 +78,7 @@ it('saves the expected revision, adopts returned node IDs, and preserves publish
     publishNavigationVersion: vi.fn(() =>
       Promise.resolve({ ...saved, status: 'PUBLISHED' as const }),
     ),
+    deleteNavigationDraft: vi.fn(() => Promise.resolve({ id: draft.id })),
   }
   const versions = useNavigationVersions(api, editor, feedback, () => true)
   await versions.save()
@@ -92,6 +93,27 @@ it('saves the expected revision, adopts returned node IDs, and preserves publish
     { expectedEditRevision: 1, expectedPublishedVersionId: 'old-published' },
     false,
   )
+})
+it('deletes a draft and falls back to the published version', async () => {
+  const { editor, feedback } = editorState()
+  const draft = snapshot()
+  const published = { ...draft, id: 'published-1', status: 'PUBLISHED' as const }
+  const api = {
+    getNavigationAdmin: vi.fn(() =>
+      Promise.resolve({ publishedVersionId: published.id, versions: [] }),
+    ),
+    getNavigationVersion: vi.fn(() => Promise.resolve(published)),
+    createNavigationDraft: vi.fn(() => Promise.resolve(draft)),
+    saveNavigationDraft: vi.fn(),
+    validateNavigationVersion: vi.fn(),
+    publishNavigationVersion: vi.fn(),
+    deleteNavigationDraft: vi.fn(() => Promise.resolve({ id: draft.id })),
+  }
+  const versions = useNavigationVersions(api, editor, feedback, () => true)
+  await versions.deleteDraft()
+  expect(api.deleteNavigationDraft).toHaveBeenCalledWith(draft.id)
+  expect(editor.version.value?.id).toBe(published.id)
+  expect(feedback.message.value).toBe('草稿已删除。')
 })
 it('clears prior role state on failed reads and cannot save a role that was not loaded', async () => {
   const feedback = useNavigationFeedback()

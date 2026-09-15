@@ -30,6 +30,7 @@ export interface NavigationStore extends NavigationSource {
   ): Promise<void>
   markPublished(context: ApplicationContext, id: string): Promise<void>
   pointPublished(context: ApplicationContext, rootId: string, versionId: string): Promise<void>
+  deleteDraft(context: ApplicationContext, id: string): Promise<void>
   roleCodes(tenantId: TenantId, roleId: string): Promise<string[]>
   replaceRoleCodes(
     context: ApplicationContext,

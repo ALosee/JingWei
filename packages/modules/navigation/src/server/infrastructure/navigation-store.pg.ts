@@ -290,6 +290,16 @@ export class PostgresNavigationStore implements NavigationStore {
       .where('id', '=', rootId)
       .execute()
   }
+  /** Only drafts are deletable; published snapshots are protected by database triggers. */
+  async deleteDraft(context: ApplicationContext, id: string) {
+    await this.db
+      .deleteFrom('navigation.navigation_version')
+      .where('tenant_id', '=', context.tenantId)
+      .where('id', '=', id)
+      .where('status', '=', 'DRAFT')
+      .where('published_at', 'is', null)
+      .execute()
+  }
   async grantedCodes(tenantId: TenantId, roleIds: readonly string[]): Promise<ReadonlySet<string>> {
     if (roleIds.length === 0) return new Set()
     const rows = await this.db

@@ -7,8 +7,18 @@ import {
   querySchema,
   type NavigationCatalog,
   type NavigationNode,
+  type NavigationNodeType,
   type NavigationVersion,
 } from '../../shared/index.js'
+import {
+  buildNavigationTree,
+  canNestNode,
+  defaultExpandedIds,
+  flattenNavigationTree,
+  nextSortOrder,
+  parentOptionsFor,
+  uniqueCode,
+} from './navigation-tree.js'
 import type { NavigationFeedback } from './use-navigation-feedback.js'
 
 /** Local editing only: no HTTP, publish, role grants, or global store mutations. */
@@ -24,7 +34,19 @@ export function useNavigationEditor(
   const dirty = ref(false)
   const paramsText = ref('{}')
   const queryText = ref('{}')
+  const search = ref('')
+  const expandedIds = ref<Set<string>>(new Set())
+  const highlightId = ref('')
   const readOnly = computed(() => version.value?.status !== 'DRAFT' || busy.value)
+
+  const tree = computed(() => buildNavigationTree(version.value?.nodes ?? []))
+  const rows = computed(() => flattenNavigationTree(tree.value, expandedIds.value, search.value))
+  const parentOptions = computed(() =>
+    selected.value === undefined
+      ? []
+      : parentOptionsFor(version.value?.nodes ?? [], selected.value),
+  )
+
   function selectNode(id: string) {
     // Preserve edits to JSON fields before moving to another node.
     if (selected.value !== undefined && dirty.value) {
@@ -46,9 +68,10 @@ export function useNavigationEditor(
     selected.value.params = paramsSchema.parse(params)
     selected.value.query = querySchema.parse(query)
   }
-  function changeType() {
+  function changeType(nextType?: NavigationNodeType) {
     const node = selected.value
     if (node === undefined) return
+    if (nextType !== undefined) node.type = nextType
     if (!isInternal(node)) {
       node.routeKey = null
       node.path = null
@@ -72,38 +95,64 @@ export function useNavigationEditor(
       node.layout = 'base'
       node.accessMode = 'PERMISSION'
     }
+    dirty.value = true
   }
-  function changeRoute() {
+  function changeRoute(nextRouteKey?: string | null) {
     const node = selected.value
-    const definition = catalog.value.routes.find((route) => route.key === node?.routeKey)
-    if (node !== undefined && definition !== undefined) {
+    if (node === undefined) return
+    if (nextRouteKey !== undefined) node.routeKey = nextRouteKey
+    const definition = catalog.value.routes.find((route) => route.key === node.routeKey)
+    if (definition !== undefined) {
       node.layout = definition.layout
       node.accessMode = definition.allowedAccessModes[0] ?? 'PERMISSION'
     }
+    dirty.value = true
   }
-  function addNode() {
-    if (version.value === null) return
-    const node: NavigationNode = {
+  function createNodePayload(type: NavigationNodeType, parentId: string | null): NavigationNode {
+    const nodes = version.value?.nodes ?? []
+    return {
       id: crypto.randomUUID(),
-      code: 'new-node-' + String(version.value.nodes.length + 1),
+      code: uniqueCode(nodes, 'new-node'),
       name: '新节点',
-      type: 'MENU',
+      type,
       status: 'ENABLED',
-      parentId: null,
+      parentId,
       routeKey: null,
-      path: '',
-      layout: 'base',
-      accessMode: 'PERMISSION',
+      path: type === 'MENU' || type === 'PAGE' ? '' : null,
+      layout: type === 'MENU' || type === 'PAGE' ? 'base' : null,
+      accessMode:
+        type === 'DIRECTORY' || type === 'GROUP'
+          ? null
+          : type === 'EXTERNAL_LINK'
+            ? 'AUTHENTICATED'
+            : 'PERMISSION',
       icon: null,
-      sortOrder: 0,
-      href: null,
-      externalTarget: null,
+      sortOrder: nextSortOrder(nodes, parentId),
+      href: type === 'EXTERNAL_LINK' ? '' : null,
+      externalTarget: type === 'EXTERNAL_LINK' ? 'BLANK' : null,
       params: {},
       query: {},
     }
+  }
+  function insertNode(node: NavigationNode) {
+    if (version.value === null) return
     version.value.nodes.push(node)
+    if (node.parentId !== null) expandedIds.value.add(node.parentId)
     selectNode(node.id)
     dirty.value = true
+  }
+  function addNode() {
+    const parentId =
+      selected.value !== undefined && isContainer(selected.value) ? selected.value.id : null
+    insertNode(createNodePayload('MENU', parentId))
+  }
+  function addNodeAs(type: NavigationNodeType) {
+    const parentId =
+      selected.value !== undefined && isContainer(selected.value) ? selected.value.id : null
+    insertNode(createNodePayload(type, parentId))
+  }
+  function addSiblingNode() {
+    insertNode(createNodePayload('MENU', selected.value?.parentId ?? null))
   }
   function removeNode() {
     if (version.value === null || selected.value === undefined) return
@@ -116,9 +165,74 @@ export function useNavigationEditor(
     selectedId.value = ''
     dirty.value = true
   }
+  function moveNode(delta: -1 | 1) {
+    if (version.value === null || selected.value === undefined || readOnly.value) return
+    const node = selected.value
+    const siblings = version.value.nodes
+      .filter((item) => item.parentId === node.parentId)
+      .toSorted(
+        (left, right) => left.sortOrder - right.sortOrder || left.code.localeCompare(right.code),
+      )
+    const index = siblings.findIndex((item) => item.id === node.id)
+    const target = siblings[index + delta]
+    if (target === undefined) return
+    const left = delta === -1 ? target : node
+    const right = delta === -1 ? node : target
+    if (left.sortOrder === right.sortOrder) right.sortOrder += 1
+    const temp = left.sortOrder
+    left.sortOrder = right.sortOrder
+    right.sortOrder = temp
+    dirty.value = true
+  }
+  function moveNodeToParent(parentId: string | null) {
+    if (version.value === null || selected.value === undefined || readOnly.value) return
+    if (!canNestNode(version.value.nodes, selected.value.id, parentId)) {
+      error.value = '目标父节点不接受该节点类型'
+      return
+    }
+    selected.value.parentId = parentId
+    selected.value.sortOrder = nextSortOrder(
+      version.value.nodes.filter((node) => node.id !== selected.value?.id),
+      parentId,
+    )
+    if (parentId !== null) expandedIds.value.add(parentId)
+    dirty.value = true
+  }
+  function toggleExpanded(id: string) {
+    const next = new Set(expandedIds.value)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    expandedIds.value = next
+  }
+  function expandAll() {
+    const ids = new Set<string>()
+    for (const node of version.value?.nodes ?? []) {
+      if (version.value?.nodes.some((child) => child.parentId === node.id)) ids.add(node.id)
+    }
+    expandedIds.value = ids
+  }
+  function collapseAll() {
+    expandedIds.value = new Set()
+  }
+  function revealNode(id: string) {
+    const nodes = version.value?.nodes ?? []
+    const byId = new Map(nodes.map((node) => [node.id, node]))
+    const next = new Set(expandedIds.value)
+    let cursor = byId.get(id)?.parentId ?? null
+    while (cursor !== null) {
+      next.add(cursor)
+      cursor = byId.get(cursor)?.parentId ?? null
+    }
+    expandedIds.value = next
+    highlightId.value = id
+    selectNode(id)
+  }
   function replaceVersion(value: NavigationVersion, selectedCode?: string) {
     version.value = value
     dirty.value = false
+    search.value = ''
+    highlightId.value = ''
+    expandedIds.value = defaultExpandedIds(value.nodes)
     selectNode(
       value.nodes.find((node) => node.code === selectedCode)?.id ?? value.nodes[0]?.id ?? '',
     )
@@ -130,13 +244,27 @@ export function useNavigationEditor(
     dirty,
     paramsText,
     queryText,
+    search,
+    expandedIds,
+    highlightId,
     readOnly,
+    tree,
+    rows,
+    parentOptions,
     selectNode,
     applyJson,
     changeType,
     changeRoute,
     addNode,
+    addNodeAs,
+    addSiblingNode,
     removeNode,
+    moveNode,
+    moveNodeToParent,
+    toggleExpanded,
+    expandAll,
+    collapseAll,
+    revealNode,
     replaceVersion,
   }
 }

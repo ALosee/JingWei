@@ -1,3 +1,5 @@
+import { z } from 'zod'
+
 import { ApiClientError, createModuleApiClient, executeApiRequest } from '@jingwei/api-client'
 
 import {
@@ -94,6 +96,14 @@ export const publishNavigationVersion = (id: string, input: PublishNavigation, r
           schema: versionSchema,
         }),
       )
+
+export const deleteNavigationDraft = (id: string) =>
+  executeApiRequest(() =>
+    api.throwingClient.delete('/versions/{id}', {
+      pathParams: { id },
+      schema: z.object({ id: z.uuid() }).strict(),
+    }),
+  )
 
 export const getRoleNavigation = (roleId: string) =>
   executeApiRequest(() =>

@@ -172,3 +172,18 @@ export function navigationTarget(node: NavigationNode): string | null {
   }
   return path + (query.size > 0 ? '?' + query.toString() : '')
 }
+
+export function isIconifyName(value: string): boolean {
+  return /^[a-z0-9]+:[a-z0-9-]+$/iu.test(value)
+}
+
+/** Full iconify name only; short aliases are not supported. */
+export function resolveNavigationIcon(icon: string | null, type: NavigationNode['type']): string {
+  const raw = (icon ?? '').trim()
+  if (raw !== '') return raw
+  if (type === 'DIRECTORY') return 'lucide:folder'
+  if (type === 'EXTERNAL_LINK') return 'lucide:external-link'
+  if (type === 'GROUP') return 'lucide:layers'
+  if (type === 'PAGE') return 'lucide:file-text'
+  return 'lucide:layout-grid'
+}

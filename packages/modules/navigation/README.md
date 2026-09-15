@@ -24,24 +24,24 @@ Navigation 拥有租户导航配置、发布版本和角色导航授权。它将
 
 共享配置 DTO 定义在 [shared/index.ts](./src/shared/index.ts)，数据库使用 snake_case，API 使用 camelCase：
 
-| 字段           | 含义与约束                                                                         |
-| -------------- | ---------------------------------------------------------------------------------- |
-| id             | 当前版本中的节点 UUID；不是授权标识，克隆/保存后会重新分配                         |
-| code           | 稳定导航资源标识；版本内唯一，小写字母开头，支持数字、点、下划线、连字符，最长 120 |
-| name           | 展示名称，1–200 字符                                                               |
-| type           | 上表五种类型                                                                       |
-| parentId       | 同一版本节点 ID 或 null；表达展示归属，不表达 Vue Router 嵌套                      |
-| status         | ENABLED / DISABLED；禁用祖先使整个分支不可用                                       |
-| sortOrder      | 同层排序；同值按 code 排序                                                         |
-| icon           | 展示图标 key 或 null；不能是 HTML/脚本，当前壳只映射少数内置 key                   |
-| routeKey       | MENU/PAGE 必填；当前 Edition 的稳定页面 key                                        |
-| path           | MENU/PAGE 必填；绝对路径模板，不把 query 拼在此字段                                |
-| layout         | MENU/PAGE 必填；base / blank，受 manifest.allowedLayouts 约束                      |
-| accessMode     | MENU/PAGE/EXTERNAL_LINK 必填；PUBLIC / AUTHENTICATED / PERMISSION                  |
-| params         | 内部路径的默认参数对象；字符串或数字，不允许表达式                                 |
-| query          | 内部跳转的默认查询对象；标量、null 或标量数组                                      |
-| href           | 仅外链使用；HTTPS URL，不含 username/password                                      |
-| externalTarget | 仅外链使用；SELF / BLANK，BLANK 输出 noopener noreferrer                           |
+| 字段           | 含义与约束                                                                                                          |
+| -------------- | ------------------------------------------------------------------------------------------------------------------- |
+| id             | 当前版本中的节点 UUID；不是授权标识，克隆/保存后会重新分配                                                          |
+| code           | 稳定导航资源标识；版本内唯一，小写字母开头，支持数字、点、下划线、连字符，最长 120                                  |
+| name           | 展示名称，1–200 字符                                                                                                |
+| type           | 上表五种类型                                                                                                        |
+| parentId       | 同一版本节点 ID 或 null；表达展示归属，不表达 Vue Router 嵌套                                                       |
+| status         | ENABLED / DISABLED；禁用祖先使整个分支不可用                                                                        |
+| sortOrder      | 同层排序；同值按 code 排序                                                                                          |
+| icon           | 完整 iconify 名（如 `lucide:settings`）或 null；仅支持全名，不提供短别名映射；null 时按类型默认，无效名不会渲染图标 |
+| routeKey       | MENU/PAGE 必填；当前 Edition 的稳定页面 key                                                                         |
+| path           | MENU/PAGE 必填；绝对路径模板，不把 query 拼在此字段                                                                 |
+| layout         | MENU/PAGE 必填；base / blank，受 manifest.allowedLayouts 约束                                                       |
+| accessMode     | MENU/PAGE/EXTERNAL_LINK 必填；PUBLIC / AUTHENTICATED / PERMISSION                                                   |
+| params         | 内部路径的默认参数对象；字符串或数字，不允许表达式                                                                  |
+| query          | 内部跳转的默认查询对象；标量、null 或标量数组                                                                       |
+| href           | 仅外链使用；HTTPS URL，不含 username/password                                                                       |
+| externalTarget | 仅外链使用；SELF / BLANK，BLANK 输出 noopener noreferrer                                                            |
 
 DIRECTORY/GROUP 的路由、布局、外链、accessMode 必须为 null，params/query 必须为空。外链将查询串直接写入 href，不混用内部路由字段。
 
@@ -85,6 +85,7 @@ IAM 的 Public API 返回当前活跃角色并判断功能权限，Navigation �
 - `validate`：返回 issues；用于检查已保存版本与当前 Edition 是否兼容，不修改配置。
 - `publish`：草稿变为不可变发布快照，切换根指针。
 - `publish(..., true)`：回滚到曾发布的版本。
+- `deleteDraft`：删除未发布草稿；已发布快照受数据库 trigger 保护，不可删除。
 - `grantRole`：整组替换角色的 code；比较 expectedCodes，阻止并发覆盖。
 
 Application 通过 NavigationUnitOfWork 开启事务。保存、发布、回滚和授权串行锁住租户导航根；状态/指针变更、Audit、Outbox 共用同一连接，任何一步失败全部回滚。成功操作记录 draft_created、draft_saved、published、rolled_back、role_granted。审计只记录必要的版本、修订号、code，不复制可能敏感的 query/href 原文。
@@ -94,7 +95,7 @@ Application 通过 NavigationUnitOfWork 开启事务。保存、发布、回滚�
 | 操作                               | 功能权限                            |
 | ---------------------------------- | ----------------------------------- |
 | 读取管理配置、目录、角色授权；校验 | navigation.view                     |
-| 创建/保存草稿                      | navigation.manage                   |
+| 创建/保存草稿、删除草稿            | navigation.manage                   |
 | 发布/回滚                          | navigation.publish                  |
 | 保存角色导航授权                   | navigation.manage + iam.role.manage |
 
