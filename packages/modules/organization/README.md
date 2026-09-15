@@ -68,12 +68,12 @@ Organization 不负责：
 
 ### 岗位
 
-| 方法   | 路径                                             | 权限                  | 说明                         |
-| ------ | ------------------------------------------------ | --------------------- | ---------------------------- |
-| GET    | `/org-units/{id}/positions`                      | `organization.view`   | 列出该组织下岗位             |
-| POST   | `/org-units/{id}/positions`                      | `organization.manage` | 创建岗位                     |
-| PATCH  | `/org-units/{id}/positions/{positionId}`         | `organization.manage` | 更新岗位                     |
-| DELETE | `/org-units/{id}/positions/{positionId}`         | `organization.manage` | 无用户占用时可删，否则停用   |
+| 方法   | 路径                                     | 权限                  | 说明                       |
+| ------ | ---------------------------------------- | --------------------- | -------------------------- |
+| GET    | `/org-units/{id}/positions`              | `organization.view`   | 列出该组织下岗位           |
+| POST   | `/org-units/{id}/positions`              | `organization.manage` | 创建岗位                   |
+| PATCH  | `/org-units/{id}/positions/{positionId}` | `organization.manage` | 更新岗位                   |
+| DELETE | `/org-units/{id}/positions/{positionId}` | `organization.manage` | 无用户占用时可删，否则停用 |
 
 岗位编码在 `tenant + org_unit` 内唯一。删除前检查 `user_position`。
 
