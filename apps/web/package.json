@@ -12,6 +12,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@jingwei/api-client": "workspace:*",
     "@jingwei/module-dictionary": "workspace:*",
     "@jingwei/module-iam": "workspace:*",
     "@jingwei/module-navigation": "workspace:*",

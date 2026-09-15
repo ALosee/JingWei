@@ -12,15 +12,20 @@ import { apiErrorSchema } from '@jingwei/http-contract'
 
 const safeMethods = new Set(['GET', 'HEAD', 'OPTIONS'])
 const globalLoadingListeners = new Set<(loading: boolean) => void>()
+const sessionExpiredListeners = new Set<() => void>()
 let globalLoading = false
 let refreshPromise: Promise<boolean> | null = null
+let sessionExpiryNotified = false
 
 const cookieAuthenticationAdapter: FetchAdapter = async (url, init) => {
   const response = await globalThis.fetch(url, init)
   if (!shouldAttemptRefresh(url, init, response)) return response
 
   const refreshed = await refreshCookieSession()
-  if (!refreshed) return response
+  if (!refreshed) {
+    if (response.status === 401) notifySessionExpired(url)
+    return response
+  }
   await discardResponseBody(response)
   return globalThis.fetch(url, init)
 }
@@ -123,6 +128,36 @@ export function subscribeGlobalApiLoading(listener: (loading: boolean) => void):
   listener(globalLoading)
   globalLoadingListeners.add(listener)
   return () => globalLoadingListeners.delete(listener)
+}
+
+/**
+ * Fires once when a protected request remains 401 after cookie refresh fails.
+ * Shell chrome owns redirect policy; the client only signals expiry.
+ */
+export function subscribeSessionExpired(listener: () => void): () => void {
+  sessionExpiredListeners.add(listener)
+  return () => sessionExpiredListeners.delete(listener)
+}
+
+/** Allow a later expiry signal after the shell has recovered (e.g. re-login without full reload). */
+export function resetSessionExpirySignal(): void {
+  sessionExpiryNotified = false
+}
+
+function notifySessionExpired(url: string): void {
+  const path = requestPath(url)
+  if (path === refreshTokenCookiePath) return
+  if (path === '/api/v1/iam/sessions') return
+  if (path === '/api/v1/iam/session') return
+  if (sessionExpiryNotified) return
+  sessionExpiryNotified = true
+  for (const listener of sessionExpiredListeners) {
+    try {
+      listener()
+    } catch {
+      // Shell observers must never alter the outcome of an HTTP request.
+    }
+  }
 }
 
 /**

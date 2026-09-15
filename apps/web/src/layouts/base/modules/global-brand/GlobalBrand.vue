@@ -1,10 +1,18 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
+import { resolveHomeTarget } from '../../../../navigation/workspace-targets.js'
+import { useShellStore } from '../../../../stores/shell.js'
+
 withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
+
+const shell = useShellStore()
+const homePath = computed(() => resolveHomeTarget(shell.navigation))
 </script>
 
 <template>
   <RouterLink
-    to="/"
+    :to="homePath"
     class="group/brand inline-flex min-w-0 items-center gap-5 rounded-md text-foreground decoration-none outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-3"
     aria-label="经纬企业平台首页"
   >

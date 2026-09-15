@@ -1,4 +1,10 @@
-import { navigationTarget, type NavigationNode } from '@jingwei/module-navigation/shared'
+import {
+  navigationTarget,
+  resolveNavigationIcon,
+  type NavigationNode,
+} from '@jingwei/module-navigation/shared'
+
+export { resolveNavigationIcon }
 
 export interface SearchableNavigationItem {
   readonly node: NavigationNode
@@ -64,19 +70,4 @@ export function containsActiveNavigation(
   if (node.code === activeCode) return true
   const children = childNavigationNodes(nodes, node.id)
   return children.some((child) => containsActiveNavigation(nodes, child, activeCode))
-}
-
-export function resolveNavigationIcon(icon: string | null, type: NavigationNode['type']): string {
-  const aliases: Readonly<Record<string, string>> = {
-    settings: 'lucide:settings',
-    user: 'lucide:user-round',
-    grid: 'lucide:layout-grid',
-    folder: 'lucide:folder',
-    link: 'lucide:external-link',
-    book: 'lucide:notebook-tabs',
-  }
-  if (icon !== null) return aliases[icon] ?? icon
-  if (type === 'DIRECTORY') return aliases.folder ?? 'lucide:folder'
-  if (type === 'EXTERNAL_LINK') return aliases.link ?? 'lucide:external-link'
-  return aliases.grid ?? 'lucide:layout-grid'
 }

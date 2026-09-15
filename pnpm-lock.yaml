@@ -288,6 +288,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@jingwei/api-client':
+        specifier: workspace:*
+        version: link:../../packages/platform/api-client
       '@jingwei/module-dictionary':
         specifier: workspace:*
         version: link:../../packages/modules/dictionary

@@ -11,11 +11,21 @@ interface SignInDependencies {
   enterWorkspace: () => void
 }
 
+function safeReturnPath(value: unknown): string {
+  if (typeof value !== 'string') return '/'
+  if (!value.startsWith('/') || value.startsWith('//') || value.startsWith('/\\')) return '/'
+  if (value.startsWith('/__')) return '/'
+  return value
+}
+
 /** Owns sign-in form submission; the page renders fields and binds actions. */
 export function useSignIn(
   dependencies: SignInDependencies = {
     login,
-    enterWorkspace: () => window.location.assign('/'),
+    enterWorkspace: () => {
+      const redirect = safeReturnPath(new URLSearchParams(window.location.search).get('redirect'))
+      window.location.assign(redirect)
+    },
   },
 ) {
   const tenantCode = ref('default')

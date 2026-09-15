@@ -10,6 +10,7 @@ import {
 } from '@jingwei/module-navigation/client'
 
 import App from '../App.vue'
+import { installSessionExpiryRedirect } from '../composables/use-session-expiry.js'
 import { initializeNavigation } from '../navigation/initialize-navigation.js'
 import { installDynamicRoutes } from '../router/dynamic-routes.js'
 import { createApplicationRouter } from '../router/index.js'
@@ -23,6 +24,7 @@ export async function startWebApplication(): Promise<void> {
   const router = createApplicationRouter()
   app.use(pinia)
   app.use(router)
+  installSessionExpiryRedirect()
   await initializeNavigation(initialLocation, {
     loadBootstrap: getNavigationBootstrap,
     loadSession: getSessionStatus,
