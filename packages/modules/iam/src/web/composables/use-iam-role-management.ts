@@ -11,6 +11,7 @@ import {
   replaceIamRolePermissions,
   updateIamRole,
 } from '../../client/index.js'
+import { useIamPermission } from '../../session/index.js'
 import type {
   CreateIamRole,
   IamRole,
@@ -55,6 +56,8 @@ export function useIamRoleManagement(
   const draftStatus = ref<'ACTIVE' | 'DISABLED'>('ACTIVE')
   const selectedPermissions = ref<Map<string, RoleDataScopeType>>(new Map())
   const permissionsDirty = ref(false)
+  /** Functional permission is enforced on the server; this only improves button UX. */
+  const canManage = useIamPermission('iam.role.manage')
 
   const listState = useApiRequestState()
   const catalogState = useApiRequestState()
@@ -222,6 +225,7 @@ export function useIamRoleManagement(
     roles,
     filteredRoles,
     catalog,
+    canManage,
     selected,
     selectedId,
     search,

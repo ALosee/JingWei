@@ -33,6 +33,7 @@ const {
   draftStatus,
   selectedPermissions,
   permissionsDirty,
+  canManage,
   select,
   beginCreate,
   cancelCreate,
@@ -42,9 +43,6 @@ const {
   togglePermission,
   savePermissions,
 } = management
-
-/** Functional permission is enforced on the server; this only improves button UX. */
-const canManage = true
 
 const statusOptions: SelectSingleOptionData[] = [
   { value: 'ACTIVE', label: '启用' },

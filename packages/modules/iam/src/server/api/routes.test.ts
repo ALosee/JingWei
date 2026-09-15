@@ -64,17 +64,21 @@ const accountStubs = {
 describe('IAM session HTTP boundary', () => {
   it('returns the mutable safe user projection for an authenticated session', async () => {
     const current = session()
-    const readCurrentUser = vi.fn(() =>
+    const readSessionStatus = vi.fn(() =>
       Promise.resolve({
-        id: current.userId,
-        tenantId: current.tenantId,
-        displayName: 'Admin',
-        avatarUrl: 'https://example.com/avatar.png',
+        authenticated: true as const,
+        user: {
+          id: current.userId,
+          tenantId: current.tenantId,
+          displayName: 'Admin',
+          avatarUrl: 'https://example.com/avatar.png',
+        },
+        permissions: ['iam.role.view', 'iam.role.manage'],
       }),
     )
     const routes = createIamRoutes({
       authenticateUser: { execute: vi.fn() },
-      readCurrentUser: { execute: readCurrentUser },
+      readSessionStatus: { execute: readSessionStatus },
       sessions: { logout: vi.fn(), refresh: vi.fn() },
       ...accountStubs,
       secureCookies: false,
@@ -105,8 +109,14 @@ describe('IAM session HTTP boundary', () => {
         displayName: 'Admin',
         avatarUrl: 'https://example.com/avatar.png',
       },
+      permissions: ['iam.role.view', 'iam.role.manage'],
     })
-    expect(readCurrentUser).toHaveBeenCalledWith(current.tenantId, current.userId)
+    expect(readSessionStatus).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: current.tenantId,
+        userId: current.userId,
+      }),
+    )
   })
 
   it('sets separate hardened access, refresh, and CSRF cookies without returning credentials', async () => {
@@ -129,7 +139,7 @@ describe('IAM session HTTP boundary', () => {
         logout: vi.fn(),
         refresh: vi.fn(),
       },
-      readCurrentUser: { execute: vi.fn() },
+      readSessionStatus: { execute: vi.fn() },
       ...accountStubs,
       secureCookies: true,
       logger,
@@ -188,7 +198,7 @@ describe('IAM session HTTP boundary', () => {
     const routes = createIamRoutes({
       authenticateUser: { execute: vi.fn() },
       sessions: { logout: vi.fn(), refresh },
-      readCurrentUser: { execute: vi.fn() },
+      readSessionStatus: { execute: vi.fn() },
       ...accountStubs,
       secureCookies: false,
       logger,

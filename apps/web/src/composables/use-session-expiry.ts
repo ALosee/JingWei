@@ -1,5 +1,5 @@
 import { subscribeSessionExpired } from '@jingwei/api-client'
-import { setIamSessionUser } from '@jingwei/module-iam/web'
+import { clearIamSessionPermissions, setIamSessionUser } from '@jingwei/module-iam/web'
 
 import { resolveAuthEntryTarget, withRedirectQuery } from '../navigation/workspace-targets.js'
 import { useShellStore } from '../stores/shell.js'
@@ -18,6 +18,7 @@ export function installSessionExpiryRedirect(
     shell.currentUser = null
     shell.navigation = null
     setIamSessionUser(null)
+    clearIamSessionPermissions()
     leave(url)
   })
 }

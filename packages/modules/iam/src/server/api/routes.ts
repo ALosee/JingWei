@@ -22,7 +22,7 @@ import type {
 import type { AuthenticateUser } from '../application/authenticate-user.js'
 import type { ManageIamRoles } from '../application/manage-roles.js'
 import type { ManageIamUsers } from '../application/manage-users.js'
-import type { ReadCurrentUser } from '../application/read-current-user.js'
+import type { ReadSessionStatus } from '../application/read-session-status.js'
 import type { SessionLifecycle } from '../application/session-lifecycle.js'
 import { iamApiRoutes } from './openapi.js'
 
@@ -33,7 +33,7 @@ interface AuthenticationLogger {
 
 export function createIamRoutes(dependencies: {
   readonly authenticateUser: Pick<AuthenticateUser, 'execute'>
-  readonly readCurrentUser: Pick<ReadCurrentUser, 'execute'>
+  readonly readSessionStatus: Pick<ReadSessionStatus, 'execute'>
   readonly sessions: Pick<SessionLifecycle, 'logout' | 'refresh'>
   readonly readAccount: Pick<ReadAccountProfile, 'execute'>
   readonly updateAccount: Pick<UpdateAccountProfile, 'execute'>
@@ -107,15 +107,7 @@ export function createIamRoutes(dependencies: {
   app.openapi(iamApiRoutes.getSession, async (context) => {
     const auth = context.get('authContext')
     if (auth === null) return context.json({ authenticated: false } as const, 200)
-    const user = await dependencies.readCurrentUser.execute(auth.tenantId, auth.userId)
-    if (user === null) return context.json({ authenticated: false } as const, 200)
-    return context.json(
-      {
-        authenticated: true,
-        user,
-      },
-      200,
-    )
+    return context.json(await dependencies.readSessionStatus.execute(auth), 200)
   })
   app.openapi(iamApiRoutes.refreshSession, async (context) => {
     const refreshToken = getCookie(context, refreshTokenCookieName)

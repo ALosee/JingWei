@@ -27,12 +27,17 @@ export const loginResultSchema = z
   })
   .meta({ id: 'IamLoginResult' })
 
+export const iamRoleCodeSchema = z.string().trim().min(1).max(120)
+export const iamRoleNameSchema = z.string().trim().min(1).max(160)
+export const iamPermissionCodeSchema = z.string().trim().min(1).max(160)
+
 export const sessionStatusSchema = z
   .discriminatedUnion('authenticated', [
     z.object({ authenticated: z.literal(false) }),
     z.object({
       authenticated: z.literal(true),
       user: authenticatedUserSchema,
+      permissions: z.array(iamPermissionCodeSchema).max(5_000),
     }),
   ])
   .meta({ id: 'IamSessionStatus' })
@@ -98,10 +103,6 @@ export const roleDataScopeTypes = [
   'CUSTOM',
 ] as const
 export type RoleDataScopeType = (typeof roleDataScopeTypes)[number]
-
-export const iamRoleCodeSchema = z.string().trim().min(1).max(120)
-export const iamRoleNameSchema = z.string().trim().min(1).max(160)
-export const iamPermissionCodeSchema = z.string().trim().min(1).max(160)
 
 export const iamRoleSchema = z
   .object({

@@ -471,6 +471,7 @@ export type components = {
         } | {
             /** @enum {boolean} */
             authenticated: true;
+            permissions: string[];
             user: components["schemas"]["IamAuthenticatedUser"];
         };
         IamUpdateAccountInput: {

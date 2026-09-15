@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-
 import { toast } from '@jingwei/ui'
 
 import type {
@@ -16,6 +14,7 @@ const management = useOrganizationManagement()
 const {
   units,
   tree,
+  canManage,
   selected,
   selectedId,
   selectedHasChildren,
@@ -38,9 +37,6 @@ const {
   updateUnit,
   removeUnit,
 } = management
-
-/** Functional permission is enforced on the server; this only improves button UX. */
-const canManage = ref(true)
 
 async function onCreate(input: CreateOrganizationUnit) {
   await createUnit(input)

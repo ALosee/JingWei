@@ -111,6 +111,7 @@ function createManage(store: MemoryRoleStore, registry = createRegistry()) {
   const access: IamAccess = {
     activeRoleIds: () => Promise.resolve([]),
     roles: () => Promise.resolve([]),
+    effectivePermissionCodes: () => Promise.resolve([]),
     requirePermission: () => Promise.resolve(),
   }
   const work: RoleUnitOfWork = {

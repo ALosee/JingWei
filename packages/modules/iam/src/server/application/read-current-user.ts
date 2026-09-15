@@ -10,12 +10,3 @@ export interface CurrentUserSnapshot {
 export interface CurrentUserReader {
   findActiveById(tenantId: TenantId, userId: UserId): Promise<CurrentUserSnapshot | null>
 }
-
-/** Reads the mutable, safe user projection used by the authenticated application shell. */
-export class ReadCurrentUser {
-  constructor(private readonly users: CurrentUserReader) {}
-
-  execute(tenantId: TenantId, userId: UserId): Promise<CurrentUserSnapshot | null> {
-    return this.users.findActiveById(tenantId, userId)
-  }
-}

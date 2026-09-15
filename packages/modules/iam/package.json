@@ -6,6 +6,7 @@
   "exports": {
     "./manifest": "./src/manifest.ts",
     "./shared": "./src/shared/index.ts",
+    "./session": "./src/session/index.ts",
     "./server": "./src/server/index.ts",
     "./server/public": "./src/server/public/index.ts",
     "./openapi": "./src/server/api/openapi.ts",

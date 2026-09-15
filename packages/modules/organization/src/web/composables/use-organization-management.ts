@@ -1,6 +1,7 @@
 import { computed, onMounted, ref } from 'vue'
 
 import { ApiClientError } from '@jingwei/api-client'
+import { useIamPermission } from '@jingwei/module-iam/session'
 
 import * as api from '../../client/index.js'
 import {
@@ -32,6 +33,8 @@ export function useOrganizationManagement() {
   const error = ref('')
   const creating = ref(false)
   const draftParentId = ref<string | null>(null)
+  /** Functional permission is enforced on the server; this only improves button UX. */
+  const canManage = useIamPermission('organization.manage')
 
   const selected = computed(() => units.value.find((unit) => unit.id === selectedId.value))
   const tree = computed(() => buildOrganizationTree(units.value))
@@ -178,6 +181,7 @@ export function useOrganizationManagement() {
   return {
     units,
     tree,
+    canManage,
     selected,
     selectedId,
     selectedHasChildren,

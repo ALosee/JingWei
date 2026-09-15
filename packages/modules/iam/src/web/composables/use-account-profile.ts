@@ -3,8 +3,8 @@ import { computed, ref } from 'vue'
 import { useApiRequestState } from '@jingwei/api-client/vue'
 
 import { getAccountProfile, getAccountRoles, updateAccountProfile } from '../../client/index.js'
+import { patchIamSessionUser } from '../../session/index.js'
 import type { AccountProfile, AccountRole } from '../../shared/index.js'
-import { patchIamSessionUser } from '../session-user.js'
 
 interface AccountProfileDependencies {
   load: typeof getAccountProfile

@@ -47,6 +47,20 @@ export class PostgresIamAccess implements IamAccess {
       .orderBy('code')
       .execute()
   }
+  async effectivePermissionCodes(context: AuthContext): Promise<string[]> {
+    const roles = await this.activeRoleIds(context)
+    if (roles.length === 0) return []
+    const rows = await this.database
+      .selectFrom('iam.role_permission')
+      .select('permission_code')
+      .where('tenant_id', '=', context.tenantId)
+      .where('role_id', 'in', roles)
+      .execute()
+    const enabled = new Set(this.registry.permissions().map((permission) => permission.code))
+    return [...new Set(rows.map((row) => row.permission_code))]
+      .filter((code) => enabled.has(code))
+      .sort((left, right) => left.localeCompare(right))
+  }
   async requirePermission(
     context: AuthContext,
     permission: string,

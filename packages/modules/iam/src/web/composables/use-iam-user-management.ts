@@ -11,6 +11,7 @@ import {
   resetIamUserPassword,
   updateIamUser,
 } from '../../client/index.js'
+import { useIamPermission } from '../../session/index.js'
 import type {
   CreateManagedUser,
   IamRole,
@@ -48,6 +49,8 @@ export function useIamUserManagement(
   const busy = ref(false)
   const error = ref('')
   const creating = ref(false)
+  /** Functional permission is enforced on the server; this only improves button UX. */
+  const canManage = useIamPermission('iam.user.manage')
   const draftUsername = ref('')
   const draftDisplayName = ref('')
   const draftEmail = ref('')
@@ -231,6 +234,7 @@ export function useIamUserManagement(
     users,
     filteredUsers,
     activeRoles,
+    canManage,
     selected,
     selectedId,
     search,

@@ -1,5 +1,5 @@
 import type { AuthenticatedUser, SessionStatus } from '@jingwei/module-iam/shared'
-import { setIamSessionUser } from '@jingwei/module-iam/web'
+import { setIamSessionPermissions, setIamSessionUser } from '@jingwei/module-iam/web'
 import type { NavigationResponse } from '@jingwei/module-navigation/shared'
 
 import { selectInitialLocation } from './initial-location.js'
@@ -36,6 +36,9 @@ export async function initializeNavigation(
     const user = session.authenticated && authenticated !== null ? session.user : null
     shell.currentUser = user
     setIamSessionUser(user)
+    setIamSessionPermissions(
+      session.authenticated && authenticated !== null ? session.permissions : [],
+    )
     await dependencies.replace(
       selectInitialLocation({
         initialLocation,
@@ -47,6 +50,7 @@ export async function initializeNavigation(
   } catch (error) {
     shell.currentUser = null
     setIamSessionUser(null)
+    setIamSessionPermissions([])
     shell.bootstrapError = error instanceof Error ? error.message : 'Navigation bootstrap failed'
     await dependencies.replace('/__recovery')
   }

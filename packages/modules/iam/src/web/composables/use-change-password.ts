@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { useApiRequestState } from '@jingwei/api-client/vue'
 
 import { changeAccountPassword } from '../../client/index.js'
-import { setIamSessionUser } from '../session-user.js'
+import { setIamSessionUser } from '../../session/index.js'
 
 interface ChangePasswordDependencies {
   change: typeof changeAccountPassword

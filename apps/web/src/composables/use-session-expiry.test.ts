@@ -17,6 +17,7 @@ vi.mock('@jingwei/api-client', () => ({
 
 vi.mock('@jingwei/module-iam/web', () => ({
   setIamSessionUser: vi.fn(),
+  clearIamSessionPermissions: vi.fn(),
 }))
 
 function loginNode(): NavigationNode {

@@ -26,6 +26,7 @@ const {
   selectedRoleIds,
   rolesDirty,
   newPassword,
+  canManage,
   select,
   beginCreate,
   cancelCreate,
@@ -35,8 +36,6 @@ const {
   toggleRole,
   saveRoles,
 } = management
-
-const canManage = true
 
 const statusOptions: SelectSingleOptionData[] = [
   { value: 'ACTIVE', label: '正常' },

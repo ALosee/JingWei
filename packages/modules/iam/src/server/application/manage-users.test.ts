@@ -190,6 +190,7 @@ function createManage(store: MemoryUserStore) {
   const access: IamAccess = {
     activeRoleIds: () => Promise.resolve([]),
     roles: () => Promise.resolve([]),
+    effectivePermissionCodes: () => Promise.resolve([]),
     requirePermission: () => Promise.resolve(),
   }
   const work: UserAdminUnitOfWork = {

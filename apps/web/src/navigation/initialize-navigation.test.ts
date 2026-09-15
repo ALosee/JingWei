@@ -71,6 +71,7 @@ function dependencies(loggedIn: boolean) {
                 displayName: 'Admin',
                 avatarUrl: null,
               },
+              permissions: ['iam.account.view'],
             }
           : { authenticated: false as const },
       )

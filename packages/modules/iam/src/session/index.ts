@@ -1,11 +1,8 @@
-export { webModule } from './module.js'
 export {
   clearIamSessionPermissions,
   hasIamPermission,
   iamSessionPermissions,
-  iamSessionUser,
-  patchIamSessionUser,
   setIamSessionPermissions,
-  setIamSessionUser,
   useIamPermission,
-} from '../session/index.js'
+} from './session-permissions.js'
+export { iamSessionUser, patchIamSessionUser, setIamSessionUser } from './session-user.js'

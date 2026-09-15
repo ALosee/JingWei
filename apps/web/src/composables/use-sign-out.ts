@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 
 import { logout } from '@jingwei/module-iam/client'
-import { setIamSessionUser } from '@jingwei/module-iam/web'
+import { clearIamSessionPermissions, setIamSessionUser } from '@jingwei/module-iam/web'
 import { toast } from '@jingwei/ui'
 
 import { useShellStore } from '../stores/shell.js'
@@ -29,6 +29,7 @@ export function useSignOut(
       shell.currentUser = null
       shell.navigation = null
       setIamSessionUser(null)
+      clearIamSessionPermissions()
       dependencies.leaveWorkspace()
     } catch {
       toast.error('退出登录失败，请稍后重试')

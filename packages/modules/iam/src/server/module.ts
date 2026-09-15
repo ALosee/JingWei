@@ -15,7 +15,7 @@ import { AuthenticateUser } from './application/authenticate-user.js'
 import { ManageIamRoles } from './application/manage-roles.js'
 import { ManageIamUsers } from './application/manage-users.js'
 import { ReadPermissionCatalog } from './application/permission-catalog.js'
-import { ReadCurrentUser } from './application/read-current-user.js'
+import { ReadSessionStatus } from './application/read-session-status.js'
 import { SessionLifecycle } from './application/session-lifecycle.js'
 import { PostgresAccountStore } from './infrastructure/account-store.pg.js'
 import { PostgresCredentialStore, type IamDatabase } from './infrastructure/credential-reader.pg.js'
@@ -70,7 +70,7 @@ export const serverModule: ServerModule = {
       basePath: '/iam',
       routes: createIamRoutes({
         authenticateUser,
-        readCurrentUser: new ReadCurrentUser(currentUsers),
+        readSessionStatus: new ReadSessionStatus(currentUsers, access),
         sessions: sessionLifecycle,
         readAccount: new ReadAccountProfile(accounts),
         updateAccount: new UpdateAccountProfile({ accounts, clock: systemClock }),

@@ -4,5 +4,7 @@ import type { AuthContext, TenantId } from '@jingwei/kernel'
 export interface IamAccess {
   activeRoleIds(context: AuthContext): Promise<readonly string[]>
   roles(tenantId: TenantId): Promise<{ id: string; code: string; name: string }[]>
+  /** Enabled-edition permission codes granted by the user's active roles. */
+  effectivePermissionCodes(context: AuthContext): Promise<readonly string[]>
   requirePermission(context: AuthContext, permission: string, capability: string): Promise<void>
 }
