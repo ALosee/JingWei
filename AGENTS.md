@@ -100,19 +100,30 @@
 
 ## 9. 完成定义
 
-提交前必须运行并通过：
+提交前必须在仓库根目录完整运行并通过：
 
 ```text
-pnpm typecheck
-pnpm lint
+pnpm check
+```
+
+等价于：
+
+```text
 pnpm format:check
 pnpm api:check
+pnpm typecheck
+pnpm lint
 pnpm architecture:check
 pnpm test
 pnpm build
 ```
 
-功能只有在实现、权限/数据范围/租户边界、Migration、Error Code、必要日志/审计、测试、文档与模块边界均处理完成后才算完成。
+约束：
+
+- `pnpm check`（或上述全量列表）是唯一提交门禁。单包 `typecheck`、局部 vitest、只对改动目录跑 lint/format 只能作为开发中间步骤，不得替代提交前全量检查。
+- 任一门禁失败必须修到全绿后再提交；禁止「先交、CI 再修」。改完任何文件后，提交前必须再次确认 `format:check` 通过。
+- 模块 `server/module.ts` 的 `install`、public 工厂与被导入实现不得默认依赖可用的 PostgreSQL/外网：`createApp` 与契约测试在无库环境下必须能完成装配。需要持久化投影时放入 seed/运维命令或请求内用例，不在安装期写库。
+- 功能只有在实现、权限/数据范围/租户边界、Migration、Error Code、必要日志/审计、测试、文档与模块边界均处理完成后才算完成。
 
 优先级：**架构一致性 > 模块边界 > 正确性 > 可维护性 > 测试 > 局部开发速度 > 少写几行代码**。
 
