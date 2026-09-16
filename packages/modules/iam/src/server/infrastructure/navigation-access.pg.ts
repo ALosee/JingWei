@@ -17,6 +17,31 @@ interface AccessDatabase {
   }
 }
 
+function permissionDenied(): ApplicationError {
+  return new ApplicationError({
+    code: 'PERMISSION_DENIED',
+    message: '没有执行此操作的功能权限',
+    status: 403,
+  })
+}
+
+/** Reject programming errors before any grant query can accidentally authorize a scoped permission. */
+export function assertUnscopedPermissionAvailable(
+  registry: ModuleRegistry,
+  permission: string,
+  capability: string,
+): void {
+  const definition = registry.permission(permission)
+  if (definition?.dataScope !== undefined) {
+    throw new ApplicationError({
+      code: 'AUTHZ_SCOPE_PERMISSION_REQUIRES_EVALUATOR',
+      message: '带数据范围的权限必须通过数据范围授权评估器校验',
+      status: 500,
+    })
+  }
+  if (definition === null || !registry.hasCapability(capability)) throw permissionDenied()
+}
+
 /** Live role reads avoid stale role grants embedded in the session. No is_super bypass. */
 export class PostgresIamAccess implements IamAccess {
   constructor(
@@ -61,33 +86,23 @@ export class PostgresIamAccess implements IamAccess {
       .filter((code) => enabled.has(code))
       .sort((left, right) => left.localeCompare(right))
   }
-  async requirePermission(
+  async requireUnscopedPermission(
     context: AuthContext,
     permission: string,
     capability: string,
   ): Promise<void> {
-    const definition = this.registry.permission(permission)
-    if (
-      definition !== null &&
-      this.registry.hasCapability(capability) &&
-      !definition.supportsDataScope
-    ) {
-      const roles = await this.activeRoleIds(context)
-      if (roles.length > 0) {
-        const grant = await this.database
-          .selectFrom('iam.role_permission')
-          .select('role_id')
-          .where('tenant_id', '=', context.tenantId)
-          .where('role_id', 'in', roles)
-          .where('permission_code', '=', permission)
-          .executeTakeFirst()
-        if (grant !== undefined) return
-      }
+    assertUnscopedPermissionAvailable(this.registry, permission, capability)
+    const roles = await this.activeRoleIds(context)
+    if (roles.length > 0) {
+      const grant = await this.database
+        .selectFrom('iam.role_permission')
+        .select('role_id')
+        .where('tenant_id', '=', context.tenantId)
+        .where('role_id', 'in', roles)
+        .where('permission_code', '=', permission)
+        .executeTakeFirst()
+      if (grant !== undefined) return
     }
-    throw new ApplicationError({
-      code: 'PERMISSION_DENIED',
-      message: '没有执行此操作的功能权限',
-      status: 403,
-    })
+    throw permissionDenied()
   }
 }

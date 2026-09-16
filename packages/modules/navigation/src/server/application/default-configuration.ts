@@ -1,69 +1,81 @@
 import { newEntityId } from '@jingwei/kernel'
-import type { ModuleRegistry } from '@jingwei/module-sdk'
+import type { ModuleRegistry, NavigationPresetQueryValue } from '@jingwei/module-sdk'
 
 import type { NavigationConfiguration, NavigationNode } from '../../shared/index.js'
 
 /** Explicit initialization template only. Runtime never substitutes it for database failures. */
 export function createDefaultConfiguration(registry: ModuleRegistry): NavigationConfiguration {
-  const groupId = newEntityId()
-  const directoryId = newEntityId()
-  const empty: NavigationNode = {
-    id: groupId,
-    code: 'workspace',
-    name: '工作区',
-    type: 'GROUP',
-    parentId: null,
-    status: 'ENABLED',
-    sortOrder: 0,
+  const preset = registry.defaultNavigation()
+  if (preset === null) throw new Error('Edition does not define a default navigation preset')
+  const ids = new Map(
+    [...preset.containers, ...preset.items].map(({ code }) => [code, newEntityId()]),
+  )
+  const parentId = (parentCode: string | null): string | null => {
+    if (parentCode === null) return null
+    const id = ids.get(parentCode)
+    if (id === undefined) throw new Error(`Default navigation parent not found: ${parentCode}`)
+    return id
+  }
+  const containers: NavigationNode[] = preset.containers.map((container) => ({
+    id: requiredId(ids, container.code),
+    code: container.code,
+    name: container.name,
+    type: container.type,
+    parentId: parentId(container.parentCode),
+    status: container.status ?? 'ENABLED',
+    sortOrder: container.sortOrder ?? 0,
     routeKey: null,
     path: null,
     layout: null,
-    icon: null,
+    icon: container.icon ?? null,
     accessMode: null,
     href: null,
     externalTarget: null,
     params: {},
     query: {},
+  }))
+  const items: NavigationNode[] = preset.items.map((item) => {
+    const route = registry.route(item.routeKey)
+    if (route === null) throw new Error(`Default navigation route not found: ${item.routeKey}`)
+    return {
+      id: requiredId(ids, item.code),
+      code: item.code,
+      name: item.name,
+      type: item.type,
+      parentId: parentId(item.parentCode),
+      status: item.status ?? 'ENABLED',
+      sortOrder: item.sortOrder ?? 0,
+      routeKey: item.routeKey,
+      path: item.path,
+      layout: item.layout ?? route.layout,
+      icon: item.icon ?? null,
+      accessMode: item.accessMode ?? route.allowedAccessModes[0],
+      href: null,
+      externalTarget: null,
+      params: { ...(item.params ?? {}) },
+      query: Object.fromEntries(
+        Object.entries(item.query ?? {}).map(([key, value]) => [
+          key,
+          isQueryArray(value) ? [...value] : value,
+        ]),
+      ),
+    }
+  })
+  return {
+    authEntryCode: preset.authEntryCode,
+    homeCode: preset.homeCode,
+    nodes: [...containers, ...items],
   }
-  const labels: Readonly<Record<string, string>> = {
-    'iam.login': '登录',
-    'iam.account': '个人账号',
-    'iam.roles': '角色管理',
-    'iam.users': '用户管理',
-    'navigation.manage': '导航管理',
-    'organization.units': '组织架构',
-    'dictionary.entries': '数据字典',
-  }
-  const nodes: NavigationNode[] = [
-    empty,
-    {
-      ...empty,
-      id: directoryId,
-      code: 'administration',
-      name: '系统管理',
-      type: 'DIRECTORY',
-      parentId: groupId,
-      sortOrder: 20,
-      icon: 'lucide:settings',
-    },
-  ]
-  for (const [index, route] of registry.routes().entries()) {
-    const login = route.key === 'iam.login'
-    const account = route.key === 'iam.account'
-    nodes.push({
-      ...empty,
-      id: newEntityId(),
-      code: route.key,
-      name: labels[route.key] ?? route.key,
-      type: login ? 'PAGE' : 'MENU',
-      parentId: login ? null : account ? groupId : directoryId,
-      routeKey: route.key,
-      path: login ? '/signin' : account ? '/account' : '/' + route.key.replaceAll('.', '/'),
-      layout: route.layout,
-      accessMode: route.allowedAccessModes[0],
-      sortOrder: index * 10,
-      icon: login ? null : account ? 'lucide:user-round' : 'lucide:layout-grid',
-    })
-  }
-  return { authEntryCode: 'iam.login', homeCode: 'iam.account', nodes }
+}
+
+function isQueryArray(
+  value: NavigationPresetQueryValue,
+): value is readonly (string | number | boolean)[] {
+  return Array.isArray(value)
+}
+
+function requiredId(ids: ReadonlyMap<string, string>, code: string): string {
+  const id = ids.get(code)
+  if (id === undefined) throw new Error(`Default navigation node not found: ${code}`)
+  return id
 }

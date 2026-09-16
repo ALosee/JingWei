@@ -126,7 +126,7 @@ bootstrap 不是固定返回登录页：它读取真实租户当前发布快照�
 
 ## 8. 事务、审计与当前边界
 
-保存、发布、回滚和角色 grant 修改均锁住租户 main 根；写入配置、审计和 outbox 在一个 PostgreSQL 事务中完成。expectedEditRevision、expectedPublishedVersionId、expectedCodes 分别处理三类并发冲突。客户端收到 409 应重新加载，不自动重试覆盖。
+保存、发布、回滚和角色 grant 修改均锁住租户 main 根；写入配置和审计在一个 PostgreSQL 事务中完成。expectedEditRevision、expectedPublishedVersionId、expectedCodes 分别处理三类并发冲突。客户端收到 409 应重新加载，不自动重试覆盖。
 
 本轮没有缓存、ETag、实时推送或页面 keep-alive 定义。BaseLayout 页签只记录当前壳生命周期内访问过的 fullPath，不参与服务端导航版本。接口返回 Cache-Control: no-store；发布或授权后下一次请求生效，已打开浏览器需要刷新。后续可以利用 versionId 做一致性检查，但版本机制本身不依赖缓存。
 

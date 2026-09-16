@@ -19,7 +19,7 @@ V1 中一个 User 属于一个 Tenant；同一自然人在不同 Tenant 可以�
 
 ## Organization
 
-`organization.org_unit` 使用 adjacency list (`parent_id`) 与 PostgreSQL Recursive CTE；V1 不使用 closure table、nested set、ltree。一个 Tenant 可有多个 root。User 可属于多个 Organization、拥有多个 Position；最多各一个 primary。Position 是具体组织岗位，不等同未来 HR Job/Job Family。
+`organization.org_unit` 使用 adjacency list (`parent_id`) 与 PostgreSQL Recursive CTE；V1 不使用 closure table、nested set、ltree。一个 Tenant 可有多个 root。User 可属于多个 Organization、拥有多个 Position；最多各一个 primary（数据库 partial unique index 强制）。Position 是具体组织岗位，不等同未来 HR Job/Job Family。V1 岗位分配仅允许该组织下的岗位。Organization 通过 `OrganizationMembershipQuery` 暴露用户所属组织，供 Data Scope 执行器使用；授权决策仍归 IAM。
 
 ## RBAC 与数据范围
 
@@ -42,4 +42,4 @@ Navigation 的 PERMISSION 模式表示 User -> 活跃 Role -> navigation code。
 
 功能权限和导航权限不能相互推导。授予导航入口不能授予 navigation.publish 等 API 操作；同名字符串也属于不同授权关系。多个角色的导航 code 取并集，容器只按后代可见性显示，不独立授予权限。详情见 [导航设计](./navigation-routing-design.md#5-rbac角色获授-navigation-code)。
 
-当前 IAM 已提供 IamAccess，实时查询活跃用户/角色并校验不带数据范围的功能权限；不使用 is_super 通配。完整 AuthorizationEvaluator/Data Scope 执行器仍待实现，不能据此宣称所有业务数据范围已受保护。
+当前 IAM 已提供两个不可混用的授权入口：`IamAccess.requireUnscopedPermission` 只校验无数据范围的功能权限，误传 scoped permission 会抛出明确的编程错误；`AuthorizationEvaluator.requireScopedPermission` 只处理带范围权限，成功时必定返回非空 `DataScopeGrant`，拒绝直接抛出 403。两者都实时查询活跃用户/角色，不使用 is_super 通配。Evaluator 实现多角色 scope 并集、任一 ALL 直接 ALL，组织范围经 Organization 提供的 `OrganizationalScopeFacts` 展开（成员组织 + 后代，CUSTOM 取角色配置的组织并在保存及求值时按当前租户与启用状态校验；无效 ID fail closed）。Permission 以 `dataScope.allowedTypes` 和 provider 描述能力；Organization 的 `organization.view` 不允许 SELF。受限组织树由 Repository 按 `organizationIds` 查询目标节点及祖先，岗位/成员详情要求目标组织落在 scope 内；写操作走无数据范围的 `organization.manage`。事实适配器由 Edition Composition Root 显式注入，IAM-only Edition 不创建 Organization 端口。业务模块若要按数据范围过滤，应在 Application 层把 scope 转换为本模块查询条件并下推 Repository，不能先读取全量数据再在内存过滤，也不能让 Repository 依赖 IAM 类型。

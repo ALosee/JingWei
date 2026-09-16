@@ -11,6 +11,7 @@ import type {
   RolePermissionList,
   UpdateIamRole,
 } from '../../shared/index.js'
+import type { OrganizationalScopeFacts } from '../public/authorization.js'
 import type { IamAccess } from '../public/navigation-access.js'
 import type { ReadPermissionCatalog } from './permission-catalog.js'
 import type { RoleStore, RoleUnitOfWork } from './role-store.js'
@@ -27,10 +28,11 @@ export class ManageIamRoles {
     private readonly access: IamAccess,
     private readonly registry: ModuleRegistry,
     private readonly catalog: ReadPermissionCatalog,
+    private readonly organizationalScopeFacts: OrganizationalScopeFacts | null,
   ) {}
 
   private authorize(context: AuthContext, action: 'view' | 'manage') {
-    return this.access.requirePermission(context, 'iam.role.' + action, 'iam.authorization')
+    return this.access.requireUnscopedPermission(context, 'iam.role.' + action, 'iam.authorization')
   }
 
   async list(context: AuthContext) {
@@ -119,8 +121,12 @@ export class ManageIamRoles {
           permissionCode: grant.permissionCode,
           moduleId: definition?.moduleId ?? 'unknown',
           name: definition?.name ?? grant.permissionCode,
-          supportsDataScope: definition?.supportsDataScope ?? false,
+          allowedScopeTypes: definition?.allowedScopeTypes ?? ['ALL'],
+          dataScopeProvider: definition?.dataScopeProvider ?? null,
           scopeType: grant.scopeType,
+          ...(grant.organizationIds === undefined
+            ? {}
+            : { organizationIds: grant.organizationIds }),
         }
       })
       .toSorted((left, right) =>
@@ -136,32 +142,10 @@ export class ManageIamRoles {
     input: ReplaceRolePermissions,
   ): Promise<RolePermissionList> {
     await this.authorize(context, 'manage')
+    await this.validateGrants(context, input.permissions)
     return this.work.run(async (tx) => {
       const existing = await tx.store.get(context.tenantId, id)
       if (existing === null) fail('IAM_ROLE_NOT_FOUND', '角色不存在', 404)
-
-      const seen = new Set<string>()
-      for (const grant of input.permissions) {
-        if (seen.has(grant.permissionCode))
-          fail('IAM_ROLE_PERMISSION_DUPLICATE', '同一次授权中权限不能重复')
-        seen.add(grant.permissionCode)
-        const definition = this.registry.permission(grant.permissionCode)
-        if (definition === null)
-          fail('IAM_PERMISSION_UNKNOWN', `权限不存在：${grant.permissionCode}`, 400)
-        const supportsDataScope = definition.supportsDataScope ?? false
-        if (!supportsDataScope && grant.scopeType !== 'ALL')
-          fail(
-            'IAM_PERMISSION_SCOPE_UNSUPPORTED',
-            `权限 ${grant.permissionCode} 不支持数据范围，请使用 ALL`,
-            400,
-          )
-        if (supportsDataScope && grant.scopeType === 'CUSTOM')
-          fail(
-            'IAM_PERMISSION_SCOPE_CUSTOM_UNSUPPORTED',
-            '自定义组织范围暂未开放，请选择其他数据范围',
-            400,
-          )
-      }
 
       const before = await tx.store.listGrants(context.tenantId, id)
       await tx.store.replaceGrants(context, id, input.permissions)
@@ -175,6 +159,55 @@ export class ManageIamRoles {
       )
       return { permissions }
     })
+  }
+
+  private async validateGrants(
+    context: AuthContext,
+    grants: readonly RolePermissionGrant[],
+  ): Promise<void> {
+    const seen = new Set<string>()
+    for (const grant of grants) {
+      if (seen.has(grant.permissionCode))
+        fail('IAM_ROLE_PERMISSION_DUPLICATE', '同一次授权中权限不能重复')
+      seen.add(grant.permissionCode)
+      const definition = this.registry.permission(grant.permissionCode)
+      if (definition === null)
+        fail('IAM_PERMISSION_UNKNOWN', `权限不存在：${grant.permissionCode}`, 400)
+      const allowedTypes = definition.dataScope?.allowedTypes ?? ['ALL']
+      if (!allowedTypes.includes(grant.scopeType))
+        fail(
+          'IAM_PERMISSION_SCOPE_UNSUPPORTED',
+          `权限 ${grant.permissionCode} 不允许数据范围 ${grant.scopeType}`,
+          400,
+        )
+      const organizationIds = grant.organizationIds ?? []
+      if (grant.scopeType === 'CUSTOM') {
+        if (organizationIds.length === 0)
+          fail('IAM_PERMISSION_SCOPE_CUSTOM_EMPTY', '自定义组织范围必须至少选择一个组织', 400)
+        if (new Set(organizationIds).size !== organizationIds.length)
+          fail('IAM_PERMISSION_SCOPE_CUSTOM_DUPLICATE', '自定义组织范围不能包含重复组织', 400)
+      } else if (organizationIds.length > 0)
+        fail('IAM_PERMISSION_SCOPE_ORGS_UNUSED', '仅自定义组织范围可以携带组织列表', 400)
+      if (grant.scopeType !== 'ALL' && definition.dataScope?.provider !== undefined) {
+        if (this.organizationalScopeFacts === null)
+          fail('IAM_DATA_SCOPE_PROVIDER_UNAVAILABLE', '当前版本未提供所需的数据范围事实', 409)
+        if (definition.dataScope.provider !== 'organization')
+          fail('IAM_DATA_SCOPE_PROVIDER_UNSUPPORTED', '当前版本不支持该数据范围提供者', 409)
+      }
+      if (grant.scopeType === 'CUSTOM') {
+        if (this.organizationalScopeFacts === null)
+          fail('IAM_DATA_SCOPE_PROVIDER_UNAVAILABLE', '当前版本未提供组织范围事实', 409)
+        const validIds = new Set(
+          await this.organizationalScopeFacts.validOrgUnitIds(context.tenantId, organizationIds),
+        )
+        if (organizationIds.some((id) => !validIds.has(id)))
+          fail(
+            'IAM_PERMISSION_SCOPE_ORGANIZATION_INVALID',
+            '自定义组织范围包含不存在、已停用或不属于当前租户的组织',
+            400,
+          )
+      }
+    }
   }
 }
 

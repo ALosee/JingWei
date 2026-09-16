@@ -1,10 +1,10 @@
 import { ApplicationError, newEntityId, type AuthContext, type TenantId } from '@jingwei/kernel'
-import type { IamAccess } from '@jingwei/module-iam/server/public'
+import type { AuthorizationEvaluator, IamAccess } from '@jingwei/module-iam/server/public'
 
-import {
-  type CreateOrganizationUnit,
-  type OrganizationUnit,
-  type UpdateOrganizationUnit,
+import type {
+  CreateOrganizationUnit,
+  OrganizationUnit,
+  UpdateOrganizationUnit,
 } from '../../shared/index.js'
 import type { OrgUnitStore, OrgUnitOfWork } from './org-unit-store.js'
 
@@ -18,19 +18,32 @@ export class ManageOrganizationUnits {
     private readonly store: OrgUnitStore,
     private readonly work: OrgUnitOfWork,
     private readonly access: IamAccess,
+    private readonly evaluator: AuthorizationEvaluator,
   ) {}
 
-  private authorize(context: AuthContext, action: 'view' | 'manage') {
-    return this.access.requirePermission(context, 'organization.' + action, 'organization.core')
+  private authorizeManage(context: AuthContext) {
+    return this.access.requireUnscopedPermission(
+      context,
+      'organization.manage',
+      'organization.core',
+    )
   }
 
   async tree(context: AuthContext) {
-    await this.authorize(context, 'view')
-    return { units: await this.store.list(context.tenantId) }
+    const dataScope = await this.evaluator.requireScopedPermission({
+      context,
+      capability: 'organization.core',
+      permission: 'organization.view',
+    })
+    if (dataScope.type === 'ALL') return { units: await this.store.list(context.tenantId) }
+    if (dataScope.type === 'SELF') return { units: [] }
+    return {
+      units: await this.store.listVisibleTree(context.tenantId, dataScope.organizationIds),
+    }
   }
 
   async create(context: AuthContext, input: CreateOrganizationUnit): Promise<OrganizationUnit> {
-    await this.authorize(context, 'manage')
+    await this.authorizeManage(context)
     return this.work.run(async (tx) => {
       if (input.parentId !== null)
         await this.assertParent(tx.store, context.tenantId, input.parentId)
@@ -58,7 +71,7 @@ export class ManageOrganizationUnits {
     id: string,
     input: UpdateOrganizationUnit,
   ): Promise<OrganizationUnit> {
-    await this.authorize(context, 'manage')
+    await this.authorizeManage(context)
     return this.work.run(async (tx) => {
       const existing = await this.required(tx.store, context.tenantId, id)
       const nextParentId = input.parentId === undefined ? existing.parentId : input.parentId
@@ -92,7 +105,7 @@ export class ManageOrganizationUnits {
 
   /** Empty leaf only; otherwise disable. Positions and members block physical delete. */
   async remove(context: AuthContext, id: string) {
-    await this.authorize(context, 'manage')
+    await this.authorizeManage(context)
     return this.work.run(async (tx) => {
       const existing = await this.required(tx.store, context.tenantId, id)
       if (await tx.store.hasChildren(context.tenantId, id))

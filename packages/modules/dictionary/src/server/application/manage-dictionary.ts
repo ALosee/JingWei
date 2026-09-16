@@ -22,7 +22,7 @@ function fail(code: string, message: string, status = 409): never {
   throw new ApplicationError({ code, message, status })
 }
 
-/** Application use cases own authorization, tenant scope, revisions, audit and change events. */
+/** Application use cases own authorization, tenant scope, revisions and audit. */
 export class ManageDictionary {
   constructor(
     private readonly store: DictionaryStore,
@@ -31,7 +31,7 @@ export class ManageDictionary {
   ) {}
 
   private authorize(context: AuthContext, action: 'view' | 'manage') {
-    return this.access.requirePermission(context, `dictionary.${action}`, 'dictionary.core')
+    return this.access.requireUnscopedPermission(context, `dictionary.${action}`, 'dictionary.core')
   }
 
   async catalog(context: AuthContext): Promise<DictionaryCatalog> {
@@ -155,7 +155,6 @@ export class ManageDictionary {
       }
       await tx.store.insertType(context, type)
       await tx.record(context, 'type_created', 'dictionary_type', type.id, null, type)
-      await tx.publishDefinitionChanged(context, type.id, type.code, type.revision)
       return { type, items: [] }
     })
   }
@@ -194,7 +193,6 @@ export class ManageDictionary {
       if (!changed) this.revisionConflict()
       const detail = await this.requiredDetail(tx.store, context.tenantId, id)
       await tx.record(context, 'type_updated', 'dictionary_type', id, existing, detail.type)
-      await tx.publishDefinitionChanged(context, id, detail.type.code, detail.type.revision)
       return detail
     })
   }
@@ -227,7 +225,6 @@ export class ManageDictionary {
       await this.touchType(tx.store, context, typeId, input.expectedRevision, now)
       const detail = await this.requiredDetail(tx.store, context.tenantId, typeId)
       await tx.record(context, 'item_created', 'dictionary_item', item.id, null, item)
-      await tx.publishDefinitionChanged(context, typeId, type.code, detail.type.revision)
       return detail
     })
   }
@@ -263,7 +260,6 @@ export class ManageDictionary {
       const detail = await this.requiredDetail(tx.store, context.tenantId, typeId)
       const updated = detail.items.find((item) => item.id === itemId)
       await tx.record(context, 'item_updated', 'dictionary_item', itemId, existing, updated)
-      await tx.publishDefinitionChanged(context, typeId, type.code, detail.type.revision)
       return detail
     })
   }

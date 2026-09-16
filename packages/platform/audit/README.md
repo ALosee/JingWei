@@ -40,11 +40,11 @@ await audit.append({
 | 审计              | 合规、追责、业务操作历史 | 不应关闭             |
 | Integration Event | 通知其他模块事实         | 不作为审计记录替代品 |
 
-同一个动作可能同时产生日志、审计和 outbox，但三者载荷和保留策略不同。
+存在真实事件消费者时，同一个动作可能同时产生日志、审计和 outbox，但三者载荷和保留策略不同。当前 Foundation 的模块写操作不生产 Outbox 事件。
 
 ## 事务一致性
 
-高价值写操作的审计应与业务数据共享事务。`PostgresAuditWriter` 接收 QueryExecutorProvider（Kysely 或 Transaction 均可），通过同一个 executor 建立审计表的类型视图，不新建连接或提交事务。用例中使用 `new PostgresAuditWriter(transaction)`，即可与模块仓储及 Outbox 原子提交。不能先提交业务数据，再异步“尽力写审计”。Navigation 的真实数据库测试会注入 Outbox 失败，验证审计与发布指针一起回滚。
+高价值写操作的审计应与业务数据共享事务。`PostgresAuditWriter` 接收 QueryExecutorProvider（Kysely 或 Transaction 均可），通过同一个 executor 建立审计表的类型视图，不新建连接或提交事务。用例中使用 `new PostgresAuditWriter(transaction)`，即可与模块仓储原子提交；未来启用的 Outbox 也必须复用该事务。不能先提交业务数据，再异步“尽力写审计”。Navigation 的真实数据库测试会注入 Audit 失败，验证业务状态与发布指针一起回滚。
 
 ## 敏感信息
 

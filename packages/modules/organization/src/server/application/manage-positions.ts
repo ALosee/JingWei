@@ -1,10 +1,11 @@
 import { ApplicationError, newEntityId, type AuthContext } from '@jingwei/kernel'
-import type { IamAccess } from '@jingwei/module-iam/server/public'
+import type { AuthorizationEvaluator, IamAccess } from '@jingwei/module-iam/server/public'
 
-import type {
-  CreateOrganizationPosition,
-  OrganizationPosition,
-  UpdateOrganizationPosition,
+import {
+  isOrgUnitInDataScope,
+  type CreateOrganizationPosition,
+  type OrganizationPosition,
+  type UpdateOrganizationPosition,
 } from '../../shared/index.js'
 import type { PositionStore, PositionUnitOfWork } from './position-store.js'
 
@@ -18,14 +19,30 @@ export class ManageOrganizationPositions {
     private readonly store: PositionStore,
     private readonly work: PositionUnitOfWork,
     private readonly access: IamAccess,
+    private readonly evaluator: AuthorizationEvaluator,
   ) {}
 
-  private authorize(context: AuthContext, action: 'view' | 'manage') {
-    return this.access.requirePermission(context, 'organization.' + action, 'organization.core')
+  private authorizeManage(context: AuthContext) {
+    return this.access.requireUnscopedPermission(
+      context,
+      'organization.manage',
+      'organization.core',
+    )
+  }
+
+  /** organization.view supports data scope, so view goes through the evaluator. */
+  private async authorizeViewInScope(context: AuthContext, orgUnitId: string) {
+    const dataScope = await this.evaluator.requireScopedPermission({
+      context,
+      capability: 'organization.core',
+      permission: 'organization.view',
+    })
+    if (!isOrgUnitInDataScope(orgUnitId, dataScope))
+      fail('PERMISSION_DENIED', '没有该组织的数据访问范围', 403)
   }
 
   async listByUnit(context: AuthContext, orgUnitId: string) {
-    await this.authorize(context, 'view')
+    await this.authorizeViewInScope(context, orgUnitId)
     if (!(await this.store.unitExists(context.tenantId, orgUnitId)))
       fail('ORGANIZATION_UNIT_NOT_FOUND', '组织不存在', 404)
     return { positions: await this.store.listByUnit(context.tenantId, orgUnitId) }
@@ -36,7 +53,7 @@ export class ManageOrganizationPositions {
     orgUnitId: string,
     input: CreateOrganizationPosition,
   ): Promise<OrganizationPosition> {
-    await this.authorize(context, 'manage')
+    await this.authorizeManage(context)
     return this.work.run(async (tx) => {
       if (!(await tx.store.unitExists(context.tenantId, orgUnitId)))
         fail('ORGANIZATION_UNIT_NOT_FOUND', '组织不存在', 404)
@@ -58,13 +75,15 @@ export class ManageOrganizationPositions {
 
   async update(
     context: AuthContext,
+    orgUnitId: string,
     id: string,
     input: UpdateOrganizationPosition,
   ): Promise<OrganizationPosition> {
-    await this.authorize(context, 'manage')
+    await this.authorizeManage(context)
     return this.work.run(async (tx) => {
       const existing = await tx.store.get(context.tenantId, id)
-      if (existing === null) fail('ORGANIZATION_POSITION_NOT_FOUND', '岗位不存在', 404)
+      if (existing?.orgUnitId !== orgUnitId)
+        fail('ORGANIZATION_POSITION_NOT_FOUND', '岗位不存在', 404)
       const nextCode = input.code ?? existing.code
       if (nextCode !== existing.code) {
         if (await tx.store.codeTaken(context.tenantId, existing.orgUnitId, nextCode, id))
@@ -85,11 +104,12 @@ export class ManageOrganizationPositions {
   }
 
   /** Empty position only; occupied positions must be disabled instead. */
-  async remove(context: AuthContext, id: string) {
-    await this.authorize(context, 'manage')
+  async remove(context: AuthContext, orgUnitId: string, id: string) {
+    await this.authorizeManage(context)
     return this.work.run(async (tx) => {
       const existing = await tx.store.get(context.tenantId, id)
-      if (existing === null) fail('ORGANIZATION_POSITION_NOT_FOUND', '岗位不存在', 404)
+      if (existing?.orgUnitId !== orgUnitId)
+        fail('ORGANIZATION_POSITION_NOT_FOUND', '岗位不存在', 404)
       if (await tx.store.hasMembers(context.tenantId, id))
         fail(
           'ORGANIZATION_POSITION_HAS_MEMBERS',

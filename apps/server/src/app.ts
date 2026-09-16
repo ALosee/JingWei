@@ -4,7 +4,7 @@ import { Scalar } from '@scalar/hono-api-reference'
 import type { ServerAppEnv } from '@jingwei/module-sdk/server'
 
 import type { Runtime } from './bootstrap/runtime.js'
-import { generatedServerModules } from './generated/modules.js'
+import { createGeneratedServerModules } from './generated/modules.js'
 import { installHttpErrors } from './http/errors.js'
 import { openApiDocumentConfig, registerOpenApiSecuritySchemes } from './http/openapi.js'
 import { createSystemRoutes } from './http/system-routes.js'
@@ -17,7 +17,7 @@ export async function createApp(runtime: Runtime) {
   registerOpenApiSecuritySchemes(app)
   app.route('/', createSystemRoutes(runtime.moduleRegistry.editionId))
   const api = new OpenAPIHono<ServerAppEnv>()
-  for (const module of generatedServerModules) {
+  for (const module of createGeneratedServerModules(runtime)) {
     const installed = await module.install(runtime)
     api.route(installed.basePath, installed.routes)
   }

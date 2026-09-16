@@ -92,7 +92,7 @@
 | http-contract | [README](../packages/platform/http-contract/README.md) | 平台 HTTP 错误与安全方案契约            |
 | audit         | [README](../packages/platform/audit/README.md)         | 审计写入                                |
 | observability | [README](../packages/platform/observability/README.md) | 结构化日志                              |
-| outbox        | [README](../packages/platform/outbox/README.md)        | 事务发件箱与 worker                     |
+| outbox        | [README](../packages/platform/outbox/README.md)        | 未启用的事务发件箱 primitive            |
 | storage       | [README](../packages/platform/storage/README.md)       | 对象存储端口                            |
 | testing       | [README](../packages/platform/testing/README.md)       | 测试上下文和固定时钟                    |
 | ui            | [README](../packages/platform/ui/README.md)            | 基础 Vue 组件与样式                     |

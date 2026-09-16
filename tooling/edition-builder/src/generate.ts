@@ -38,7 +38,7 @@ export async function generateEdition(
   await Promise.all([
     writeGenerated(
       join(repositoryRoot, 'apps/server/src/generated/edition.ts'),
-      serverEditionSource(resolved.id, ids, capabilitySelections),
+      serverEditionSource(resolved.id, ids, capabilitySelections, loaded.default.navigation),
     ),
     writeGenerated(
       join(repositoryRoot, 'apps/server/src/generated/modules.ts'),
@@ -85,6 +85,7 @@ function serverEditionSource(
   editionId: string,
   moduleIds: readonly string[],
   capabilities: Readonly<Record<string, readonly string[]>>,
+  navigation: EditionDefinition['navigation'],
 ): string {
   const imports = moduleIds
     .map(
@@ -99,29 +100,62 @@ function serverEditionSource(
     })
     .join('\n')
   const catalog = moduleIds.map((id) => alias(id, 'Manifest')).join(', ')
+  const navigationSource =
+    navigation === undefined ? '' : `  navigation: ${JSON.stringify(navigation)},\n`
 
-  return `${imports}\nimport { defineEdition, resolveEdition } from '@jingwei/module-sdk'\n\nconst edition = defineEdition({\n  id: '${editionId}',\n  modules: {\n${modules}\n  },\n})\n\nexport const generatedEdition = resolveEdition(edition, [${catalog}])\n`
+  return `${imports}\nimport { defineEdition, resolveEdition } from '@jingwei/module-sdk'\n\nconst edition = defineEdition({\n  id: '${editionId}',\n  modules: {\n${modules}\n  },\n${navigationSource}})\n\nexport const generatedEdition = resolveEdition(edition, [${catalog}])\n`
 }
 
-function serverModulesSource(moduleIds: readonly string[]): string {
+export function serverModulesSource(moduleIds: readonly string[]): string {
+  const hasOrganization = moduleIds.includes('organization')
   const imports = moduleIds
-    .map(
-      (id) =>
-        `import { serverModule as ${alias(id, 'ServerModule')} } from '@jingwei/module-${id}/server'`,
-    )
+    .map((id) => {
+      if (hasOrganization && id === 'iam') {
+        return `import { createIamServerModule } from '@jingwei/module-iam/server'`
+      }
+      if (id === 'organization') {
+        return `import { createOrganizationServerModule } from '@jingwei/module-organization/server'`
+      }
+      return `import { serverModule as ${alias(id, 'ServerModule')} } from '@jingwei/module-${id}/server'`
+    })
     .join('\n')
-  const modules = moduleIds.map((id) => `  ${alias(id, 'ServerModule')},`).join('\n')
-  return `${imports}\n\nexport const generatedServerModules = [\n${modules}\n] as const\n`
+  const integrationImports = hasOrganization
+    ? `\nimport { createOrganizationalScopeFacts } from '@jingwei/module-organization/server/public'`
+    : ''
+  const modules = moduleIds
+    .map((id) => {
+      if (hasOrganization && id === 'iam') {
+        return `    createIamServerModule({ organizationalScopeFacts }),`
+      }
+      if (id === 'organization') {
+        return `    createOrganizationServerModule({ organizationalScopeFacts }),`
+      }
+      return `    ${alias(id, 'ServerModule')},`
+    })
+    .join('\n')
+  const facts = hasOrganization
+    ? `  const organizationalScopeFacts = createOrganizationalScopeFacts(context.database)\n`
+    : `  void context\n`
+  return `${imports}${integrationImports}\nimport type { ServerModuleContext } from '@jingwei/module-sdk/server'\n\nexport function createGeneratedServerModules(context: ServerModuleContext) {\n${facts}  return [\n${modules}\n  ] as const\n}\n`
 }
 
-function webModulesSource(moduleIds: readonly string[]): string {
+export function webModulesSource(moduleIds: readonly string[]): string {
+  const hasOrganization = moduleIds.includes('organization')
   const imports = moduleIds
-    .map(
-      (id) => `import { webModule as ${alias(id, 'WebModule')} } from '@jingwei/module-${id}/web'`,
+    .map((id) =>
+      hasOrganization && id === 'organization'
+        ? `import { organizationalScopeReferenceDirectory, webModule as ${alias(id, 'WebModule')} } from '@jingwei/module-organization/web'`
+        : `import { webModule as ${alias(id, 'WebModule')} } from '@jingwei/module-${id}/web'`,
     )
     .join('\n')
   const modules = moduleIds.map((id) => `  ${alias(id, 'WebModule')},`).join('\n')
-  return `${imports}\n\nexport const generatedWebModules = [\n${modules}\n] as const\n`
+  const integrationImports = hasOrganization
+    ? `\nimport { customScopeReferenceDirectoryKey } from '@jingwei/module-iam/public/web'`
+    : ''
+  const integration = hasOrganization
+    ? `  app.provide(customScopeReferenceDirectoryKey, organizationalScopeReferenceDirectory)\n`
+    : `  void app\n`
+  return `${imports}${integrationImports}\nimport type { App } from 'vue'\n\nexport const generatedWebModules = [\n${modules}\n] as const\n\nexport function installGeneratedWebIntegrations(app: App): void {\n${integration}}\n`
 }
 
 function migrationsSource(moduleIds: readonly string[]): string {

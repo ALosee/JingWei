@@ -13,7 +13,8 @@ export class ReadPermissionCatalog {
         code: permission.code,
         moduleId: permission.moduleId,
         name: permission.name,
-        supportsDataScope: permission.supportsDataScope ?? false,
+        allowedScopeTypes: [...(permission.dataScope?.allowedTypes ?? ['ALL'])],
+        dataScopeProvider: permission.dataScope?.provider ?? null,
       }))
       .toSorted((left, right) =>
         left.moduleId === right.moduleId

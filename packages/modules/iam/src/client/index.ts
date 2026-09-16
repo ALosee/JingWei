@@ -215,7 +215,15 @@ export function replaceIamRolePermissions(
   return toApiResult(
     api.client.put('/roles/{roleId}/permissions', {
       pathParams: { roleId },
-      body: input,
+      body: {
+        permissions: input.permissions.map((grant) => ({
+          permissionCode: grant.permissionCode,
+          scopeType: grant.scopeType,
+          ...(grant.organizationIds === undefined || grant.organizationIds.length === 0
+            ? {}
+            : { organizationIds: grant.organizationIds }),
+        })),
+      },
       schema: rolePermissionListSchema,
       ...options,
     }),

@@ -26,7 +26,6 @@
     "@jingwei/kernel": "workspace:*",
     "@jingwei/module-iam": "workspace:*",
     "@jingwei/module-sdk": "workspace:*",
-    "@jingwei/outbox": "workspace:*",
     "@jingwei/ui": "workspace:*",
     "hono": "catalog:",
     "kysely": "catalog:",

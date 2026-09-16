@@ -2,7 +2,6 @@ import { sql, type Kysely } from 'kysely'
 
 import { PostgresAuditWriter } from '@jingwei/audit'
 import { ApplicationError, type ApplicationContext, type TenantId } from '@jingwei/kernel'
-import { PostgresOutboxAppender } from '@jingwei/outbox'
 
 import type {
   DictionaryCategory,
@@ -464,17 +463,6 @@ export class PostgresDictionaryUnitOfWork implements DictionaryUnitOfWork {
             result: 'SUCCESS',
             before,
             after,
-          })
-        },
-        publishDefinitionChanged: async (context, typeId, dictionaryCode, revision) => {
-          await new PostgresOutboxAppender().append(transaction, {
-            tenantId: context.tenantId,
-            type: 'dictionary.definition.changed',
-            version: 1,
-            aggregateType: 'dictionary_type',
-            aggregateId: typeId,
-            occurredAt: new Date(),
-            payload: { dictionaryCode, revision },
           })
         },
       }),

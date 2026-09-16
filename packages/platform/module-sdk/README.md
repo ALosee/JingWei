@@ -43,7 +43,7 @@ Server/Web 契约拆成子路径，避免纯 manifest/构建工具无意引入 H
 
 ## `ModuleRegistry`
 
-运行时只读目录，可查询 Edition ID、模块、已启用能力、路由和权限定义。构造时再次阻止跨模块重复 route key 和 permission code。
+运行时只读目录，可查询 Edition ID、模块、已启用能力、路由、权限定义和已解析的 Edition 默认导航。构造时再次阻止跨模块重复 route key 和 permission code。
 
 注册表不是权限引擎：`hasCapability` 说明产品能力存在，不说明当前用户已获授权。
 
@@ -65,6 +65,8 @@ RouteDefinition.requiredPermission 保留功能权限的静态关联和注册校
 ## Web Module
 
 `WebModule.pages` 把 manifest 的 `routeKey` 绑定到构建注册表中的 `pageKey`。服务端 Navigation 返回 route key 后，Web 壳同时解析 route definition 和页面绑定；任何缺失都应快速失败。
+
+WebModule 不提供 configure/startup hook。跨模块 UI adapter 由 Edition Builder 生成显式 `app.provide` 装配，禁止模块 import 时修改全局变量。
 
 ## 修改 SDK
 

@@ -290,7 +290,7 @@ catalog 是配置候选目录，完整配置仍要通过服务端校验；它不
 { "sourceVersionId": null }
 ```
 
-传 UUID 则克隆指定版本；null 则克隆当前发布版本；若从未发布，使用 Edition 初始化模板。克隆分配新节点 ID，但保持稳定 code。不会自动发布。
+传 UUID 则克隆指定版本；null 则克隆当前发布版本；若从未发布，使用 Edition 初始化模板。模板由启用模块显式声明的 navigationItems 与 Edition 公共容器/入口组合，不会把全部 Route 自动变成菜单。克隆分配新节点 ID，但保持稳定 code。不会自动发布。
 
 保存 PUT 是全量替换，不是 patch。body 为：
 
@@ -320,7 +320,7 @@ validate 检查已保存版本，响应 `{ issues: [] }` 表示通过；有 issu
 }
 ```
 
-首次发布预期指针为 null。publish 只接受 DRAFT；rollback 只接受 PUBLISHED。两者均重验配置与当前 Edition，锁住根指针，并在同一事务写状态/指针、审计和 outbox。
+首次发布预期指针为 null。publish 只接受 DRAFT；rollback 只接受 PUBLISHED。两者均重验配置与当前 Edition，锁住根指针，并在同一事务写状态/指针和审计。
 
 成功返回目标完整发布版本。指针不符返回 NAVIGATION_PUBLISH_CONFLICT/409，编辑修订不符返回 NAVIGATION_EDIT_CONFLICT/409。不能通过自动重试掩盖冲突，应让管理员重新读取差异。
 

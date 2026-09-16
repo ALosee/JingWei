@@ -4,6 +4,26 @@
  */
 
 export type paths = {
+    "/api/v1/organization/member-candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 读取可加入组织的候选用户
+         * @description 仅返回 ACTIVE 用户的安全投影；不要求 iam.user.view。
+         */
+        get: operations["organizationListMemberCandidates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/organization/org-units": {
         parameters: {
             query?: never;
@@ -49,6 +69,68 @@ export type paths = {
         patch: operations["organizationUpdateUnit"];
         trace?: never;
     };
+    "/api/v1/organization/org-units/{id}/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 读取组织成员
+         * @description 返回成员、安全用户投影及其在本组织下的岗位分配。
+         */
+        get: operations["organizationListMembers"];
+        put?: never;
+        /** 将用户加入组织 */
+        post: operations["organizationCreateMember"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/organization/org-units/{id}/members/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * 将用户移出组织
+         * @description 会同时解除该用户在本组织下的岗位分配。
+         */
+        delete: operations["organizationDeleteMember"];
+        options?: never;
+        head?: never;
+        /** 更新组织成员归属 */
+        patch: operations["organizationUpdateMember"];
+        trace?: never;
+    };
+    "/api/v1/organization/org-units/{id}/members/{userId}/positions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 整组替换成员在本组织的岗位
+         * @description 岗位必须属于该组织且启用；同一用户全局只能有一个主岗位。
+         */
+        put: operations["organizationReplaceMemberPositions"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/organization/org-units/{id}/positions": {
         parameters: {
             query?: never;
@@ -88,6 +170,26 @@ export type paths = {
         patch: operations["organizationUpdatePosition"];
         trace?: never;
     };
+    "/api/v1/organization/scope-options": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 读取角色授权可选组织
+         * @description 返回当前租户全部有效组织，仅供拥有 iam.role.manage 的集中式角色管理员使用。
+         */
+        get: operations["organizationListScopeOptions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 };
 export type webhooks = Record<string, never>;
 export type components = {
@@ -100,6 +202,27 @@ export type components = {
             };
             message: string;
             requestId: string;
+        };
+        OrganizationalScopeOption: {
+            code: string;
+            /** Format: uuid */
+            id: string;
+            name: string;
+            /** Format: uuid */
+            parentId: string | null;
+            /** @enum {string} */
+            status: "ENABLED";
+        };
+        OrganizationalScopeOptions: {
+            units: components["schemas"]["OrganizationalScopeOption"][];
+        };
+        OrganizationCreateMemberInput: {
+            isPrimary?: boolean;
+            /** Format: date */
+            joinedAt?: string | null;
+            positionIds?: string[];
+            /** Format: uuid */
+            userId: string;
         };
         OrganizationCreatePositionInput: {
             code: string;
@@ -119,6 +242,53 @@ export type components = {
             /** @enum {string} */
             type: "COMPANY" | "DIVISION" | "DEPARTMENT" | "TEAM" | "OTHER";
         };
+        OrganizationMember: {
+            isPrimary: boolean;
+            /** Format: date */
+            joinedAt: string | null;
+            /** Format: uuid */
+            orgUnitId: string;
+            positions: components["schemas"]["OrganizationMemberPosition"][];
+            user: components["schemas"]["OrganizationMemberUser"];
+            /** Format: uuid */
+            userId: string;
+        };
+        OrganizationMemberCandidateList: {
+            users: components["schemas"]["OrganizationMemberUser"][];
+        };
+        OrganizationMemberList: {
+            members: components["schemas"]["OrganizationMember"][];
+        };
+        OrganizationMemberPosition: {
+            code: string;
+            isPrimary: boolean;
+            name: string;
+            /** Format: uuid */
+            positionId: string;
+        };
+        OrganizationMemberPositionAssignment: {
+            isPrimary?: boolean;
+            /** Format: uuid */
+            positionId: string;
+        };
+        OrganizationMemberPositionList: {
+            positions: components["schemas"]["OrganizationMemberPosition"][];
+        };
+        OrganizationMemberRef: {
+            /** Format: uuid */
+            orgUnitId: string;
+            /** Format: uuid */
+            userId: string;
+        };
+        OrganizationMemberUser: {
+            avatar: string | null;
+            displayName: string;
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            status: "INVITED" | "ACTIVE" | "DISABLED" | "LOCKED";
+            username: string;
+        };
         OrganizationPosition: {
             code: string;
             /** Format: uuid */
@@ -136,6 +306,9 @@ export type components = {
         OrganizationPositionRef: {
             /** Format: uuid */
             id: string;
+        };
+        OrganizationReplaceMemberPositionsInput: {
+            assignments: components["schemas"]["OrganizationMemberPositionAssignment"][];
         };
         OrganizationTree: {
             units: components["schemas"]["OrganizationUnit"][];
@@ -160,6 +333,11 @@ export type components = {
         OrganizationUnitRef: {
             /** Format: uuid */
             id: string;
+        };
+        OrganizationUpdateMemberInput: {
+            isPrimary?: boolean;
+            /** Format: date */
+            joinedAt?: string | null;
         };
         OrganizationUpdatePositionInput: {
             code?: string;
@@ -188,6 +366,53 @@ export type components = {
 };
 export type $defs = Record<string, never>;
 export interface operations {
+    organizationListMemberCandidates: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 候选用户列表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationMemberCandidateList"];
+                };
+            };
+            /** @description 尚未登录 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 缺少 organization.manage 权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 服务器内部错误 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     organizationGetTree: {
         parameters: {
             query?: never;
@@ -459,6 +684,401 @@ export interface operations {
                 };
             };
             /** @description 编码冲突或移动成环 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Content-Type 不受支持 */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 服务器内部错误 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    organizationListMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 成员列表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationMemberList"];
+                };
+            };
+            /** @description 路径参数无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 尚未登录 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 缺少 organization.view 权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 组织不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 服务器内部错误 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    organizationCreateMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrganizationCreateMemberInput"];
+            };
+        };
+        responses: {
+            /** @description 已创建的成员归属 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationMember"];
+                };
+            };
+            /** @description 路径参数或请求体无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 尚未登录 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 权限、Origin 或 CSRF 校验失败 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 组织、用户或岗位不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 用户已在组织中或主归属冲突 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Content-Type 不受支持 */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 服务器内部错误 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    organizationDeleteMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 已移除的成员引用 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationMemberRef"];
+                };
+            };
+            /** @description 路径参数无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 尚未登录 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 权限、Origin 或 CSRF 校验失败 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 成员不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 服务器内部错误 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    organizationUpdateMember: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrganizationUpdateMemberInput"];
+            };
+        };
+        responses: {
+            /** @description 更新后的成员归属 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationMember"];
+                };
+            };
+            /** @description 路径参数或请求体无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 尚未登录 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 权限、Origin 或 CSRF 校验失败 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 成员不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Content-Type 不受支持 */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 服务器内部错误 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    organizationReplaceMemberPositions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrganizationReplaceMemberPositionsInput"];
+            };
+        };
+        responses: {
+            /** @description 替换后的岗位列表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationMemberPositionList"];
+                };
+            };
+            /** @description 路径参数或请求体无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 尚未登录 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 权限、Origin 或 CSRF 校验失败 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 成员或岗位不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 重复分配或多个主岗位 */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -792,6 +1412,53 @@ export interface operations {
             };
             /** @description Content-Type 不受支持 */
             415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 服务器内部错误 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    organizationListScopeOptions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 有效组织选项 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationalScopeOptions"];
+                };
+            };
+            /** @description 尚未登录 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 缺少 iam.role.manage 权限 */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

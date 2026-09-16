@@ -12,6 +12,7 @@
     "./openapi": "./src/server/api/openapi.ts",
     "./client": "./src/client/index.ts",
     "./web": "./src/web/index.ts",
+    "./public/web": "./src/public/web.ts",
     "./migrations": "./migrations/index.ts"
   },
   "scripts": {

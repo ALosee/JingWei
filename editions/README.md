@@ -26,6 +26,19 @@ export default defineEdition({
       capabilities: ['dictionary.read'],
     },
   },
+  navigation: {
+    authEntryCode: 'iam.login',
+    homeCode: 'iam.account',
+    containers: [
+      { code: 'workspace', name: '工作区', type: 'GROUP', parentCode: null },
+      {
+        code: 'administration',
+        name: '系统管理',
+        type: 'DIRECTORY',
+        parentCode: 'workspace',
+      },
+    ],
+  },
 })
 ```
 
@@ -33,6 +46,8 @@ export default defineEdition({
 - `{ capabilities: [...] }`：只启用列出的 capability；
 - 模块必需依赖会自动加入；
 - 未知模块、未知 capability、缺失 capability 依赖或循环依赖会导致生成失败。
+- `navigation` 拥有产品级公共容器、登录入口和首页；模块自己的 `navigationItems` 只提供建议叶节点；
+- Permission 引用的 Data Scope provider 必须由当前 Edition 中的模块声明，否则生成失败。
 
 ## 设计规则
 

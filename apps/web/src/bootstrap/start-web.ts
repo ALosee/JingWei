@@ -11,6 +11,7 @@ import {
 
 import App from '../App.vue'
 import { installSessionExpiryRedirect } from '../composables/use-session-expiry.js'
+import { installGeneratedWebIntegrations } from '../generated/modules.js'
 import { initializeNavigation } from '../navigation/initialize-navigation.js'
 import { installDynamicRoutes } from '../router/dynamic-routes.js'
 import { createApplicationRouter } from '../router/index.js'
@@ -20,6 +21,7 @@ import { useShellStore } from '../stores/shell.js'
 export async function startWebApplication(): Promise<void> {
   const initialLocation = window.location.pathname + window.location.search + window.location.hash
   const app = createApp(App)
+  installGeneratedWebIntegrations(app)
   const pinia = createPinia()
   const router = createApplicationRouter()
   app.use(pinia)

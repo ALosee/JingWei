@@ -1,6 +1,15 @@
 export const accessModes = ['PUBLIC', 'AUTHENTICATED', 'PERMISSION'] as const
 export type AccessMode = (typeof accessModes)[number]
 
+export const permissionDataScopeTypes = [
+  'ALL',
+  'ORGANIZATION',
+  'ORGANIZATION_AND_DESCENDANTS',
+  'SELF',
+  'CUSTOM',
+] as const
+export type PermissionDataScopeType = (typeof permissionDataScopeTypes)[number]
+
 export const moduleCategories = ['platform', 'foundation', 'business', 'extension'] as const
 export type ModuleCategory = (typeof moduleCategories)[number]
 
@@ -10,10 +19,43 @@ export interface CapabilityDefinition {
   readonly requiresModules?: readonly string[]
 }
 
+/** A statically declared owner for facts needed to evaluate provider-backed data scopes. */
+export interface DataScopeProviderDefinition {
+  readonly id: string
+}
+
+export interface PermissionDataScopeDefinition {
+  readonly allowedTypes: readonly [PermissionDataScopeType, ...PermissionDataScopeType[]]
+  readonly provider?: string
+}
+
 export interface PermissionDefinition {
   readonly code: string
   readonly name: string
-  readonly supportsDataScope?: boolean
+  /** Omission means this permission only accepts ALL. */
+  readonly dataScope?: PermissionDataScopeDefinition
+}
+
+export type NavigationPresetScalar = string | number | boolean | null
+export type NavigationPresetQueryValue =
+  | NavigationPresetScalar
+  | readonly Exclude<NavigationPresetScalar, null>[]
+
+/** Module-owned suggestion only; the Edition decides shared containers and entry points. */
+export interface ModuleNavigationItem {
+  readonly code: string
+  readonly name: string
+  readonly type: 'MENU' | 'PAGE'
+  readonly parentCode: string | null
+  readonly routeKey: string
+  readonly path: string
+  readonly layout?: 'base' | 'blank'
+  readonly accessMode?: AccessMode
+  readonly status?: 'ENABLED' | 'DISABLED'
+  readonly sortOrder?: number
+  readonly icon?: string | null
+  readonly params?: Readonly<Record<string, string | number>>
+  readonly query?: Readonly<Record<string, NavigationPresetQueryValue>>
 }
 
 export interface RouteDefinition {
@@ -34,8 +76,10 @@ export interface ModuleManifest {
   readonly dependencies: readonly string[]
   readonly optionalDependencies: readonly string[]
   readonly capabilities: readonly CapabilityDefinition[]
+  readonly dataScopeProviders?: readonly DataScopeProviderDefinition[]
   readonly permissions: readonly PermissionDefinition[]
   readonly routeDefinitions: readonly RouteDefinition[]
+  readonly navigationItems?: readonly ModuleNavigationItem[]
 }
 
 const moduleIdPattern = /^[a-z][a-z0-9-]*$/u
@@ -74,6 +118,10 @@ export function validateManifest(manifest: ModuleManifest): void {
     manifest.capabilities.map(({ id }) => id),
   )
   ensureUnique(
+    `${manifest.id} data-scope provider`,
+    (manifest.dataScopeProviders ?? []).map(({ id }) => id),
+  )
+  ensureUnique(
     `${manifest.id} permission`,
     manifest.permissions.map(({ code }) => code),
   )
@@ -95,6 +143,27 @@ export function validateManifest(manifest: ModuleManifest): void {
     }
   }
 
+  for (const permission of manifest.permissions) {
+    const dataScope = permission.dataScope
+    if (dataScope === undefined) continue
+    ensureUnique(`${permission.code} data-scope type`, dataScope.allowedTypes)
+    if (dataScope.allowedTypes.length === 0) {
+      throw new Error(`Permission ${permission.code} must allow at least one data-scope type`)
+    }
+    if (!dataScope.allowedTypes.includes('ALL')) {
+      throw new Error(`Permission ${permission.code} data scopes must include ALL`)
+    }
+    const needsProvider = dataScope.allowedTypes.some((type) =>
+      ['ORGANIZATION', 'ORGANIZATION_AND_DESCENDANTS', 'CUSTOM'].includes(type),
+    )
+    if (needsProvider && dataScope.provider === undefined) {
+      throw new Error(`Permission ${permission.code} requires a data-scope provider`)
+    }
+    if (dataScope.provider !== undefined && !moduleIdPattern.test(dataScope.provider)) {
+      throw new Error(`Permission ${permission.code} has invalid provider ${dataScope.provider}`)
+    }
+  }
+
   for (const route of manifest.routeDefinitions) {
     if (route.allowedLayouts !== undefined && !route.allowedLayouts.includes(route.layout)) {
       throw new Error(`Route ${route.key} default layout must be allowed`)
@@ -110,6 +179,31 @@ export function validateManifest(manifest: ModuleManifest): void {
     }
     if (route.requiredPermission !== undefined && route.allowedAccessModes.includes('PUBLIC')) {
       throw new Error(`Permission route ${route.key} cannot allow PUBLIC access`)
+    }
+  }
+
+  const routes = new Map(manifest.routeDefinitions.map((route) => [route.key, route]))
+  ensureUnique(
+    `${manifest.id} navigation code`,
+    (manifest.navigationItems ?? []).map(({ code }) => code),
+  )
+  ensureUnique(
+    `${manifest.id} navigation route`,
+    (manifest.navigationItems ?? []).map(({ routeKey }) => routeKey),
+  )
+  for (const item of manifest.navigationItems ?? []) {
+    const route = routes.get(item.routeKey)
+    if (route === undefined) {
+      throw new Error(`Navigation item ${item.code} references unknown route ${item.routeKey}`)
+    }
+    if (
+      item.layout !== undefined &&
+      !(route.allowedLayouts ?? [route.layout]).includes(item.layout)
+    ) {
+      throw new Error(`Navigation item ${item.code} uses a forbidden layout`)
+    }
+    if (item.accessMode !== undefined && !route.allowedAccessModes.includes(item.accessMode)) {
+      throw new Error(`Navigation item ${item.code} uses a forbidden access mode`)
     }
   }
 }

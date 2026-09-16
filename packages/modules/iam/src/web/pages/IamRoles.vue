@@ -14,7 +14,7 @@ import {
 } from '@jingwei/ui'
 import type { SelectSingleOptionData } from '@jingwei/ui'
 
-import type { CreateIamRole, RoleDataScopeType } from '../../shared/index.js'
+import type { CreateIamRole, PermissionCatalogItem, RoleDataScopeType } from '../../shared/index.js'
 import { useIamRoleManagement } from '../composables/use-iam-role-management.js'
 
 const management = useIamRoleManagement()
@@ -33,6 +33,9 @@ const {
   draftStatus,
   selectedPermissions,
   permissionsDirty,
+  canSavePermissions,
+  organizationOptions,
+  organizationOptionsError,
   canManage,
   select,
   beginCreate,
@@ -41,6 +44,8 @@ const {
   saveSelected,
   removeSelected,
   togglePermission,
+  setPermissionScope,
+  togglePermissionOrganization,
   savePermissions,
 } = management
 
@@ -49,12 +54,17 @@ const statusOptions: SelectSingleOptionData[] = [
   { value: 'DISABLED', label: '停用' },
 ]
 
-const scopeOptions: SelectSingleOptionData[] = [
-  { value: 'ALL', label: '全部' },
-  { value: 'ORGANIZATION', label: '本组织' },
-  { value: 'ORGANIZATION_AND_DESCENDANTS', label: '本组织及下级' },
-  { value: 'SELF', label: '仅本人' },
-]
+const scopeLabels: Readonly<Record<RoleDataScopeType, string>> = {
+  ALL: '全部',
+  ORGANIZATION: '本组织',
+  ORGANIZATION_AND_DESCENDANTS: '本组织及下级',
+  SELF: '仅本人',
+  CUSTOM: '自定义组织',
+}
+
+function scopeOptionsFor(permission: PermissionCatalogItem): SelectSingleOptionData[] {
+  return permission.allowedScopeTypes.map((value) => ({ value, label: scopeLabels[value] }))
+}
 
 const catalogByModule = computed(() => {
   const groups = new Map<string, typeof catalog.value>()
@@ -71,13 +81,17 @@ const canSaveRole = computed(
 )
 
 function onTogglePermission(code: string, enabled: boolean) {
-  const current = selectedPermissions.value.get(code) ?? 'ALL'
-  togglePermission(code, enabled, current)
+  const current = selectedPermissions.value.get(code)
+  togglePermission(code, enabled, current?.scopeType ?? 'ALL', current?.organizationIds ?? [])
 }
 
 function onScopeChange(code: string, scope: RoleDataScopeType) {
   if (!selectedPermissions.value.has(code)) return
-  togglePermission(code, true, scope)
+  setPermissionScope(code, scope)
+}
+
+function isOrgSelected(code: string, orgUnitId: string): boolean {
+  return selectedPermissions.value.get(code)?.organizationIds.includes(orgUnitId) ?? false
 }
 
 async function onCreate() {
@@ -114,6 +128,10 @@ function onRemove() {
 async function onSavePermissions() {
   await savePermissions()
   if (error.value === '') toast.success('角色权限已更新')
+}
+
+function orgIndent(depth: number): string {
+  return depth === 0 ? '' : '　'.repeat(depth)
 }
 </script>
 
@@ -252,14 +270,17 @@ async function onSavePermissions() {
                   size="sm"
                   variant="soft"
                   :loading="busy"
-                  :disabled="!permissionsDirty"
+                  :disabled="!permissionsDirty || !canSavePermissions"
                   @click="onSavePermissions"
                 >
                   保存授权
                 </ButtonLoading>
               </div>
               <p class="m-0 text-xs text-muted-foreground">
-                权限来自当前产品版本；不支持数据范围的权限固定为「全部」。导航菜单授权在导航模块配置。
+                权限来自当前产品版本；每项权限只能选择其声明的数据范围。自定义组织需要至少一个组织。导航菜单授权在导航模块配置。
+              </p>
+              <p v-if="organizationOptionsError" class="m-0 text-xs text-warning" role="status">
+                {{ organizationOptionsError }}
               </p>
               <div
                 v-for="group in catalogByModule"
@@ -270,43 +291,79 @@ async function onSavePermissions() {
                   {{ group.moduleId }}
                 </div>
                 <ul class="m-0 list-none divide-y divide-border">
-                  <li
-                    v-for="item in group.permissions"
-                    :key="item.code"
-                    class="flex flex-wrap items-center gap-3 px-3 py-2"
-                  >
-                    <label class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-sm">
-                      <Switch
-                        :model-value="selectedPermissions.has(item.code)"
-                        :disabled="!canManage"
+                  <li v-for="item in group.permissions" :key="item.code" class="px-3 py-2">
+                    <div class="flex flex-wrap items-center gap-3">
+                      <label class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-sm">
+                        <Switch
+                          :model-value="selectedPermissions.has(item.code)"
+                          :disabled="!canManage"
+                          @update:model-value="
+                            (value: boolean) => onTogglePermission(item.code, value)
+                          "
+                        />
+                        <span class="min-w-0">
+                          <span class="block truncate">{{ item.name }}</span>
+                          <span class="block truncate text-xs text-muted-foreground">
+                            {{ item.code }}
+                          </span>
+                        </span>
+                      </label>
+                      <Select
+                        v-if="item.allowedScopeTypes.length > 1"
+                        class="w-44 shrink-0"
+                        :model-value="selectedPermissions.get(item.code)?.scopeType ?? 'ALL'"
+                        :items="scopeOptionsFor(item)"
+                        :disabled="!canManage || !selectedPermissions.has(item.code)"
                         @update:model-value="
-                          (value: boolean) => onTogglePermission(item.code, value)
+                          (value: string | number) =>
+                            onScopeChange(item.code, value as RoleDataScopeType)
                         "
                       />
-                      <span class="min-w-0">
-                        <span class="block truncate">{{ item.name }}</span>
-                        <span class="block truncate text-xs text-muted-foreground">
-                          {{ item.code }}
-                        </span>
+                      <span
+                        v-else
+                        class="shrink-0 rounded bg-muted px-2 py-1 text-xs text-muted-foreground"
+                      >
+                        无数据范围
                       </span>
-                    </label>
-                    <Select
-                      v-if="item.supportsDataScope"
-                      class="w-44 shrink-0"
-                      :model-value="selectedPermissions.get(item.code) ?? 'ALL'"
-                      :items="scopeOptions"
-                      :disabled="!canManage || !selectedPermissions.has(item.code)"
-                      @update:model-value="
-                        (value: string | number) =>
-                          onScopeChange(item.code, value as RoleDataScopeType)
+                    </div>
+                    <div
+                      v-if="
+                        item.dataScopeProvider !== null &&
+                        selectedPermissions.get(item.code)?.scopeType === 'CUSTOM'
                       "
-                    />
-                    <span
-                      v-else
-                      class="shrink-0 rounded bg-muted px-2 py-1 text-xs text-muted-foreground"
+                      class="mt-2 max-h-48 overflow-y-auto rounded-md border border-border bg-muted/20 p-2"
                     >
-                      无数据范围
-                    </span>
+                      <p
+                        v-if="organizationOptions.length === 0"
+                        class="m-0 text-xs text-muted-foreground"
+                      >
+                        {{
+                          organizationOptionsError || '暂无可用组织。请确认当前租户已配置有效组织。'
+                        }}
+                      </p>
+                      <label
+                        v-for="org in organizationOptions"
+                        :key="org.id"
+                        class="flex cursor-pointer items-center gap-2 py-0.5 text-sm"
+                      >
+                        <input
+                          type="checkbox"
+                          :disabled="!canManage"
+                          :checked="isOrgSelected(item.code, org.id)"
+                          @change="
+                            togglePermissionOrganization(
+                              item.code,
+                              org.id,
+                              ($event.target as HTMLInputElement).checked,
+                            )
+                          "
+                        />
+                        <span class="truncate">{{ orgIndent(org.depth) }}{{ org.name }}</span>
+                        <span class="shrink-0 font-mono text-xs text-muted-foreground">
+                          {{ org.code }}
+                        </span>
+                      </label>
+                    </div>
                   </li>
                 </ul>
               </div>

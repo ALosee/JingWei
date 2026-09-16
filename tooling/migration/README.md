@@ -48,7 +48,7 @@ TEST_ADMIN_PASSWORD='<seed 时使用的密码>' pnpm test:auth:real
 - 创建 development-admin 角色并分配给开发用户；显式投影/授予当前 Edition 的功能权限，不依赖 is_super。
 - 仅在没有已发布配置时创建首个草稿并发布；不会覆盖已有导航。
 - 给开发角色授予当前发布版本所有 PERMISSION 节点 code，移除不在当前版本的残留 code；不是普通生产授权同步器。
-- 不读取或修改密码；角色、版本与授权操作记录审计/Outbox。
+- 不读取或修改密码；角色、版本与授权操作记录审计。
 - 拒绝 NODE_ENV=production。正常应用启动不自动运行该工具。
 
 ### `seed:dictionary`
@@ -76,7 +76,7 @@ pnpm dev:test
 node --env-file=.env.test --import tsx tooling/migration/src/test-navigation-real.ts
 ```
 
-工具使用配置中的 PostgreSQL 实例创建唯一的 jingwei_navigation_test_* 临时数据库，运行所有迁移和真实 API/事务测试，最后删除这一个临时数据库，不清空应用数据库。连接账号必须具有 CREATEDB 权限。测试覆盖密码失败锁定、Cookie Token 轮换、code RBAC、跨租户访问、CSRF、并发写入/发布、回滚、不可变快照和 Outbox 故障回滚。
+工具使用配置中的 PostgreSQL 实例创建唯一的 jingwei_navigation_test_* 临时数据库，运行所有迁移和真实 API/事务测试，最后删除这一个临时数据库，不清空应用数据库。连接账号必须具有 CREATEDB 权限。测试覆盖密码失败锁定、Cookie Token 轮换、code RBAC、跨租户访问、CSRF、并发写入/发布、回滚、不可变快照和 Audit 故障回滚。
 
 普通 pnpm test 不连接数据库，会跳过此集成 suite。单独运行集成测试必须使用 TEST_DATABASE_URL 且数据库名通过临时前缀保护；推荐使用上述包装工具以确保 finally 清理。
 
@@ -98,7 +98,7 @@ pnpm migration:up
 
 ## 迁移集合
 
-当前始终包含 platform database、auth、audit、outbox 迁移；然后按解析顺序加入选中业务模块迁移。迁移名必须全局唯一，否则 Kysely 迁移记录会冲突。
+当前始终包含 platform database、auth、audit、outbox 迁移；其中 outbox 只预留平台表结构，不代表 worker 已启用。然后按解析顺序加入选中业务模块迁移。迁移名必须全局唯一，否则 Kysely 迁移记录会冲突。
 
 ## 安全约定
 

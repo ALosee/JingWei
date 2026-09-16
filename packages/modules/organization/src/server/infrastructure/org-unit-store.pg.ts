@@ -85,6 +85,33 @@ export class PostgresOrgUnitStore implements OrgUnitStore {
     return rows.map(toUnit)
   }
 
+  async listVisibleTree(tenantId: TenantId, organizationIds: readonly string[]) {
+    if (organizationIds.length === 0) return []
+    const rows = await this.db
+      .withRecursive('visible_org_tree', (db) =>
+        db
+          .selectFrom('organization.org_unit')
+          .select(['id', 'parent_id'])
+          .where('tenant_id', '=', tenantId)
+          .where('id', 'in', [...organizationIds])
+          .union((eb) =>
+            eb
+              .selectFrom('organization.org_unit as parent')
+              .innerJoin('visible_org_tree as child', 'child.parent_id', 'parent.id')
+              .select(['parent.id', 'parent.parent_id'])
+              .where('parent.tenant_id', '=', tenantId),
+          ),
+      )
+      .selectFrom('organization.org_unit as unit')
+      .innerJoin('visible_org_tree as visible', 'visible.id', 'unit.id')
+      .selectAll('unit')
+      .where('unit.tenant_id', '=', tenantId)
+      .orderBy('unit.sort_order')
+      .orderBy('unit.code')
+      .execute()
+    return rows.map(toUnit)
+  }
+
   async get(tenantId: TenantId, id: string) {
     const row = await this.db
       .selectFrom('organization.org_unit')
@@ -103,6 +130,18 @@ export class PostgresOrgUnitStore implements OrgUnitStore {
       .where('id', '=', id)
       .executeTakeFirst()
     return row !== undefined
+  }
+
+  async validIds(tenantId: TenantId, ids: readonly string[]) {
+    if (ids.length === 0) return []
+    const rows = await this.db
+      .selectFrom('organization.org_unit')
+      .select('id')
+      .where('tenant_id', '=', tenantId)
+      .where('id', 'in', [...ids])
+      .where('status', '=', 'ENABLED')
+      .execute()
+    return rows.map((row) => row.id)
   }
 
   async codeTaken(tenantId: TenantId, code: string, exceptId?: string) {

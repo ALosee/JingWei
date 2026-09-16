@@ -6,5 +6,10 @@ export interface IamAccess {
   roles(tenantId: TenantId): Promise<{ id: string; code: string; name: string }[]>
   /** Enabled-edition permission codes granted by the user's active roles. */
   effectivePermissionCodes(context: AuthContext): Promise<readonly string[]>
-  requirePermission(context: AuthContext, permission: string, capability: string): Promise<void>
+  /** Require a permission whose manifest definition has no data scope. */
+  requireUnscopedPermission(
+    context: AuthContext,
+    permission: string,
+    capability: string,
+  ): Promise<void>
 }

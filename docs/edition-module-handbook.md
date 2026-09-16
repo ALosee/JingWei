@@ -60,7 +60,13 @@ export const manifest = defineModule({
   dependencies: ['iam'],
   optionalDependencies: [],
   capabilities: [{ id: 'example.core', name: '核心能力' }],
-  permissions: [{ code: 'example.view', name: '查看示例', supportsDataScope: true }],
+  permissions: [
+    {
+      code: 'example.view',
+      name: '查看示例',
+      dataScope: { allowedTypes: ['ALL', 'SELF'] },
+    },
+  ],
   routeDefinitions: [
     {
       key: 'example.list',
@@ -83,7 +89,11 @@ Manifest 必须满足：
 - Optional Dependency 表示代码可以检测并增强，但核心语义不依赖它。
 - Manifest 不读取环境变量、数据库，不创建 Service，不 import Vue 页面。
 
-`defineModule()` 会验证 ID、重复 Capability/Permission/Route、Permission/Route 所有权、requiredCapability 和 requiredPermission 是否存在，以及 PUBLIC Route 是否错误绑定 Permission。
+Permission 省略 `dataScope` 时只允许 `ALL`。需要组织事实的 Permission 显式声明 provider；对应模块通过 `dataScopeProviders` 声明 provider 所有权。Edition Resolver 会拒绝缺少 provider 的产品组合。
+
+模块还可以通过与 `routeDefinitions` 独立的 `navigationItems` 提供初始导航建议。它必须显式声明 MENU/PAGE、名称、路径、父 code 和展示属性；Route 存在并不自动意味着应该生成菜单。
+
+`defineModule()` 会验证 ID、重复 Capability/Permission/Route、Permission/Route 所有权、数据范围类型/provider、navigationItems 对 Route 的引用、requiredCapability 和 requiredPermission 是否存在，以及 PUBLIC Route 是否错误绑定 Permission。
 
 ## 4. Dependency 与 DAG
 
@@ -161,7 +171,9 @@ Edition 不是：
 5. 对选择集进行拓扑排序。
 6. 解析每个 Module 的 Capability 选择。
 7. 验证 Capability 对 Module 的额外依赖。
-8. 返回不可依赖源目录扫描顺序的 `ResolvedEdition`。
+8. 校验 Permission 所需 Data Scope provider 已进入 Edition。
+9. 按启用 capability 组合模块 navigationItems 与 Edition 公共容器/入口。
+10. 返回不可依赖源目录扫描顺序的 `ResolvedEdition`。
 
 返回值中每个 `ResolvedModule` 包含 Manifest 和 `enabledCapabilities`。运行时 `ModuleRegistry` 只从该结果构造 Route/Permission/Capability 视图。
 
@@ -178,9 +190,9 @@ pnpm edition:generate development
 | 文件                                        | 用途                                             |
 | ------------------------------------------- | ------------------------------------------------ |
 | `apps/server/src/generated/edition.ts`      | 运行时 Resolved Edition                          |
-| `apps/server/src/generated/modules.ts`      | Hono Server Module 装配顺序                      |
+| `apps/server/src/generated/modules.ts`      | Hono Server Module 装配顺序与显式跨模块依赖注入  |
 | `apps/server/src/generated/migrations.ts`   | 静态 Migration Registry                          |
-| `apps/web/src/generated/modules.ts`         | Web Module/Page Binding                          |
+| `apps/web/src/generated/modules.ts`         | Web Module/Page Binding 与显式 Vue provider 注入 |
 | `apps/web/src/generated/elegant-router.ts`  | Elegant Router 可扫描的 pageDir                  |
 | `apps/web/src/router/_generated/imports.ts` | 类型检查占位，dev/build 时由 Elegant Router 替换 |
 

@@ -38,7 +38,7 @@ docs/                  架构与 ADR
 - `auth`：密码、server-side session、cookie/origin/CSRF 基础设施。
 - `observability`：结构化日志、Request ID 与日志上下文。
 - `audit`：append-only audit port 与 PostgreSQL adapter。
-- `outbox`：Integration Event envelope、outbox writer/worker port。
+- `outbox`：未启用的 Integration Event envelope、writer/worker primitive；首个真实消费者出现时再接入运行时。
 - `storage`：可替换 ObjectStorage port；本轮不绑定具体云厂商。
 - `module-sdk`：`defineModule`、`defineEdition`、DAG/Capability 验证和 runtime contracts。
 - `api-client`：浏览器端统一 fetch/error contract 基础。

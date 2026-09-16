@@ -16,7 +16,6 @@
     "@jingwei/module-iam": "workspace:*",
     "@jingwei/module-navigation": "workspace:*",
     "@jingwei/module-organization": "workspace:*",
-    "@jingwei/outbox": "workspace:*",
     "kysely": "catalog:"
   },
   "devDependencies": {

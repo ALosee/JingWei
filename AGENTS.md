@@ -16,6 +16,7 @@
 - package 必须使用显式 `exports`；禁止 `"./*": "./src/*"`。
 - 跨 Module 只能引用对方公开 package export。禁止引用其他 Module 的 repository、infrastructure、database schema、内部 domain/application 实现，禁止相对路径穿越模块边界。
 - 跨 Module 只能通过 Public API、Integration Event、Transactional Outbox 通信。需要立即结果时用 Public API；不要求同步结果时优先 Integration Event。
+- Integration Event 必须有已命名的真实消费者、版本化契约和已启用的交付运行时；禁止为未来可能存在的消费者预先写入 Outbox，也禁止用 Noop Dispatcher 将未交付事件标记为成功。
 - Manifest 是纯 metadata，不读取数据库、环境变量，不安装运行时组件。Module 依赖图必须是 DAG；实际 package/module 依赖必须在 Manifest 的 required 或 optional dependencies 中声明。
 - 禁止无归属的 `utils`、`helpers`、`common`、`misc` 垃圾桶；禁止万能 BaseEntity/BaseService/BaseRepository/BaseController。优先组合，不以继承减少少量重复。
 
@@ -53,8 +54,8 @@
 ## 5. 身份与授权
 
 - `User != Employee`。IAM 只管理 User、Credential、Role、Permission、User Role、Data Scope、Authentication/Authorization；Employee 属于未来 HR Module。
-- Web 认证采用 Server-side Session + HttpOnly Cookie。Cookie 保存 CSPRNG opaque token，数据库只保存 token hash；支持 idle/absolute expiry、logout、revoke、禁用用户和改密后的全部 revoke。
-- 密码统一 Argon2id。Cookie Authentication 必须执行 Origin Validation 与 CSRF Protection。禁止以复杂 Access/Refresh JWT 体系替换本基线。
+- Web 认证采用服务端有状态的 opaque Access/Refresh Token Family。短期 Access Token 与单次轮换 Refresh Token 分别通过 HttpOnly Cookie 携带，数据库只保存 token hash；支持 refresh replay detection、idle/absolute expiry、logout、family revoke、禁用用户和改密后的全部 revoke（ADR 0011）。
+- 密码统一 Argon2id。Cookie Authentication 必须执行 Origin Validation 与 CSRF Protection。禁止以无状态 JWT Access/Refresh 体系替换本基线。
 - 功能 Permission Source of Truth 是 Module Manifest；数据库 permission definition 只是运行时 projection。命名统一 `<module>.<action>`。Navigation 授权另按稳定节点 code 分配给 Role，不授予功能 API 权限（ADR 0007）。
 - V1 为 `User -> Role -> Permission` 的 Allow-only RBAC；禁止直接给 User 授 Permission，禁止 Explicit Deny；多个角色权限和数据范围取并集。
 - 功能 Permission 与 Data Scope 分离。数据范围固定为 `ALL | ORGANIZATION | ORGANIZATION_AND_DESCENDANTS | SELF | CUSTOM`。

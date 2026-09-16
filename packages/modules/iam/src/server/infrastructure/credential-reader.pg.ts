@@ -77,12 +77,20 @@ interface RolePermissionTable {
   created_by: string | null
 }
 
+interface RolePermissionOrgScopeTable {
+  tenant_id: string
+  role_id: string
+  permission_code: string
+  org_unit_id: string
+}
+
 interface PermissionDefinitionTable {
   code: string
   module_id: string
   name: string
   description: string | null
-  supports_data_scope: boolean
+  allowed_scope_types: string[]
+  data_scope_provider: string | null
   active: boolean
   created_at: Date
   updated_at: Date
@@ -94,6 +102,7 @@ export interface IamDatabase {
   'iam.role': RoleTable
   'iam.user_role': UserRoleTable
   'iam.role_permission': RolePermissionTable
+  'iam.role_permission_org_scope': RolePermissionOrgScopeTable
   'iam.permission_definition': PermissionDefinitionTable
 }
 

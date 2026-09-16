@@ -165,6 +165,12 @@ export class PostgresRoleStore implements RoleStore {
   }
 
   async delete(context: ApplicationContext, id: string): Promise<void> {
+    // role_permission cascades via FK; org_scope has no FK and must be cleaned explicitly.
+    await this.db
+      .deleteFrom('iam.role_permission_org_scope')
+      .where('tenant_id', '=', context.tenantId)
+      .where('role_id', '=', id)
+      .execute()
     await this.db
       .deleteFrom('iam.role')
       .where('tenant_id', '=', context.tenantId)
@@ -180,10 +186,30 @@ export class PostgresRoleStore implements RoleStore {
       .where('role_id', '=', roleId)
       .orderBy('permission_code')
       .execute()
-    return rows.map((row) => ({
-      permissionCode: row.permission_code,
-      scopeType: row.scope_type as RoleDataScopeType,
-    }))
+    if (rows.length === 0) return []
+    const customRows = await this.db
+      .selectFrom('iam.role_permission_org_scope')
+      .select(['permission_code', 'org_unit_id'])
+      .where('tenant_id', '=', tenantId)
+      .where('role_id', '=', roleId)
+      .execute()
+    const customByPermission = new Map<string, string[]>()
+    for (const row of customRows) {
+      const bucket = customByPermission.get(row.permission_code)
+      if (bucket === undefined) customByPermission.set(row.permission_code, [row.org_unit_id])
+      else bucket.push(row.org_unit_id)
+    }
+    return rows.map((row) => {
+      const scopeType = row.scope_type as RoleDataScopeType
+      const organizationIds = customByPermission.get(row.permission_code)
+      return {
+        permissionCode: row.permission_code,
+        scopeType,
+        ...(scopeType === 'CUSTOM' && organizationIds !== undefined
+          ? { organizationIds: organizationIds.toSorted((a, b) => a.localeCompare(b)) }
+          : {}),
+      }
+    })
   }
 
   async replaceGrants(
@@ -191,6 +217,11 @@ export class PostgresRoleStore implements RoleStore {
     roleId: string,
     grants: readonly RolePermissionGrant[],
   ): Promise<void> {
+    await this.db
+      .deleteFrom('iam.role_permission_org_scope')
+      .where('tenant_id', '=', context.tenantId)
+      .where('role_id', '=', roleId)
+      .execute()
     await this.db
       .deleteFrom('iam.role_permission')
       .where('tenant_id', '=', context.tenantId)
@@ -210,6 +241,18 @@ export class PostgresRoleStore implements RoleStore {
         })),
       )
       .execute()
+    const orgScopeRows = grants.flatMap((grant) =>
+      grant.scopeType === 'CUSTOM'
+        ? (grant.organizationIds ?? []).map((orgUnitId) => ({
+            tenant_id: context.tenantId,
+            role_id: roleId,
+            permission_code: grant.permissionCode,
+            org_unit_id: orgUnitId,
+          }))
+        : [],
+    )
+    if (orgScopeRows.length > 0)
+      await this.db.insertInto('iam.role_permission_org_scope').values(orgScopeRows).execute()
   }
 }
 

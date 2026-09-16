@@ -551,7 +551,7 @@ describe.skipIf(databaseUrl === undefined)('real PostgreSQL navigation/API', () 
     expect(nav.versionId).toBe(b.published.id)
   })
 
-  it('rolls back pointer, snapshot and audit when transactional outbox append fails', async () => {
+  it('rolls back pointer and snapshot when transactional audit append fails', async () => {
     const f = await fixture()
     const draft = versionSchema.parse(
       await (await request('/drafts', f.admin.session, 'POST', { sourceVersionId: null })).json(),
@@ -566,10 +566,10 @@ describe.skipIf(databaseUrl === undefined)('real PostgreSQL navigation/API', () 
         )
       ).rows[0]?.count
     const before = await auditCount()
-    await sql`CREATE FUNCTION platform.test_reject_outbox() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'injected outbox failure'; END $$`.execute(
+    await sql`CREATE FUNCTION platform.test_reject_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'injected audit failure'; END $$`.execute(
       db,
     )
-    await sql`CREATE TRIGGER test_reject_outbox BEFORE INSERT ON platform.outbox FOR EACH ROW EXECUTE FUNCTION platform.test_reject_outbox()`.execute(
+    await sql`CREATE TRIGGER test_reject_audit BEFORE INSERT ON platform.audit_log FOR EACH ROW EXECUTE FUNCTION platform.test_reject_audit()`.execute(
       db,
     )
     try {
@@ -582,8 +582,8 @@ describe.skipIf(databaseUrl === undefined)('real PostgreSQL navigation/API', () 
       expect(response.status).toBe(500)
       expect(await response.text()).not.toContain('injected')
     } finally {
-      await sql`DROP TRIGGER test_reject_outbox ON platform.outbox`.execute(db)
-      await sql`DROP FUNCTION platform.test_reject_outbox()`.execute(db)
+      await sql`DROP TRIGGER test_reject_audit ON platform.audit_log`.execute(db)
+      await sql`DROP FUNCTION platform.test_reject_audit()`.execute(db)
     }
     expect(await auditCount()).toBe(before)
     const current = navigationResponseSchema.parse(

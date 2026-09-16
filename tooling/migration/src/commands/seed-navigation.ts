@@ -12,7 +12,6 @@ import {
 } from '@jingwei/kernel'
 import { createNavigationManagement } from '@jingwei/module-navigation/server/public'
 import { ModuleRegistry } from '@jingwei/module-sdk'
-import { PostgresOutboxAppender } from '@jingwei/outbox'
 
 import { generatedEdition } from '../../../../apps/server/src/generated/edition.js'
 
@@ -59,9 +58,9 @@ export async function runNavigationSeed(
       )
       for (const module of generatedEdition.modules) {
         for (const permission of module.manifest.permissions) {
-          await sql`INSERT INTO iam.permission_definition (code, module_id, name, description, supports_data_scope, active, created_at, updated_at)
-            VALUES (${permission.code}, ${module.manifest.id}, ${permission.name}, NULL, ${permission.supportsDataScope ?? false}, true, now(), now())
-            ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, supports_data_scope = EXCLUDED.supports_data_scope, active = true, updated_at = now()`.execute(
+          await sql`INSERT INTO iam.permission_definition (code, module_id, name, description, allowed_scope_types, data_scope_provider, active, created_at, updated_at)
+            VALUES (${permission.code}, ${module.manifest.id}, ${permission.name}, NULL, ${[...(permission.dataScope?.allowedTypes ?? ['ALL'])]}, ${permission.dataScope?.provider ?? null}, true, now(), now())
+            ON CONFLICT (code) DO UPDATE SET name = EXCLUDED.name, allowed_scope_types = EXCLUDED.allowed_scope_types, data_scope_provider = EXCLUDED.data_scope_provider, active = true, updated_at = now()`.execute(
             tx,
           )
           await sql`INSERT INTO iam.role_permission (tenant_id, role_id, permission_code, scope_type, created_at, created_by)
@@ -78,15 +77,6 @@ export async function runNavigationSeed(
         entityId: role.id,
         result: 'SUCCESS',
         after: { code: 'development-admin' },
-      })
-      await new PostgresOutboxAppender().append(tx, {
-        tenantId: tenant.id,
-        type: 'iam.development_role_initialized',
-        version: 1,
-        aggregateType: 'role',
-        aggregateId: role.id,
-        occurredAt: new Date(),
-        payload: { userId: user.id },
       })
       return role.id
     })

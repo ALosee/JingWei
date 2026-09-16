@@ -209,18 +209,20 @@ Web 登录页只调用 `useSignIn()` 绑定字段和提交事件。登录 client
 
 `@jingwei/module-iam/server/public` 导出：
 
-- `AuthorizationEvaluator.evaluate(request)`：输入 AuthContext、capability 和 permission，返回 allow-only 决策及可选数据范围；
-- `AuthorizationDecision` / `DataScopeGrant`；
+- `AuthorizationEvaluator.requireScopedPermission(request)`：只接受声明了 Data Scope 的权限；授权成功返回非空 `DataScopeGrant`，拒绝直接抛出 `PERMISSION_DENIED`；
+- `DataScopeGrant`；
 - `DataScopeType`：`ALL`、`ORGANIZATION`、`ORGANIZATION_AND_DESCENDANTS`、`SELF`、`CUSTOM`；
-- `IamAccess` 与 `createIamAccess(database, registry)`：返回活跃角色、租户活跃角色目录，并校验不带数据范围的功能权限。Navigation 通过它接入真实角色，不读取 IAM 内部表。
+- `OrganizationalScopeFacts`：IAM 消费方定义的组织事实契约，只包含成员组织、后代展开和当前租户有效 ID 校验；具体适配器由 Organization 提供并在 Edition Composition Root 注入；
+- `IamAccess` 与 `createIamAccess(database, registry)`：返回活跃角色、租户活跃角色目录，并通过 `requireUnscopedPermission` 校验不带数据范围的功能权限。若误传 scoped permission，会抛出 `AUTHZ_SCOPE_PERMISSION_REQUIRES_EVALUATOR`，而不是伪装成普通授权拒绝。Navigation 通过它接入真实角色，不读取 IAM 内部表；
+- `IamUserDirectory` / `IamUserSafeProfile` 与 `createIamUserDirectory(database)`：跨模块安全用户查找（`findSafeProfiles`、`usersExist`）。Organization 用它水合成员列表并校验 user id，不读取 IAM 表，不暴露凭据字段。
 
 授权实现必须合并所有角色授予，不能从菜单推断权限；deny 是默认结果。其他模块只能依赖这个 public 子路径，不能导入 IAM 仓储和表类型。
 
 ## 当前实现状态
 
-已经实现认证、登录失败计数/临时锁定/成功时间更新、opaque Access/Refresh Token Family 创建/状态恢复/轮换/复用检测/撤销、凭据 PostgreSQL store，以及供 Navigation 使用的真实 IamAccess。IamAccess 每次查询活跃用户/角色，多角色取并集，不使用 is_super 绕过；requirePermission 先检查 Edition registry/capability，仅处理无 Data Scope 的功能权限。它不等于通用 AuthorizationEvaluator。
+已经实现认证、登录失败计数/临时锁定/成功时间更新、opaque Access/Refresh Token Family 创建/状态恢复/轮换/复用检测/撤销、凭据 PostgreSQL store，以及供 Navigation 使用的真实 IamAccess。IamAccess 每次查询活跃用户/角色，多角色取并集，不使用 is_super 绕过；`requireUnscopedPermission` 先检查 Edition registry/capability，并拒绝 scoped permission。`AuthorizationEvaluator.requireScopedPermission` 只处理带 Data Scope 的权限，成功结果保证包含显式范围；两个入口通过命名和运行时错误共同防止混用。
 
-角色管理（CRUD、权限目录、整组替换授权）与用户管理（列表、创建、资料/状态更新、重置密码、角色分配）及对应管理页已实现。授权展示与校验以 Module Registry 为 Source of Truth；`iam.permission_definition` 仍可由 seed/运维投影，但服务端安装不再强制写库。完整 Data Scope evaluator、邮箱/手机变更与验证码、多设备会话列表仍是后续工作。开发种子会投影当前 Edition 的功能权限并初始化显式管理员 grant，但不能当作生产权限同步服务。
+角色管理（CRUD、权限目录、整组替换授权）与用户管理（列表、创建、资料/状态更新、重置密码、角色分配）及对应管理页已实现。授权展示与校验以 Module Registry 为 Source of Truth；`iam.permission_definition` 仍可由 seed/运维投影，但服务端安装不再强制写库。Permission 通过 `dataScope.allowedTypes` 精确声明可选范围，Organization 的查看权限不提供 `SELF`。完整 Data Scope evaluator 已实现并被 Organization 读路径使用；CUSTOM ID 在保存时校验，并在求值时按当前租户再次校验，失效、停用或跨租户 ID 会令授权 fail closed。启用 Organization 时，Edition 生成代码显式注入服务端事实适配器和 Web `CustomScopeReferenceDirectory`；IAM-only Edition 不保留组织运行时端口。角色管理员通过专用 scope-options API 读取本租户全部有效组织，不依赖 `organization.view`。邮箱/手机变更与验证码、多设备会话列表仍是后续工作。开发种子会投影当前 Edition 的功能权限并初始化显式管理员 grant，但不能当作生产权限同步服务。
 
 个人账号页已支持资料查看/编辑、修改密码（全会话撤销）和角色只读展示；路由使用 `/account?tab=profile|security|roles`，不引入无意义的 path id。
 

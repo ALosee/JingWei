@@ -8,9 +8,9 @@ export const manifest = defineModule({
   optionalDependencies: [],
   capabilities: [{ id: 'navigation.core', name: '动态导航编排' }],
   permissions: [
-    { code: 'navigation.view', name: '查看导航配置', supportsDataScope: false },
-    { code: 'navigation.manage', name: '管理导航配置', supportsDataScope: false },
-    { code: 'navigation.publish', name: '发布导航配置', supportsDataScope: false },
+    { code: 'navigation.view', name: '查看导航配置' },
+    { code: 'navigation.manage', name: '管理导航配置' },
+    { code: 'navigation.publish', name: '发布导航配置' },
   ],
   routeDefinitions: [
     {
@@ -20,6 +20,19 @@ export const manifest = defineModule({
       allowedAccessModes: ['PERMISSION'],
       requiredCapability: 'navigation.core',
       requiredPermission: 'navigation.view',
+    },
+  ],
+  navigationItems: [
+    {
+      code: 'navigation.manage',
+      name: '导航管理',
+      type: 'MENU',
+      parentCode: 'administration',
+      routeKey: 'navigation.manage',
+      path: '/navigation/manage',
+      accessMode: 'PERMISSION',
+      sortOrder: 30,
+      icon: 'lucide:route',
     },
   ],
 })

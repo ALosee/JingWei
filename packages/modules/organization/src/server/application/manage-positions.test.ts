@@ -8,7 +8,7 @@ import {
   type ApplicationContext,
   type AuthContext,
 } from '@jingwei/kernel'
-import type { IamAccess } from '@jingwei/module-iam/server/public'
+import type { AuthorizationEvaluator, IamAccess } from '@jingwei/module-iam/server/public'
 
 import type { OrganizationPosition, UpdateOrganizationPosition } from '../../shared/index.js'
 import { ManageOrganizationPositions } from './manage-positions.js'
@@ -71,19 +71,25 @@ class MemoryPositionStore implements PositionStore {
   }
 }
 
-function createManage(store: MemoryPositionStore) {
+function createManage(
+  store: MemoryPositionStore,
+  evaluator: AuthorizationEvaluator = {
+    requireScopedPermission: () =>
+      Promise.resolve({ type: 'ALL', organizationIds: [], includeSelf: false }),
+  },
+) {
   const access: IamAccess = {
     activeRoleIds: () => Promise.resolve([]),
     roles: () => Promise.resolve([]),
     effectivePermissionCodes: () => Promise.resolve([]),
-    requirePermission: () => Promise.resolve(),
+    requireUnscopedPermission: () => Promise.resolve(),
   }
   const work: PositionUnitOfWork = {
     run<T>(work: (transaction: PositionTransaction) => Promise<T>) {
       return work({ store, record: () => Promise.resolve() })
     },
   }
-  return new ManageOrganizationPositions(store, work, access)
+  return new ManageOrganizationPositions(store, work, access, evaluator)
 }
 
 describe('ManageOrganizationPositions', () => {
@@ -114,11 +120,11 @@ describe('ManageOrganizationPositions', () => {
     const manage = createManage(store)
     const created = await manage.create(context, unitId, { code: 'rd', name: '研发' })
     store.members.add(created.id)
-    await expect(manage.remove(context, created.id)).rejects.toMatchObject({
+    await expect(manage.remove(context, unitId, created.id)).rejects.toMatchObject({
       code: 'ORGANIZATION_POSITION_HAS_MEMBERS',
     })
     store.members.delete(created.id)
-    await expect(manage.remove(context, created.id)).resolves.toEqual({ id: created.id })
+    await expect(manage.remove(context, unitId, created.id)).resolves.toEqual({ id: created.id })
   })
 
   it('returns 404 for unknown unit or position', async () => {
@@ -127,8 +133,40 @@ describe('ManageOrganizationPositions', () => {
     await expect(manage.listByUnit(context, 'missing-unit')).rejects.toMatchObject({
       code: 'ORGANIZATION_UNIT_NOT_FOUND',
     })
-    await expect(manage.update(context, 'missing', { name: 'x' })).rejects.toMatchObject({
+    await expect(manage.update(context, unitId, 'missing', { name: 'x' })).rejects.toMatchObject({
       code: 'ORGANIZATION_POSITION_NOT_FOUND',
+    })
+  })
+
+  it('rejects a position addressed through the wrong organization unit', async () => {
+    const store = new MemoryPositionStore()
+    const manage = createManage(store)
+    const created = await manage.create(context, unitId, { code: 'rd', name: '研发' })
+    const otherUnitId = newUserId()
+    store.units.add(otherUnitId)
+
+    await expect(
+      manage.update(context, otherUnitId, created.id, { name: '误更新' }),
+    ).rejects.toMatchObject({ code: 'ORGANIZATION_POSITION_NOT_FOUND' })
+    await expect(manage.remove(context, otherUnitId, created.id)).rejects.toMatchObject({
+      code: 'ORGANIZATION_POSITION_NOT_FOUND',
+    })
+    expect(store.positions.get(created.id)?.name).toBe('研发')
+  })
+
+  it('denies listByUnit when the unit is outside data scope', async () => {
+    const store = new MemoryPositionStore()
+    store.units.add(unitId)
+    const manage = createManage(store, {
+      requireScopedPermission: () =>
+        Promise.resolve({
+          type: 'ORGANIZATION',
+          organizationIds: ['other-unit'],
+          includeSelf: false,
+        }),
+    })
+    await expect(manage.listByUnit(context, unitId)).rejects.toMatchObject({
+      code: 'PERMISSION_DENIED',
     })
   })
 })

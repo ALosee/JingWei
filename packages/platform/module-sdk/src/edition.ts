@@ -1,4 +1,24 @@
-import type { ModuleManifest } from './manifest.js'
+import type { ModuleManifest, ModuleNavigationItem } from './manifest.js'
+
+export interface EditionNavigationContainer {
+  readonly code: string
+  readonly name: string
+  readonly type: 'DIRECTORY' | 'GROUP'
+  readonly parentCode: string | null
+  readonly status?: 'ENABLED' | 'DISABLED'
+  readonly sortOrder?: number
+  readonly icon?: string | null
+}
+
+export interface EditionNavigationDefinition {
+  readonly authEntryCode: string
+  readonly homeCode: string | null
+  readonly containers: readonly EditionNavigationContainer[]
+}
+
+export interface ResolvedNavigationDefinition extends EditionNavigationDefinition {
+  readonly items: readonly ModuleNavigationItem[]
+}
 
 export interface EditionModuleOptions {
   readonly capabilities?: readonly string[]
@@ -9,6 +29,7 @@ export type EditionModuleSelection = true | EditionModuleOptions
 export interface EditionDefinition {
   readonly id: string
   readonly modules: Readonly<Record<string, EditionModuleSelection>>
+  readonly navigation?: EditionNavigationDefinition
 }
 
 export interface ResolvedModule {
@@ -19,6 +40,7 @@ export interface ResolvedModule {
 export interface ResolvedEdition {
   readonly id: string
   readonly modules: readonly ResolvedModule[]
+  readonly navigation?: ResolvedNavigationDefinition
 }
 
 /**
@@ -94,7 +116,72 @@ export function resolveEdition(
     return { manifest, enabledCapabilities: new Set(requested) }
   })
 
-  return { id: edition.id, modules }
+  validateDataScopeProviders(edition.id, modules)
+  const navigation = resolveNavigation(edition, modules)
+  return { id: edition.id, modules, ...(navigation === undefined ? {} : { navigation }) }
+}
+
+function validateDataScopeProviders(editionId: string, modules: readonly ResolvedModule[]): void {
+  const providers = new Set<string>()
+  for (const module of modules) {
+    for (const provider of module.manifest.dataScopeProviders ?? []) {
+      if (providers.has(provider.id)) {
+        throw new Error(
+          `Edition ${editionId} contains duplicate data-scope provider ${provider.id}`,
+        )
+      }
+      providers.add(provider.id)
+    }
+  }
+  for (const module of modules) {
+    for (const permission of module.manifest.permissions) {
+      const provider = permission.dataScope?.provider
+      if (provider !== undefined && !providers.has(provider)) {
+        throw new Error(
+          `Permission ${permission.code} requires missing data-scope provider ${provider} in edition ${editionId}`,
+        )
+      }
+    }
+  }
+}
+
+function resolveNavigation(
+  edition: EditionDefinition,
+  modules: readonly ResolvedModule[],
+): ResolvedNavigationDefinition | undefined {
+  if (edition.navigation === undefined) return undefined
+  const items = modules.flatMap((module) =>
+    (module.manifest.navigationItems ?? []).filter((item) => {
+      const route = module.manifest.routeDefinitions.find(({ key }) => key === item.routeKey)
+      return (
+        route !== undefined &&
+        (route.requiredCapability === undefined ||
+          module.enabledCapabilities.has(route.requiredCapability))
+      )
+    }),
+  )
+  const codes = [
+    ...edition.navigation.containers.map(({ code }) => code),
+    ...items.map(({ code }) => code),
+  ]
+  if (new Set(codes).size !== codes.length) {
+    throw new Error(`Edition ${edition.id} default navigation contains duplicate codes`)
+  }
+  const available = new Set(codes)
+  for (const node of [...edition.navigation.containers, ...items]) {
+    if (node.parentCode !== null && !available.has(node.parentCode)) {
+      throw new Error(
+        `Edition ${edition.id} default navigation parent ${node.parentCode} does not exist`,
+      )
+    }
+  }
+  if (!available.has(edition.navigation.authEntryCode)) {
+    throw new Error(`Edition ${edition.id} default navigation auth entry does not exist`)
+  }
+  if (edition.navigation.homeCode !== null && !available.has(edition.navigation.homeCode)) {
+    throw new Error(`Edition ${edition.id} default navigation home does not exist`)
+  }
+  return { ...edition.navigation, items }
 }
 
 function includeDependencies(

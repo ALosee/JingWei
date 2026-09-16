@@ -11,6 +11,7 @@ import {
 import { ModuleRegistry, type ResolvedEdition } from '@jingwei/module-sdk'
 
 import type { IamRole, RolePermissionGrant, UpdateIamRole } from '../../shared/index.js'
+import type { OrganizationalScopeFacts } from '../public/authorization.js'
 import type { IamAccess } from '../public/navigation-access.js'
 import { ManageIamRoles } from './manage-roles.js'
 import { ReadPermissionCatalog } from './permission-catalog.js'
@@ -93,10 +94,18 @@ function createRegistry(): ModuleRegistry {
           dependencies: [],
           optionalDependencies: [],
           capabilities: [{ id: 'iam.authorization', name: '角色与权限' }],
+          dataScopeProviders: [{ id: 'organization' }],
           permissions: [
             { code: 'iam.role.view', name: '查看角色' },
             { code: 'iam.role.manage', name: '管理角色' },
-            { code: 'example.scope', name: '带范围', supportsDataScope: true },
+            {
+              code: 'example.scope',
+              name: '带范围',
+              dataScope: {
+                allowedTypes: ['ALL', 'ORGANIZATION', 'ORGANIZATION_AND_DESCENDANTS', 'CUSTOM'],
+                provider: 'organization',
+              },
+            },
           ],
           routeDefinitions: [],
         },
@@ -107,19 +116,34 @@ function createRegistry(): ModuleRegistry {
   return new ModuleRegistry(edition)
 }
 
-function createManage(store: MemoryRoleStore, registry = createRegistry()) {
+function createManage(
+  store: MemoryRoleStore,
+  registry = createRegistry(),
+  facts: OrganizationalScopeFacts = {
+    memberOrgUnitIds: () => Promise.resolve([]),
+    descendantsOf: (_tenantId, ids) => Promise.resolve(ids),
+    validOrgUnitIds: (_tenantId, ids) => Promise.resolve(ids),
+  },
+) {
   const access: IamAccess = {
     activeRoleIds: () => Promise.resolve([]),
     roles: () => Promise.resolve([]),
     effectivePermissionCodes: () => Promise.resolve([]),
-    requirePermission: () => Promise.resolve(),
+    requireUnscopedPermission: () => Promise.resolve(),
   }
   const work: RoleUnitOfWork = {
     run<T>(work: (transaction: RoleTransaction) => Promise<T>) {
       return work({ store, record: () => Promise.resolve() })
     },
   }
-  return new ManageIamRoles(store, work, access, registry, new ReadPermissionCatalog(registry))
+  return new ManageIamRoles(
+    store,
+    work,
+    access,
+    registry,
+    new ReadPermissionCatalog(registry),
+    facts,
+  )
 }
 
 describe('ManageIamRoles', () => {
@@ -194,6 +218,72 @@ describe('ManageIamRoles', () => {
         ],
       }),
     ).rejects.toMatchObject({ code: 'IAM_ROLE_PERMISSION_DUPLICATE' })
+  })
+
+  it('accepts CUSTOM scope with org ids and rejects empty custom lists', async () => {
+    const store = new MemoryRoleStore()
+    const manage = createManage(store)
+    const role = await manage.create(context, { code: 'scoped', name: '范围角色' })
+    const orgId = newUserId()
+    await expect(
+      manage.replacePermissions(context, role.id, {
+        permissions: [{ permissionCode: 'example.scope', scopeType: 'CUSTOM' }],
+      }),
+    ).rejects.toMatchObject({ code: 'IAM_PERMISSION_SCOPE_CUSTOM_EMPTY' })
+
+    const replaced = await manage.replacePermissions(context, role.id, {
+      permissions: [
+        {
+          permissionCode: 'example.scope',
+          scopeType: 'CUSTOM',
+          organizationIds: [orgId],
+        },
+      ],
+    })
+    expect(replaced.permissions[0]).toMatchObject({
+      permissionCode: 'example.scope',
+      scopeType: 'CUSTOM',
+      organizationIds: [orgId],
+    })
+
+    await expect(
+      manage.replacePermissions(context, role.id, {
+        permissions: [
+          {
+            permissionCode: 'example.scope',
+            scopeType: 'CUSTOM',
+            organizationIds: [orgId, orgId],
+          },
+        ],
+      }),
+    ).rejects.toMatchObject({ code: 'IAM_PERMISSION_SCOPE_CUSTOM_DUPLICATE' })
+  })
+
+  it('rejects scope types outside the permission contract and invalid custom organizations', async () => {
+    const store = new MemoryRoleStore()
+    const facts: OrganizationalScopeFacts = {
+      memberOrgUnitIds: () => Promise.resolve([]),
+      descendantsOf: (_tenantId, ids) => Promise.resolve(ids),
+      validOrgUnitIds: () => Promise.resolve([]),
+    }
+    const manage = createManage(store, createRegistry(), facts)
+    const role = await manage.create(context, { code: 'bounded', name: '受限角色' })
+    await expect(
+      manage.replacePermissions(context, role.id, {
+        permissions: [{ permissionCode: 'example.scope', scopeType: 'SELF' }],
+      }),
+    ).rejects.toMatchObject({ code: 'IAM_PERMISSION_SCOPE_UNSUPPORTED' })
+    await expect(
+      manage.replacePermissions(context, role.id, {
+        permissions: [
+          {
+            permissionCode: 'example.scope',
+            scopeType: 'CUSTOM',
+            organizationIds: [newUserId()],
+          },
+        ],
+      }),
+    ).rejects.toMatchObject({ code: 'IAM_PERMISSION_SCOPE_ORGANIZATION_INVALID' })
   })
 
   it('updates name/status without touching code', async () => {

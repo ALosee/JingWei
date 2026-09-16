@@ -4,6 +4,11 @@ import type { OrganizationUnit, UpdateOrganizationUnit } from '../../shared/inde
 
 export interface OrgUnitStore {
   list(tenantId: TenantId): Promise<OrganizationUnit[]>
+  /** Read only visible units plus their ancestors so a scoped tree remains navigable. */
+  listVisibleTree(
+    tenantId: TenantId,
+    organizationIds: readonly string[],
+  ): Promise<OrganizationUnit[]>
   get(tenantId: TenantId, id: string): Promise<OrganizationUnit | null>
   exists(tenantId: TenantId, id: string): Promise<boolean>
   codeTaken(tenantId: TenantId, code: string, exceptId?: string): Promise<boolean>

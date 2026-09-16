@@ -88,7 +88,7 @@ IAM 的 Public API 返回当前活跃角色并判断功能权限，Navigation �
 - `deleteDraft`：删除未发布草稿；已发布快照受数据库 trigger 保护，不可删除。
 - `grantRole`：整组替换角色的 code；比较 expectedCodes，阻止并发覆盖。
 
-Application 通过 NavigationUnitOfWork 开启事务。保存、发布、回滚和授权串行锁住租户导航根；状态/指针变更、Audit、Outbox 共用同一连接，任何一步失败全部回滚。成功操作记录 draft_created、draft_saved、published、rolled_back、role_granted。审计只记录必要的版本、修订号、code，不复制可能敏感的 query/href 原文。
+Application 通过 NavigationUnitOfWork 开启事务。保存、发布、回滚和授权串行锁住租户导航根；状态/指针变更与 Audit 共用同一连接，任何一步失败全部回滚。成功操作记录 draft_created、draft_saved、published、rolled_back、role_granted。审计只记录必要的版本、修订号、code，不复制可能敏感的 query/href 原文。当前没有 Navigation 事件消费者，因此不写 speculative Outbox；未来只有在真实消费者与交付运行时同时落地时才发布事件（ADR 0014）。
 
 权限：
 
@@ -107,7 +107,7 @@ Application 通过 NavigationUnitOfWork 开启事务。保存、发布、回滚�
 
 匿名 bootstrap 通过 tenantCode 或 BOOTSTRAP_TENANT_CODE 解析真实租户；已登录请求始终使用会话租户。运行时只从数据库读取已发布版本，无版本返回 NAVIGATION_NOT_PUBLISHED/503，不隐式使用静态数据。
 
-`@jingwei/module-navigation/server/public` 导出 NavigationSource 端口、纯初始化模板 createDefaultConfiguration 和受控装配工厂 createNavigationManagement。工厂封装 PostgreSQL store、IAM public service 和事务适配器；用于初始化工具，不允许普通调用方借此绕过 AuthContext/功能权限。
+`@jingwei/module-navigation/server/public` 导出 NavigationSource 端口、Edition 初始化模板物化函数 createDefaultConfiguration 和受控装配工厂 createNavigationManagement。模块 manifest 可独立提供 `navigationItems` 建议项，Edition 拥有公共容器、authEntryCode 和 homeCode；解析时按启用 capability 过滤并校验。Navigation 不再枚举全部 Route 猜测名称、路径和菜单类型。工厂封装 PostgreSQL store、IAM public service 和事务适配器；用于初始化工具，不允许普通调用方借此绕过 AuthContext/功能权限。
 
 `@jingwei/module-navigation/client` 使用模块 OpenAPI 生成类型封装所有 HTTP 调用，并以模块 Zod schema 验证响应。修改请求的 CSRF 头由 `@jingwei/api-client` 统一添加；管理页面不自行拼装 URL、Cookie 或 SQL。
 
@@ -129,9 +129,11 @@ Application 通过 NavigationUnitOfWork 开启事务。保存、发布、回滚�
 
 本地执行迁移后运行 `pnpm seed:navigation`（环境变量须显式加载），它只在非生产环境工作，保留已有密码和已发布配置；初始化 development-admin 角色及显式 grants。运行时不会自动 seed。详情见 [迁移工具](../../../tooling/migration/README.md)。
 
+Edition 默认模板只用于首次显式创建草稿，不覆盖任何已发布租户版本。没有 `navigationItems` 的 Route 仍出现在管理目录中，但不会自动成为菜单。
+
 ## 测试与扩展检查
 
-纯规则测试覆盖 access/layout 降级、路径冲突、参数、循环、外链、容器裁剪。真实 PostgreSQL 测试覆盖空库迁移、租户隔离、权限/CSRF、并发保存/发布、回滚、已发布不可变以及 Outbox 失败后的整笔回滚。Playwright 覆盖刷新、五类节点展示和编辑器契约。
+纯规则测试覆盖 access/layout 降级、路径冲突、参数、循环、外链、容器裁剪。真实 PostgreSQL 测试覆盖空库迁移、租户隔离、权限/CSRF、并发保存/发布、回滚、已发布不可变以及 Audit 失败后的整笔回滚。Playwright 覆盖刷新、五类节点展示和编辑器契约。
 
 管理页 controller 测试覆盖无效 JSON 阻止切换、保存后采用新节点 ID、版本并发参数、角色加载失败清理及授权并发比较；它们不替代真实数据库约束测试。
 

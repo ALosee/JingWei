@@ -12,8 +12,16 @@ export interface OrganizationQuery {
   descendantsOf(tenantId: string, organizationIds: readonly string[]): Promise<readonly string[]>
 }
 
+/** Membership facts for data-scope expansion; never exposes internal rows. */
+export interface OrganizationMembershipQuery {
+  orgUnitIdsOf(tenantId: string, userId: string): Promise<readonly string[]>
+  primaryOrgUnitIdOf(tenantId: string, userId: string): Promise<string | null>
+}
+
 export {
   createOrganizationManagement,
   createOrganizationQuery,
   createOrganizationSnapshot,
+  createOrganizationMembershipQuery,
 } from './create-management.js'
+export { createOrganizationalScopeFacts } from './create-organizational-scope-facts.js'

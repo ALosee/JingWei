@@ -191,7 +191,7 @@ function createManage(store: MemoryUserStore) {
     activeRoleIds: () => Promise.resolve([]),
     roles: () => Promise.resolve([]),
     effectivePermissionCodes: () => Promise.resolve([]),
-    requirePermission: () => Promise.resolve(),
+    requireUnscopedPermission: () => Promise.resolve(),
   }
   const work: UserAdminUnitOfWork = {
     run<T>(work: (transaction: UserAdminTransaction) => Promise<T>) {

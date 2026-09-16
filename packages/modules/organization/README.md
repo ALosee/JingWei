@@ -43,9 +43,9 @@ Organization 不负责：
 | `organization.user_org`      | IAM user 与组织关系 | tenant/user/org 复合主键          |
 | `organization.user_position` | IAM user 与岗位关系 | tenant/user/position 复合主键     |
 
-跨模块 user ID 不建立到 IAM 表的数据库外键。应用层通过 IAM 公共契约保证主体存在，并通过事件处理删除/禁用后的最终一致性。
+跨模块 user ID 不建立到 IAM 表的数据库外键。应用层通过 IAM 公共契约保证主体存在；IAM 用户删除/禁用后的最终一致性处理尚未设计，不能假设当前存在事件消费链路。
 
-`is_primary` 的唯一性目前未由迁移中的部分索引强制，后续实现写用例时必须用事务和数据库约束保证每个用户最多一个主组织/主岗位。
+`20260901020200_organization_membership_primary.ts` 使用部分唯一索引强制每个租户用户最多一个主组织、最多一个主岗位；写用例在同一事务内先降级旧主项，再设置新主项。
 
 ## HTTP API
 
@@ -79,6 +79,27 @@ Organization 不负责：
 
 稳定错误码：`ORGANIZATION_POSITION_NOT_FOUND`、`ORGANIZATION_POSITION_CODE_CONFLICT`、`ORGANIZATION_POSITION_HAS_MEMBERS`。
 
+### 成员归属
+
+| 方法   | 路径                                         | 权限                  | 说明                                    |
+| ------ | -------------------------------------------- | --------------------- | --------------------------------------- |
+| GET    | `/member-candidates`                         | `organization.manage` | ACTIVE 候选用户（不要求 iam.user.view） |
+| GET    | `/org-units/{id}/members`                    | `organization.view`   | 成员 + 安全用户投影 + 本组织岗位        |
+| POST   | `/org-units/{id}/members`                    | `organization.manage` | 加入组织                                |
+| PATCH  | `/org-units/{id}/members/{userId}`           | `organization.manage` | 改主归属 / 加入日期                     |
+| DELETE | `/org-units/{id}/members/{userId}`           | `organization.manage` | 移出组织，并解除本组织岗位              |
+| PUT    | `/org-units/{id}/members/{userId}/positions` | `organization.manage` | 整组替换本组织岗位                      |
+
+规则：
+
+- 用户必须在 IAM 同租户存在（`IamUserDirectory`）；
+- 同一用户可属于多个组织，全局最多一个主组织；
+- 禁止向 DISABLED 组织新增成员；
+- 岗位分配仅允许该组织下 ENABLED 岗位；同一用户全局最多一个主岗位；
+- 写事务同步写 Audit；当前没有成员变更消费者，因此不写 speculative Outbox。
+
+稳定错误码：`ORGANIZATION_USER_NOT_FOUND`、`ORGANIZATION_MEMBER_NOT_FOUND`、`ORGANIZATION_MEMBER_EXISTS`、`ORGANIZATION_UNIT_DISABLED`、`ORGANIZATION_POSITION_NOT_IN_UNIT`、`ORGANIZATION_MULTIPLE_PRIMARY_POSITIONS`、`ORGANIZATION_POSITION_ASSIGNMENT_EXISTS`。
+
 ## Public API
 
 `@jingwei/module-organization/server/public`：
@@ -99,11 +120,18 @@ Organization 不负责：
 - 发现跨租户或循环脏数据时安全失败；
 - 调用方不直接读取 Organization 表。
 
-工厂：`createOrganizationQuery(database)`、`createOrganizationManagement(database, registry)`、`createOrganizationSnapshot(database)`。
+### `OrganizationMembershipQuery`
+
+- `orgUnitIdsOf(tenantId, userId)`：用户所属组织 ID；
+- `primaryOrgUnitIdOf(tenantId, userId)`：用户主组织 ID 或 null。
+
+用于后续 Data Scope 执行器；本模块只提供事实，不负责授权决策。
+
+工厂：`createOrganizationQuery(database)`、`createOrganizationManagement(database, registry)`、`createOrganizationSnapshot(database)`、`createOrganizationMembershipQuery(database)`。
 
 ## Web
 
-`OrganizationUnits`：左树 + 右详情（基本信息 / 岗位 Tab）。支持组织搜索、展开折叠、新建/编辑/移动/启停与空叶子删除；选中组织后可维护岗位列表。写按钮仅为 UX；安全边界始终在服务端权限校验。
+`OrganizationUnits`：左树 + 右详情（基本信息 / 岗位 / 成员 Tab）。支持组织搜索、展开折叠、新建/编辑/移动/启停与空叶子删除；选中组织后可维护岗位列表与成员归属（加入、主组织、本组织岗位）。写按钮仅为 UX；安全边界始终在服务端权限校验。
 
 ## 当前实现状态
 
@@ -111,11 +139,15 @@ Organization 不负责：
 
 岗位 P0：按组织列出、创建、更新、启停、无占用删除；应用层单测覆盖唯一码与删除门禁。
 
-尚未实现：用户组织/岗位归属与主归属约束、outbox 集成事件、组织树 PostgreSQL 集成测试、数据范围执行器对接。
+成员归属 P0：加入/更新/移出、主组织唯一（partial unique index）、本组织岗位整组替换、主岗位唯一、IAM 用户目录水合、Audit、Web 成员面板与应用层单测。
 
-## 建议事件
+尚未实现：组织树/成员 PostgreSQL 集成测试、IAM 用户删除后的 membership 消费清理。
 
-未来可发布 `organization.created`、`organization.moved`、`organization.disabled`、`organization.membership.changed` 等事实。事件 payload 保持最小，并通过 outbox 与写事务一致。
+数据范围：`organization.view` 明确允许 `ALL / ORGANIZATION / ORGANIZATION_AND_DESCENDANTS / CUSTOM`，不允许 `SELF`。树、岗位列表、成员列表经 `AuthorizationEvaluator.requireScopedPermission` 校验；成功结果必有显式 scope，不存在 `null = ALL`。受限组织树由 Repository 使用 recursive CTE 只读取 scope 内节点及导航所需祖先，岗位/成员详情则要求目标组织严格落在 scope 内。Organization 实现 IAM 消费方定义的 `OrganizationalScopeFacts`；CUSTOM 组织 ID 在授权保存和求值时都按当前租户及启用状态校验，失效或跨租户 ID 会令授权 fail closed。`GET /scope-options` 只供具备 `iam.role.manage` 的集中式角色管理员读取当前租户全部有效组织，不复用 `organization.view` 数据范围。Edition 生成代码显式注入服务端事实适配器和 Web 选择目录，不使用全局注册器。`organization.manage` 仍为无数据范围功能权限，并通过独立的 `requireUnscopedPermission` 入口检查。
+
+## Integration Event 边界
+
+当前没有 Organization 事件消费者，不发布 `organization.membership.changed` 或其他预留事件。主归属/主岗位降级信息保存在同事务 Audit 中。第一个真实异步消费者出现时，再同时定义事件契约、幂等语义和交付运行时（ADR 0014）。
 
 ## 修改检查表
 
@@ -124,5 +156,5 @@ Organization 不负责：
 - 主组织/岗位约束可抵抗并发；
 - 跨模块只使用 IAM user ID/public contract；
 - 数据范围查询有真实 PostgreSQL 集成测试；
-- 删除/停用对岗位、成员和下游事件的语义已定义；
+- 删除/停用对岗位、成员及未来下游同步的语义已定义；
 - 更新本 README 和数据库设计。

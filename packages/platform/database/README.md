@@ -32,7 +32,7 @@ try {
 
 ## 事务
 
-`TransactionRunner.execute` 保证回调成功后提交、抛错后回滚。跨多次写入的业务用例应接收 transaction，并让业务数据、审计和 outbox 共用它。
+`TransactionRunner.execute` 保证回调成功后提交、抛错后回滚。跨多次写入的业务用例应接收 transaction，并让业务数据与审计共用它；存在已启用真实消费者时，相关 outbox append 也必须复用该 transaction。
 
 Kysely 的类型参数只描述可见表，不提供运行时租户隔离。每个模块仍必须在 SQL 中包含 `tenant_id` 条件，并用集成测试证明。
 

@@ -407,10 +407,11 @@ export type components = {
             permissions: components["schemas"]["IamPermissionCatalogItem"][];
         };
         IamPermissionCatalogItem: {
+            allowedScopeTypes: ("ALL" | "ORGANIZATION" | "ORGANIZATION_AND_DESCENDANTS" | "SELF" | "CUSTOM")[];
             code: string;
+            dataScopeProvider: string | null;
             moduleId: string;
             name: string;
-            supportsDataScope: boolean;
         };
         IamRefreshSessionResult: {
             /** Format: date-time */
@@ -446,17 +447,20 @@ export type components = {
             roles: components["schemas"]["IamRole"][];
         };
         IamRolePermissionGrant: {
+            organizationIds?: string[];
             permissionCode: string;
             /** @enum {string} */
             scopeType: "ALL" | "ORGANIZATION" | "ORGANIZATION_AND_DESCENDANTS" | "SELF" | "CUSTOM";
         };
         IamRolePermissionGrantView: {
+            allowedScopeTypes: ("ALL" | "ORGANIZATION" | "ORGANIZATION_AND_DESCENDANTS" | "SELF" | "CUSTOM")[];
+            dataScopeProvider: string | null;
             moduleId: string;
             name: string;
+            organizationIds?: string[];
             permissionCode: string;
             /** @enum {string} */
             scopeType: "ALL" | "ORGANIZATION" | "ORGANIZATION_AND_DESCENDANTS" | "SELF" | "CUSTOM";
-            supportsDataScope: boolean;
         };
         IamRolePermissionList: {
             permissions: components["schemas"]["IamRolePermissionGrantView"][];

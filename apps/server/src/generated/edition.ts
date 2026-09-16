@@ -14,6 +14,7 @@ const edition = defineEdition({
     'navigation': { capabilities: ["navigation.core"] },
     'organization': { capabilities: ["organization.core"] },
   },
+  navigation: {"authEntryCode":"iam.login","homeCode":"iam.account","containers":[{"code":"workspace","name":"工作区","type":"GROUP","parentCode":null,"sortOrder":0},{"code":"administration","name":"系统管理","type":"DIRECTORY","parentCode":"workspace","sortOrder":20,"icon":"lucide:settings"}]},
 })
 
 export const generatedEdition = resolveEdition(edition, [iamManifest, dictionaryManifest, navigationManifest, organizationManifest])

@@ -103,17 +103,17 @@ const { options, loading, error } = useDictionaryOptions('common.priority')
 
 管理页左侧使用可展开、可折叠的 Tree 按分类展示类型，分类和类型都是可选择的目录节点。右侧维护当前分类及其类型，或当前类型及其条目；分类、类型、条目的新建与编辑统一在右侧工作区完成，不使用弹窗，只有删除保留确认提示。搜索同时匹配分类、类型名称和 code，并自动展开匹配分支。
 
-## 事务、审计与事件
+## 事务与审计
 
-每个修改在同一 PostgreSQL transaction 中锁定聚合、比较 revision、写业务数据和 Audit。类型/条目变化同时追加 `dictionary.definition.changed` v1 Outbox Event，payload 只包含 `dictionaryCode` 和 `revision`。分类只是展示目录，其变化写审计但不发布字典定义事件。
+每个修改在同一 PostgreSQL transaction 中锁定聚合、比较 revision、写业务数据和 Audit。当前没有字典变更事件消费者，因此不写 speculative Outbox。未来如果引入跨实例缓存等真实消费者，必须连同版本化事件契约、幂等处理和已启用交付运行时一起设计（ADR 0014）。
 
 ## 缓存与一致性
 
-当前不做跨请求缓存，PostgreSQL 是唯一正确来源。未来如经证明需要缓存，key 必须包含 tenantId 和 dictionaryCode，并使用 revision/变更事件完成多实例可靠失效。
+当前不做跨请求缓存，PostgreSQL 是唯一正确来源。未来如经证明需要缓存，key 必须包含 tenantId 和 dictionaryCode；多实例失效方案落地时再引入相应变更事件，不能提前积压无人消费的记录。
 
 ## 当前实现状态
 
-已实现三级目录、租户约束、revision 并发控制、PostgreSQL 查询/事务、管理 HTTP/OpenAPI client、Public Query、Audit/Outbox 和 Web 管理页。当前不提供跨请求缓存、通用业务用户 HTTP lookup、导入导出、多语言 label、层级条目或模块自动声明内置字典。
+已实现三级目录、租户约束、revision 并发控制、PostgreSQL 查询/事务、管理 HTTP/OpenAPI client、Public Query、Audit 和 Web 管理页。当前不提供跨请求缓存、Integration Event、通用业务用户 HTTP lookup、导入导出、多语言 label、层级条目或模块自动声明内置字典。
 
 ## 修改检查表
 
@@ -123,7 +123,7 @@ const { options, loading, error } = useDictionaryOptions('common.priority')
 - label 变化不破坏业务判断；
 - 禁用与删除的历史数据语义明确；
 - 管理动作检查 `dictionary.manage` 并写审计；
-- 修改使用 expectedRevision，业务写入、审计和 Outbox 共享事务；
+- 修改使用 expectedRevision，业务写入和审计共享事务；
 - 若引入缓存，必须有可靠的租户隔离和多实例失效机制；
-- 其他模块只依赖 public query/事件，不读表；
+- 其他模块只依赖 public query；若将来引入事件则遵循 ADR 0014，不读表；
 - 新增 HTTP 接口同步更新系统 API 文档。

@@ -1,4 +1,4 @@
-import type { ResolvedEdition } from './edition.js'
+import type { ResolvedEdition, ResolvedNavigationDefinition } from './edition.js'
 import type { PermissionDefinition, RouteDefinition } from './manifest.js'
 
 /** Permission as exposed by the resolved edition, including its owner module. */
@@ -69,12 +69,14 @@ export class ModuleRegistry {
           code: permission.code,
           name: permission.name,
           moduleId: module.manifest.id,
-          ...(permission.supportsDataScope === undefined
-            ? {}
-            : { supportsDataScope: permission.supportsDataScope }),
+          ...(permission.dataScope === undefined ? {} : { dataScope: permission.dataScope }),
         })
       }
     }
     return permissions
+  }
+
+  defaultNavigation(): ResolvedNavigationDefinition | null {
+    return this.#edition.navigation ?? null
   }
 }

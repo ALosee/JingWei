@@ -31,6 +31,21 @@ export const organizationTreeSchema = z
   })
   .meta({ id: 'OrganizationTree' })
 
+export const organizationalScopeOptionSchema = z
+  .object({
+    id: z.uuid(),
+    parentId: z.uuid().nullable(),
+    code: organizationUnitCodeSchema,
+    name: organizationUnitNameSchema,
+    status: z.literal('ENABLED'),
+  })
+  .strict()
+  .meta({ id: 'OrganizationalScopeOption' })
+
+export const organizationalScopeOptionsSchema = z
+  .object({ units: z.array(organizationalScopeOptionSchema).max(5_000) })
+  .meta({ id: 'OrganizationalScopeOptions' })
+
 export const createOrganizationUnitSchema = z
   .object({
     parentId: z.uuid().nullable(),
@@ -103,13 +118,118 @@ export const organizationPositionRefSchema = z
   .strict()
   .meta({ id: 'OrganizationPositionRef' })
 
+export const organizationUserStatuses = ['INVITED', 'ACTIVE', 'DISABLED', 'LOCKED'] as const
+export type OrganizationUserStatus = (typeof organizationUserStatuses)[number]
+
+export const organizationMemberUserSchema = z
+  .object({
+    id: z.uuid(),
+    username: z.string(),
+    displayName: z.string(),
+    status: z.enum(organizationUserStatuses),
+    avatar: z.string().nullable(),
+  })
+  .strict()
+  .meta({ id: 'OrganizationMemberUser' })
+
+export const organizationMemberPositionSchema = z
+  .object({
+    positionId: z.uuid(),
+    code: organizationUnitCodeSchema,
+    name: organizationUnitNameSchema,
+    isPrimary: z.boolean(),
+  })
+  .strict()
+  .meta({ id: 'OrganizationMemberPosition' })
+
+export const organizationMemberSchema = z
+  .object({
+    userId: z.uuid(),
+    orgUnitId: z.uuid(),
+    isPrimary: z.boolean(),
+    joinedAt: z.iso.date().nullable(),
+    user: organizationMemberUserSchema,
+    positions: z.array(organizationMemberPositionSchema).max(100),
+  })
+  .strict()
+  .meta({ id: 'OrganizationMember' })
+
+export const organizationMemberListSchema = z
+  .object({
+    members: z.array(organizationMemberSchema).max(2_000),
+  })
+  .meta({ id: 'OrganizationMemberList' })
+
+export const organizationMemberCandidateListSchema = z
+  .object({
+    users: z.array(organizationMemberUserSchema).max(2_000),
+  })
+  .meta({ id: 'OrganizationMemberCandidateList' })
+
+export const createOrganizationMemberSchema = z
+  .object({
+    userId: z.uuid(),
+    isPrimary: z.boolean().optional(),
+    joinedAt: z.iso.date().nullable().optional(),
+    positionIds: z.array(z.uuid()).max(50).optional(),
+  })
+  .strict()
+  .meta({ id: 'OrganizationCreateMemberInput' })
+
+export const updateOrganizationMemberSchema = z
+  .object({
+    isPrimary: z.boolean().optional(),
+    joinedAt: z.iso.date().nullable().optional(),
+  })
+  .strict()
+  .meta({ id: 'OrganizationUpdateMemberInput' })
+
+export const organizationMemberRefSchema = z
+  .object({ orgUnitId: z.uuid(), userId: z.uuid() })
+  .strict()
+  .meta({ id: 'OrganizationMemberRef' })
+
+export const organizationMemberPositionAssignmentSchema = z
+  .object({
+    positionId: z.uuid(),
+    isPrimary: z.boolean().optional(),
+  })
+  .strict()
+  .meta({ id: 'OrganizationMemberPositionAssignment' })
+
+export const replaceOrganizationMemberPositionsSchema = z
+  .object({
+    assignments: z.array(organizationMemberPositionAssignmentSchema).max(50),
+  })
+  .strict()
+  .meta({ id: 'OrganizationReplaceMemberPositionsInput' })
+
+export const organizationMemberPositionListSchema = z
+  .object({
+    positions: z.array(organizationMemberPositionSchema).max(100),
+  })
+  .meta({ id: 'OrganizationMemberPositionList' })
+
 export type OrganizationUnit = z.infer<typeof organizationUnitSchema>
 export type OrganizationTree = z.infer<typeof organizationTreeSchema>
+export type OrganizationalScopeOption = z.infer<typeof organizationalScopeOptionSchema>
+export type OrganizationalScopeOptions = z.infer<typeof organizationalScopeOptionsSchema>
 export type CreateOrganizationUnit = z.infer<typeof createOrganizationUnitSchema>
 export type UpdateOrganizationUnit = z.infer<typeof updateOrganizationUnitSchema>
 export type OrganizationPosition = z.infer<typeof organizationPositionSchema>
 export type CreateOrganizationPosition = z.infer<typeof createOrganizationPositionSchema>
 export type UpdateOrganizationPosition = z.infer<typeof updateOrganizationPositionSchema>
+export type OrganizationMemberUser = z.infer<typeof organizationMemberUserSchema>
+export type OrganizationMemberPosition = z.infer<typeof organizationMemberPositionSchema>
+export type OrganizationMember = z.infer<typeof organizationMemberSchema>
+export type CreateOrganizationMember = z.infer<typeof createOrganizationMemberSchema>
+export type UpdateOrganizationMember = z.infer<typeof updateOrganizationMemberSchema>
+export type OrganizationMemberPositionAssignment = z.infer<
+  typeof organizationMemberPositionAssignmentSchema
+>
+export type ReplaceOrganizationMemberPositions = z.infer<
+  typeof replaceOrganizationMemberPositionsSchema
+>
 
 export interface OrganizationTreeNode {
   unit: OrganizationUnit
@@ -254,4 +374,20 @@ export function organizationUnitIcon(type: OrganizationType): string {
     default:
       return 'lucide:circle'
   }
+}
+
+/**
+ * Strict membership check for a single unit's detail reads (positions/members).
+ * Unlike the tree filter, ancestors are not implicitly readable.
+ */
+export function isOrgUnitInDataScope(
+  orgUnitId: string,
+  dataScope: {
+    type: 'ALL' | 'ORGANIZATION' | 'ORGANIZATION_AND_DESCENDANTS' | 'SELF' | 'CUSTOM'
+    organizationIds: readonly string[]
+  },
+): boolean {
+  if (dataScope.type === 'ALL') return true
+  if (dataScope.type === 'SELF') return false
+  return dataScope.organizationIds.includes(orgUnitId)
 }

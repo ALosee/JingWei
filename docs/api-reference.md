@@ -55,7 +55,17 @@ export const manifest = defineModule({
   dependencies: ['iam'],
   optionalDependencies: [],
   capabilities: [{ id: 'organization.core', name: '组织与岗位基础' }],
-  permissions: [{ code: 'organization.view', name: '查看组织', supportsDataScope: false }],
+  dataScopeProviders: [{ id: 'organization' }],
+  permissions: [
+    {
+      code: 'organization.view',
+      name: '查看组织',
+      dataScope: {
+        allowedTypes: ['ALL', 'ORGANIZATION', 'ORGANIZATION_AND_DESCENDANTS', 'CUSTOM'],
+        provider: 'organization',
+      },
+    },
+  ],
   routeDefinitions: [],
 })
 ```
@@ -89,7 +99,7 @@ interface ServerModule {
 
 ### `WebModule` 与 `PageBinding`
 
-Web 模块把 manifest route key 绑定到构建生成的 page key；URL 路径属于 Navigation。数据库选择 `base`（标准工作区）或 `blank`（页面完全控制结构）；Manifest.layout 是默认值，allowedLayouts 限制配置范围，省略时只允许默认布局。页面绑定是构建期可分析的数据，不携带运行时用户状态。可见性由 Edition、能力、访问模式和角色 navigation code grants 决定，功能 API Permission 另外判断。
+Web 模块把 manifest route key 绑定到构建生成的 page key；URL 路径属于 Navigation。数据库选择 `base`（标准工作区）或 `blank`（页面完全控制结构）；Manifest.layout 是默认值，allowedLayouts 限制配置范围，省略时只允许默认布局。页面绑定是构建期可分析的数据，不携带运行时用户状态，也没有 configure/startup hook。跨模块 UI adapter 由 Edition Builder 生成显式 Vue provider 装配。可见性由 Edition、能力、访问模式和角色 navigation code grants 决定，功能 API Permission 另外判断。
 
 ## 4. `@jingwei/config`
 
@@ -111,7 +121,7 @@ Web 模块把 manifest route key 绑定到构建生成的 page key；URL 路径�
 
 ### `TransactionRunner.execute(work)`
 
-在一个数据库事务中执行回调：成功则提交，抛错则回滚，并始终释放连接。需要同时写业务数据、审计和 outbox 的操作应共享同一事务连接，保证原子性。
+在一个数据库事务中执行回调：成功则提交，抛错则回滚，并始终释放连接。业务数据与审计应共享同一事务连接；存在已启用真实消费者时，相关 outbox append 也必须加入该事务。
 
 ### `StaticMigrationProvider`
 
@@ -139,17 +149,19 @@ IAM 的 `getSessionStatus()` typed client 使用一个允许匿名的 `200` 状�
 
 ## 7. `@jingwei/outbox`
 
+当前包是未启用的基础能力：Server 未装配 worker/dispatcher，现有模块没有事件生产者。以下 API 描述的是首次出现具名消费者后可使用的 primitive，不表示当前系统已经投递事件。启用门槛见 [ADR 0014](./adr/0014-defer-outbox-activation-until-real-consumer.md)。
+
 ### `IntegrationEvent`
 
 跨模块异步事实，包含稳定事件类型和版本、发生时间、聚合/租户关联和 JSON 载荷。追加到 outbox 时平台生成唯一记录 ID。事件表达已经发生的事实，不应命名为命令。
 
 ### `PostgresOutboxAppender`
 
-在业务事务中追加待发布事件。正确顺序是：修改业务状态 → 写审计 → 写 outbox → 提交事务。不能先发布消息再提交数据库。
+在业务事务中追加待发布事件。只有事件已有具名消费者和交付运行时后才能使用；正确顺序是：修改业务状态 → 写审计 → 写 outbox → 提交事务。不能先发布消息再提交数据库。
 
 ### `OutboxWorker`
 
-轮询未发布事件、调用 `EventDispatcher`、记录成功或失败。消费者仍必须幂等，因为“至少一次”交付可能产生重复事件。
+启用后轮询未发布事件、调用 `EventDispatcher`、记录成功或失败。消费者仍必须幂等，因为“至少一次”交付可能产生重复事件。当前 Server 没有创建该 worker。
 
 ## 8. `@jingwei/audit`
 
@@ -185,11 +197,11 @@ IAM 的 `getSessionStatus()` typed client 使用一个允许匿名的 `200` 状�
 
 `@jingwei/module-iam/server/public` 暴露授权决策、数据范围和认证所需的最小契约。其他模块不能读取 IAM 表，也不能导入 IAM 的仓储实现。
 
-`createIamAccess(database, registry)` 返回 `IamAccess`：activeRoleIds(context)、roles(tenantId)、requirePermission(context, permission, capability)。当前实现检查活跃用户/角色与无数据范围的功能权限，不是完整 Data Scope evaluator；不支持的请求默认拒绝。
+`createIamAccess(database, registry)` 返回 `IamAccess`：activeRoleIds(context)、roles(tenantId)、effectivePermissionCodes(context)、requireUnscopedPermission(context, permission, capability)。它只检查无数据范围的功能权限；传入 scoped permission 会以 `AUTHZ_SCOPE_PERMISSION_REQUIRES_EVALUATOR` 明确拒绝。`AuthorizationEvaluator.requireScopedPermission(request)` 专门处理 scoped permission，成功时返回非空 `DataScopeGrant`，拒绝时抛出 `PERMISSION_DENIED`。
 
 ### Navigation
 
-`@jingwei/module-navigation/server/public` 导出 NavigationSource 与 createNavigationManagement 工厂，封装本模块存储/事务和 IAM Public API 装配。管理用例负责权限、全量校验、乐观锁、发布/回滚以及同事务审计/Outbox。调用方不能绕过认证上下文。
+`@jingwei/module-navigation/server/public` 导出 NavigationSource 与 createNavigationManagement 工厂，封装本模块存储/事务和 IAM Public API 装配。管理用例负责权限、全量校验、乐观锁、发布/回滚以及同事务审计。调用方不能绕过认证上下文。
 
 `@jingwei/module-navigation/shared` 的 navigationTarget(node) 生成默认具体 URL；pathParameters(path) 只解析受支持的安全路径子集。它们不替代页面/API 对实际 params/query 的校验。客户端函数和完整 HTTP 契约见 [Navigation 接口](./http-api.md#6-navigation-接口)。
 
@@ -206,9 +218,9 @@ IAM 的 `getSessionStatus()` typed client 使用一个允许匿名的 `200` 状�
 | 需求                               | 选择                            |
 | ---------------------------------- | ------------------------------- |
 | 当前操作必须立即得到结果才能继续   | 模块 Public API                 |
-| 只是通知其他模块一个已经发生的事实 | Integration Event               |
-| 要求与业务写入原子落库             | 事务内追加 outbox               |
+| 只是通知具名消费者一个已发生的事实 | Integration Event               |
+| 已启用事件需与业务写入原子落库     | 事务内追加 outbox               |
 | 允许短暂最终一致                   | 事件消费者                      |
 | 只是共享纯技术能力                 | platform 包，而不是业务模块 API |
 
-新增公共 API 前先确认它不是临时实现细节；新增事件时要说明事件所有者、版本策略、幂等键和敏感字段策略。
+新增公共 API 前先确认它不是临时实现细节；新增事件时必须先确定真实消费者、版本策略、幂等键、敏感字段和交付/失败语义，并按 ADR 0014 完成运行时接线。

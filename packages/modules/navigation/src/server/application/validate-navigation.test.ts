@@ -11,10 +11,31 @@ import { projectNodes } from './resolve-navigation.js'
 import { validateNavigation } from './validate-navigation.js'
 
 const registry = new ModuleRegistry(
-  resolveEdition(defineEdition({ id: 'test', modules: { iam: true, navigation: true } }), [
-    iamManifest,
-    navigationManifest,
-  ]),
+  resolveEdition(
+    defineEdition({
+      id: 'test',
+      modules: { iam: true, navigation: true },
+      navigation: {
+        authEntryCode: 'iam.login',
+        homeCode: 'iam.account',
+        containers: [
+          {
+            code: 'workspace',
+            name: '工作区',
+            type: 'GROUP',
+            parentCode: null,
+          },
+          {
+            code: 'administration',
+            name: '系统管理',
+            type: 'DIRECTORY',
+            parentCode: 'workspace',
+          },
+        ],
+      },
+    }),
+    [iamManifest, navigationManifest],
+  ),
 )
 function fixture() {
   return createDefaultConfiguration(registry)

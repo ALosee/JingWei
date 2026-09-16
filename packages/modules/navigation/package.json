@@ -22,7 +22,6 @@
     "@jingwei/auth": "workspace:*",
     "@jingwei/database": "workspace:*",
     "@jingwei/http-contract": "workspace:*",
-    "@jingwei/outbox": "workspace:*",
     "@jingwei/api-client": "workspace:*",
     "@jingwei/kernel": "workspace:*",
     "@jingwei/module-iam": "workspace:*",

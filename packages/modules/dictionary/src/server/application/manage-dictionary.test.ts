@@ -187,23 +187,18 @@ function createManage(store: MemoryDictionaryStore, access?: Partial<IamAccess>)
     activeRoleIds: () => Promise.resolve([]),
     roles: () => Promise.resolve([]),
     effectivePermissionCodes: () => Promise.resolve([]),
-    requirePermission: () => Promise.resolve(),
+    requireUnscopedPermission: () => Promise.resolve(),
     ...access,
   }
-  const events: { code: string; revision: number }[] = []
   const work: DictionaryUnitOfWork = {
     run<T>(operation: (transaction: DictionaryTransaction) => Promise<T>) {
       return operation({
         store,
         record: () => Promise.resolve(),
-        publishDefinitionChanged: (_context, _typeId, code, revision) => {
-          events.push({ code, revision })
-          return Promise.resolve()
-        },
       })
     },
   }
-  return { manage: new ManageDictionary(store, work, resolved), events }
+  return { manage: new ManageDictionary(store, work, resolved) }
 }
 
 function seedCategory(store: MemoryDictionaryStore, index: number) {
@@ -266,7 +261,7 @@ async function createCategoryAndType(manage: ManageDictionary) {
 describe('ManageDictionary', () => {
   it('creates category, type and item while advancing the type revision', async () => {
     const store = new MemoryDictionaryStore()
-    const { manage, events } = createManage(store)
+    const { manage } = createManage(store)
     const { category, detail } = await createCategoryAndType(manage)
 
     const updated = await manage.createItem(context, detail.type.id, {
@@ -279,10 +274,6 @@ describe('ManageDictionary', () => {
     expect(category.code).toBe('common')
     expect(updated.type.revision).toBe(2)
     expect(updated.items).toMatchObject([{ code: 'female', label: '女', status: 'ENABLED' }])
-    expect(events).toEqual([
-      { code: 'common.gender', revision: 1 },
-      { code: 'common.gender', revision: 2 },
-    ])
   })
 
   it('rejects stale revisions for item changes', async () => {
@@ -383,7 +374,7 @@ describe('ManageDictionary', () => {
   it('rejects manage actions without dictionary.manage', async () => {
     const store = new MemoryDictionaryStore()
     const { manage } = createManage(store, {
-      requirePermission: () =>
+      requireUnscopedPermission: () =>
         Promise.reject(
           new ApplicationError({
             code: 'PERMISSION_DENIED',
@@ -424,7 +415,7 @@ describe('ManageDictionary', () => {
 
   it('does not bump revision when type, category or item fields are unchanged', async () => {
     const store = new MemoryDictionaryStore()
-    const { manage, events } = createManage(store)
+    const { manage } = createManage(store)
     const { category, detail } = await createCategoryAndType(manage)
     const created = await manage.createItem(context, detail.type.id, {
       code: 'female',
@@ -434,7 +425,6 @@ describe('ManageDictionary', () => {
     const item = created.items[0]
     if (item === undefined) throw new Error('Expected the created dictionary item')
     const revisionAfterCreate = created.type.revision
-    const eventCount = events.length
 
     const noopCategory = await manage.updateCategory(context, category.id, {
       name: category.name,
@@ -458,7 +448,6 @@ describe('ManageDictionary', () => {
       expectedRevision: revisionAfterCreate,
     })
     expect(noopItem.type.revision).toBe(revisionAfterCreate)
-    expect(events.length).toBe(eventCount)
   })
 })
 

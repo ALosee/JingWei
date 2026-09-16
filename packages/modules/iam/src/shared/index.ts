@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { permissionDataScopeTypes } from '@jingwei/module-sdk'
+
 export const loginInputSchema = z
   .object({
     tenantCode: z.string().trim().min(1).max(80),
@@ -95,13 +97,7 @@ export const accountRolesSchema = z
 export const roleStatuses = ['ACTIVE', 'DISABLED'] as const
 export type RoleStatus = (typeof roleStatuses)[number]
 
-export const roleDataScopeTypes = [
-  'ALL',
-  'ORGANIZATION',
-  'ORGANIZATION_AND_DESCENDANTS',
-  'SELF',
-  'CUSTOM',
-] as const
+export const roleDataScopeTypes = permissionDataScopeTypes
 export type RoleDataScopeType = (typeof roleDataScopeTypes)[number]
 
 export const iamRoleSchema = z
@@ -150,6 +146,7 @@ export const rolePermissionGrantSchema = z
   .object({
     permissionCode: iamPermissionCodeSchema,
     scopeType: z.enum(roleDataScopeTypes),
+    organizationIds: z.array(z.uuid()).max(200).optional(),
   })
   .strict()
   .meta({ id: 'IamRolePermissionGrant' })
@@ -159,8 +156,10 @@ export const rolePermissionGrantViewSchema = z
     permissionCode: iamPermissionCodeSchema,
     moduleId: z.string().min(1).max(80),
     name: z.string(),
-    supportsDataScope: z.boolean(),
+    allowedScopeTypes: z.array(z.enum(roleDataScopeTypes)).min(1),
+    dataScopeProvider: z.string().min(1).max(80).nullable(),
     scopeType: z.enum(roleDataScopeTypes),
+    organizationIds: z.array(z.uuid()).max(200).optional(),
   })
   .strict()
   .meta({ id: 'IamRolePermissionGrantView' })
@@ -183,7 +182,8 @@ export const permissionCatalogItemSchema = z
     code: iamPermissionCodeSchema,
     moduleId: z.string().min(1).max(80),
     name: z.string(),
-    supportsDataScope: z.boolean(),
+    allowedScopeTypes: z.array(z.enum(roleDataScopeTypes)).min(1),
+    dataScopeProvider: z.string().min(1).max(80).nullable(),
   })
   .strict()
   .meta({ id: 'IamPermissionCatalogItem' })

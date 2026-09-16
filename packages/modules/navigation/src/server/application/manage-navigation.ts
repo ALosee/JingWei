@@ -28,7 +28,7 @@ export class ManageNavigation {
   ) {}
 
   private authorize(context: AuthContext, action: 'view' | 'manage' | 'publish') {
-    return this.access.requirePermission(context, 'navigation.' + action, 'navigation.core')
+    return this.access.requireUnscopedPermission(context, 'navigation.' + action, 'navigation.core')
   }
   async list(context: AuthContext) {
     await this.authorize(context, 'view')
@@ -59,6 +59,7 @@ export class ManageNavigation {
         source === null
           ? createDefaultConfiguration(this.registry)
           : await this.requiredVersion(tx.store, context, source)
+      this.assertValid(config)
       const version: NavigationVersion = {
         ...cloneNodes(config),
         id: newEntityId(),
@@ -156,7 +157,7 @@ export class ManageNavigation {
   /** Replace the complete grant set, guarded by both functional permissions and the previously read code set. */
   async grantRole(context: AuthContext, roleId: string, input: SaveRoleGrants) {
     await this.authorize(context, 'manage')
-    await this.access.requirePermission(context, 'iam.role.manage', 'iam.authorization')
+    await this.access.requireUnscopedPermission(context, 'iam.role.manage', 'iam.authorization')
     await this.assertRole(context, roleId)
     return this.work.run(async (tx) => {
       const root = await tx.store.root(context.tenantId, true)

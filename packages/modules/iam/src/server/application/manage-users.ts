@@ -44,7 +44,11 @@ export class ManageIamUsers {
   ) {}
 
   private authorize(context: AuthContext, action: 'view' | 'manage') {
-    return this.access.requirePermission(context, 'iam.user.' + action, 'iam.authentication')
+    return this.access.requireUnscopedPermission(
+      context,
+      'iam.user.' + action,
+      'iam.authentication',
+    )
   }
 
   async list(context: AuthContext) {

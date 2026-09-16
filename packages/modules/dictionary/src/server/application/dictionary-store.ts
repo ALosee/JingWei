@@ -74,12 +74,6 @@ export interface DictionaryTransaction {
     before: unknown,
     after: unknown,
   ): Promise<void>
-  publishDefinitionChanged(
-    context: ApplicationContext,
-    typeId: string,
-    dictionaryCode: string,
-    revision: number,
-  ): Promise<void>
 }
 
 export interface DictionaryUnitOfWork {

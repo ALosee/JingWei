@@ -27,10 +27,10 @@ Product -> Edition -> Module -> Capability -> Permission -> Data Scope
 V1 是 Modular Monolith：一个主要 Node.js 后端进程与一个 PostgreSQL Database，内部保持严格模块边界。模块通信只允许：
 
 1. Public API：同步查询或必须立即得到结果的验证。
-2. Integration Event：跨模块稳定事实，事件带版本。
-3. Transactional Outbox：重要事件与业务写入同事务落库，由逻辑独立的后台 worker 投递。
+2. Integration Event：存在具名消费者时使用的跨模块稳定事实，事件带版本。
+3. Transactional Outbox：已启用事件与业务写入同事务落库，由逻辑独立的后台 worker 投递。
 
-初期不使用消息队列、Redis、Elasticsearch 或微服务。只有 ADR 能证明真实需求后才引入。
+当前没有已启用的 Integration Event 或 Outbox worker；包与迁移作为预留能力保留，按 [ADR 0014](./adr/0014-defer-outbox-activation-until-real-consumer.md) 在首个真实消费者出现时启用。初期不使用消息队列、Redis、Elasticsearch 或微服务。只有 ADR 能证明真实需求后才引入。
 
 ## 分层
 

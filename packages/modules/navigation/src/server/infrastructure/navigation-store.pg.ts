@@ -2,7 +2,6 @@ import type { Kysely } from 'kysely'
 
 import { PostgresAuditWriter } from '@jingwei/audit'
 import { newEntityId, type ApplicationContext, type TenantId } from '@jingwei/kernel'
-import { PostgresOutboxAppender } from '@jingwei/outbox'
 
 import {
   versionSchema,
@@ -358,15 +357,6 @@ export class PostgresNavigationUnitOfWork implements NavigationUnitOfWork {
             result: 'SUCCESS',
             before,
             after,
-          })
-          await new PostgresOutboxAppender().append(transaction, {
-            tenantId: context.tenantId,
-            type: 'navigation.' + action,
-            version: 1,
-            aggregateType: 'navigation',
-            aggregateId: entityId,
-            occurredAt: new Date(),
-            payload: { requestId: context.requestId, actorUserId: context.userId, after },
           })
         },
       }),

@@ -16,7 +16,9 @@ import {
   type UpdateOrganizationPosition,
   type UpdateOrganizationUnit,
 } from '../../shared/index.js'
+import { useOrganizationMembers } from '../composables/use-organization-members.js'
 import { useOrganizationPositions } from '../composables/use-organization-positions.js'
+import OrganizationMembersPanel from './organization-members-panel.vue'
 import OrganizationPositionsPanel from './organization-positions-panel.vue'
 
 const props = defineProps<{
@@ -39,14 +41,17 @@ const emit = defineEmits<{
 
 const NONE = '__none__'
 
-const detailTab = ref<'info' | 'positions'>('info')
+const detailTab = ref<'info' | 'positions' | 'members'>('info')
 const detailTabs = [
   { value: 'info', label: '基本信息' },
   { value: 'positions', label: '岗位' },
+  { value: 'members', label: '成员' },
 ]
 
 const positions = useOrganizationPositions(() => props.selected?.id ?? '')
 const positionError = computed(() => positions.error.value)
+const members = useOrganizationMembers(() => props.selected?.id ?? '')
+const memberError = computed(() => members.error.value)
 
 async function onCreatePosition(input: CreateOrganizationPosition) {
   await positions.createPosition(input)
@@ -65,6 +70,33 @@ async function onSetPositionStatus(positionId: string, status: OrganizationUnitS
 async function onRemovePosition(positionId: string) {
   await positions.removePosition(positionId)
   if (positions.error.value === '') toast.success('岗位已删除')
+}
+
+async function onAddMember(input: { userId: string; isPrimary?: boolean; positionIds?: string[] }) {
+  await members.addMember({
+    userId: input.userId,
+    isPrimary: input.isPrimary,
+    positionIds: input.positionIds,
+  })
+  if (members.error.value === '') toast.success('成员已加入')
+}
+
+async function onSetMemberPrimary(userId: string, isPrimary: boolean) {
+  await members.setPrimary(userId, isPrimary)
+  if (members.error.value === '') toast.success(isPrimary ? '已设为主组织' : '已取消主组织')
+}
+
+async function onRemoveMember(userId: string) {
+  await members.removeMember(userId)
+  if (members.error.value === '') toast.success('成员已移出')
+}
+
+async function onReplaceMemberPositions(
+  userId: string,
+  assignments: { positionId: string; isPrimary?: boolean }[],
+) {
+  await members.replacePositions(userId, assignments, positions.positions.value)
+  if (members.error.value === '') toast.success('岗位已更新')
 }
 
 watch(
@@ -422,7 +454,7 @@ const headerSubtitle = computed(() => {
               </div>
             </form>
 
-            <div v-else class="grid gap-3">
+            <div v-else-if="value === 'positions'" class="grid gap-3">
               <OrganizationPositionsPanel
                 :org-unit-id="selected?.id ?? ''"
                 :positions="positions.positions.value"
@@ -435,6 +467,31 @@ const headerSubtitle = computed(() => {
               />
               <p v-if="positionError" class="m-0 text-xs text-destructive whitespace-pre-wrap">
                 {{ positionError }}
+              </p>
+            </div>
+
+            <div v-else class="grid gap-3">
+              <OrganizationMembersPanel
+                :org-unit-id="selected?.id ?? ''"
+                :members="members.members.value"
+                :positions="positions.positions.value"
+                :available-users="members.availableUsers.value"
+                :busy="members.busy.value || busy"
+                :can-manage="canManage"
+                @add="onAddMember"
+                @set-primary="onSetMemberPrimary"
+                @remove="onRemoveMember"
+                @replace-positions="onReplaceMemberPositions"
+                @load-directory="() => void members.loadDirectory()"
+              />
+              <p v-if="memberError" class="m-0 text-xs text-destructive whitespace-pre-wrap">
+                {{ memberError }}
+              </p>
+              <p
+                v-if="members.directoryError.value"
+                class="m-0 text-xs text-destructive whitespace-pre-wrap"
+              >
+                {{ members.directoryError.value }}
               </p>
             </div>
           </div>

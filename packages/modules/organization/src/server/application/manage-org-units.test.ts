@@ -9,7 +9,7 @@ import {
   type ApplicationContext,
   type AuthContext,
 } from '@jingwei/kernel'
-import type { IamAccess } from '@jingwei/module-iam/server/public'
+import type { AuthorizationEvaluator, IamAccess } from '@jingwei/module-iam/server/public'
 
 import type { OrganizationUnit, UpdateOrganizationUnit } from '../../shared/index.js'
 import { ManageOrganizationUnits } from './manage-org-units.js'
@@ -41,9 +41,24 @@ class MemoryStore implements OrgUnitStore {
   units = new Map<string, OrganizationUnit>()
   members = new Set<string>()
   positions = new Set<string>()
+  listCalls = 0
+  visibleTreeCalls = 0
 
   list() {
+    this.listCalls += 1
     return Promise.resolve([...this.units.values()])
+  }
+  listVisibleTree(_tenantId: string, organizationIds: readonly string[]) {
+    this.visibleTreeCalls += 1
+    const visible = new Set<string>()
+    for (const id of organizationIds) {
+      let current = this.units.get(id)
+      while (current !== undefined) {
+        visible.add(current.id)
+        current = current.parentId === null ? undefined : this.units.get(current.parentId)
+      }
+    }
+    return Promise.resolve([...this.units.values()].filter((item) => visible.has(item.id)))
   }
   get(_tenantId: string, id: string) {
     return Promise.resolve(this.units.get(id) ?? null)
@@ -113,12 +128,18 @@ class MemoryStore implements OrgUnitStore {
   }
 }
 
-function createManage(store: MemoryStore) {
+function createManage(
+  store: MemoryStore,
+  evaluator: AuthorizationEvaluator = {
+    requireScopedPermission: () =>
+      Promise.resolve({ type: 'ALL', organizationIds: [], includeSelf: false }),
+  },
+) {
   const access: IamAccess = {
     activeRoleIds: () => Promise.resolve([]),
     roles: () => Promise.resolve([]),
     effectivePermissionCodes: () => Promise.resolve([]),
-    requirePermission: () => Promise.resolve(),
+    requireUnscopedPermission: () => Promise.resolve(),
   }
   const work: OrgUnitOfWork = {
     run<T>(work: (transaction: OrgUnitTransaction) => Promise<T>) {
@@ -128,7 +149,7 @@ function createManage(store: MemoryStore) {
       })
     },
   }
-  return new ManageOrganizationUnits(store, work, access)
+  return new ManageOrganizationUnits(store, work, access, evaluator)
 }
 
 describe('ManageOrganizationUnits', () => {
@@ -198,5 +219,40 @@ describe('ManageOrganizationUnits', () => {
       .catch((cause: unknown) => cause)
     expect(error).toBeInstanceOf(ApplicationError)
     expect((error as ApplicationError).status).toBe(404)
+  })
+
+  it('filters the tree by organization data scope and keeps ancestors', async () => {
+    const store = new MemoryStore()
+    store.units.set('root', unit({ id: 'root', parentId: null, code: 'root' }))
+    store.units.set('dept', unit({ id: 'dept', parentId: 'root', code: 'dept' }))
+    store.units.set('team', unit({ id: 'team', parentId: 'dept', code: 'team' }))
+    store.units.set('other', unit({ id: 'other', parentId: 'root', code: 'other' }))
+    const manage = createManage(store, {
+      requireScopedPermission: () =>
+        Promise.resolve({
+          type: 'ORGANIZATION_AND_DESCENDANTS',
+          organizationIds: ['team'],
+          includeSelf: false,
+        }),
+    })
+    const { units } = await manage.tree(context)
+    expect(units.map((item) => item.id).toSorted()).toEqual(['dept', 'root', 'team'])
+    expect(store.listCalls).toBe(0)
+    expect(store.visibleTreeCalls).toBe(1)
+  })
+
+  it('denies tree when evaluator rejects', async () => {
+    const store = new MemoryStore()
+    const manage = createManage(store, {
+      requireScopedPermission: () =>
+        Promise.reject(
+          new ApplicationError({
+            code: 'PERMISSION_DENIED',
+            message: '没有执行此操作的功能权限',
+            status: 403,
+          }),
+        ),
+    })
+    await expect(manage.tree(context)).rejects.toMatchObject({ code: 'PERMISSION_DENIED' })
   })
 })

@@ -3,7 +3,9 @@
 import { webModule as iamWebModule } from '@jingwei/module-iam/web'
 import { webModule as dictionaryWebModule } from '@jingwei/module-dictionary/web'
 import { webModule as navigationWebModule } from '@jingwei/module-navigation/web'
-import { webModule as organizationWebModule } from '@jingwei/module-organization/web'
+import { organizationalScopeReferenceDirectory, webModule as organizationWebModule } from '@jingwei/module-organization/web'
+import { customScopeReferenceDirectoryKey } from '@jingwei/module-iam/public/web'
+import type { App } from 'vue'
 
 export const generatedWebModules = [
   iamWebModule,
@@ -11,3 +13,7 @@ export const generatedWebModules = [
   navigationWebModule,
   organizationWebModule,
 ] as const
+
+export function installGeneratedWebIntegrations(app: App): void {
+  app.provide(customScopeReferenceDirectoryKey, organizationalScopeReferenceDirectory)
+}

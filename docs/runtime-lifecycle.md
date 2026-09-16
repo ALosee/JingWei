@@ -161,7 +161,7 @@ Navigation Server 先加载已发布配置，再用 ModuleRegistry 验证：
 
 `forUser()` 通过 IAM Public API 查询活跃角色，合并 Navigation 自有 role_navigation 的 code grants，返回 PUBLIC、AUTHENTICATED 和获授 code 的 PERMISSION 节点。外链无需 routeKey；目录/分组由可见后代推导。MENU 安装路由并显示菜单，PAGE 只安装路由。
 
-管理接口另外检查 navigation.view/manage/publish 等功能权限。发布/回滚锁住租户导航根并比较预期指针，与审计、Outbox 同事务提交；历史发布快照不可修改。完整语义见 [导航设计](./navigation-routing-design.md)。
+管理接口另外检查 navigation.view/manage/publish 等功能权限。发布/回滚锁住租户导航根并比较预期指针，与审计同事务提交；历史发布快照不可修改。完整语义见 [导航设计](./navigation-routing-design.md)。
 
 ## 10. Application Transaction
 
@@ -170,22 +170,25 @@ Navigation Server 先加载已发布配置，再用 ModuleRegistry 验证：
 ```text
 transaction.execute
   |- repository.save(aggregate)
-  |- outbox.append(integrationEvent)
+  |- audit.append(entry)
+  |- outbox.append(integrationEvent) // 仅当该事件已有真实消费者
   `- commit
 ```
 
-Repository 不得自己开启、提交业务事务。重要状态变更和 Outbox 必须使用同一个 Kysely Transaction，保证“业务成功但事件丢失”不会发生。
+Repository 不得自己开启、提交业务事务。已启用的 Integration Event 必须与业务状态使用同一个 Kysely Transaction 写入 Outbox，保证“业务成功但事件丢失”不会发生。当前 Foundation 没有已启用的 Integration Event，模块写操作只按业务要求提交状态与审计。
 
 ## 11. Outbox Worker
 
-`PostgresOutboxRepository.claimBatch()` 在短事务中：
+当前 Outbox 未启用：Server 没有装配 worker 或 dispatcher，现有模块也不写入待投递事件。`@jingwei/outbox` 与数据库迁移仅作为预留能力保留；不得用 Noop Dispatcher 把事件标记为成功。启用条件见 [ADR 0014](./adr/0014-defer-outbox-activation-until-real-consumer.md)。
+
+能力启用后，`PostgresOutboxRepository.claimBatch()` 会在短事务中：
 
 1. 查询到期、未发布、未锁定或锁已过期的事件；
 2. 使用 `FOR UPDATE SKIP LOCKED` 避免 Worker 互相阻塞；
 3. 设置 workerId、lockedAt，并增加 attempts；
 4. 提交事务后交给 EventDispatcher。
 
-投递成功写 `published_at`；失败记录截断后的错误、计算重试时间并释放锁。Worker 代码已具备，独立进程入口和具体 Dispatcher 尚未接线。
+投递成功写 `published_at`；失败记录截断后的错误、计算重试时间并释放锁。当前只具备这些底层 primitive；首次启用还必须补齐具名消费者、dispatcher、进程生命周期、幂等、未知事件和毒事件策略、可观测性与真实 PostgreSQL 测试。
 
 ## 12. Migration 生命周期
 
@@ -204,6 +207,6 @@ Repository 不得自己开启、提交业务事务。重要状态变更和 Outbo
 
 - Log 面向运行诊断，可按保留策略删除，不是业务证据。
 - Audit 面向“谁在何时对哪个实体做了什么”，原则上 append-only。
-- Outbox 面向跨模块事实的可靠投递。
+- Outbox 面向跨模块事实的可靠投递；当前处于未启用状态。
 
 一次关键写操作可能同时产生结构化日志、审计记录和 Integration Event，但三者用途不同，不能互相替代。
