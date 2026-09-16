@@ -29,4 +29,6 @@ Navigation 使用一张版本化 navigation_node 表，统一保存 DIRECTORY/GR
 
 navigation.role_navigation 保存 tenant_id、IAM role_id 和稳定 navigation_code。它不外键引用 IAM 或某个版本节点；应用通过 IAM Public API 验证角色，回滚配置不会改动 grants。详细字段见 [Navigation 模块](../packages/modules/navigation/README.md)。
 
+Dictionary 使用 `dictionary_category -> dictionary_type -> dictionary_item` 三级结构。Category 只是租户管理目录；Type 与 Item code 是稳定业务身份。复合外键保证 Category/Type/Item 属于同一 tenant，不使用级联删除清空历史解析数据。Type revision 在其自身或条目变化时递增。详见 [Dictionary 模块](../packages/modules/dictionary/README.md)。
+
 Migration 位于 Owner package，文件名全局唯一且发布后不可修改。Edition Builder 将启用模块的 migration 作为静态 build artifact；生产运行器不扫描源码目录。停用模块只停止加载代码/API/menu/permission/new migration，历史 schema 默认保留，删除数据必须走独立 decommission 流程。

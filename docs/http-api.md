@@ -360,7 +360,48 @@ codes 只能是当前发布版本中 PERMISSION 叶节点的 code；DIRECTORY/GR
 
 客户端函数与上述接口一一对应，见 `@jingwei/module-navigation/client`。mutation 封装读取可读 CSRF Cookie；浏览器安全常量从 `@jingwei/auth/shared` 导入，避免把 Node 端安全实现打入 Web bundle。
 
-## 7. 调用示例
+## 7. Dictionary 接口
+
+所有 Dictionary HTTP 接口都是租户内的管理边界。读取要求有效会话和 `dictionary.view`，修改还要求 `dictionary.manage`、Origin 和 CSRF。业务模块不应让普通用户调用这些管理接口获取选项，而应在服务端使用 Dictionary Public API。
+
+### 7.1 目录和类型详情
+
+| Method | Path                                           | Permission        | 用途                                   |
+| ------ | ---------------------------------------------- | ----------------- | -------------------------------------- |
+| GET    | `/api/v1/dictionary/catalog`                   | dictionary.view   | 返回全部分类和类型摘要                 |
+| GET    | `/api/v1/dictionary/types/{id}`                | dictionary.view   | 返回类型及按 sortOrder/code 排序的条目 |
+| GET    | `/api/v1/dictionary/types/by-code/{code}`      | dictionary.view   | 按稳定类型 code 返回类型及条目         |
+| POST   | `/api/v1/dictionary/categories`                | dictionary.manage | 创建展示分类                           |
+| PATCH  | `/api/v1/dictionary/categories/{id}`           | dictionary.manage | 重命名或调整分类排序                   |
+| DELETE | `/api/v1/dictionary/categories/{id}`           | dictionary.manage | 删除空分类                             |
+| POST   | `/api/v1/dictionary/types`                     | dictionary.manage | 在分类下创建类型                       |
+| PATCH  | `/api/v1/dictionary/types/{id}`                | dictionary.manage | 移动分类、重命名或启停类型             |
+| POST   | `/api/v1/dictionary/types/{id}/items`          | dictionary.manage | 创建条目                               |
+| PATCH  | `/api/v1/dictionary/types/{id}/items/{itemId}` | dictionary.manage | 修改 label、排序或启停条目             |
+
+Category 只用于管理展示。Type code 在租户内全局唯一，移动分类不改变 code。Type 和 Item code 创建后不可修改。Type/Item 不提供物理删除端点，通过 `ENABLED` / `DISABLED` 保留历史取值解析能力。
+
+### 7.2 revision 并发控制
+
+类型或其条目每次修改都使类型 `revision` 递增。类型、条目 mutation body 必须携带客户端最后读取的 `expectedRevision`。分类更新也使用自己的 revision；删除空分类通过 query 传递：
+
+```text
+DELETE /api/v1/dictionary/categories/{id}?expectedRevision=3
+```
+
+不匹配时返回 `DICTIONARY_REVISION_CONFLICT` / 409。客户端应重新加载，不能无条件自动重试修改请求。
+
+### 7.3 主要错误码
+
+| Code                                                                                                 | HTTP | 含义                       |
+| ---------------------------------------------------------------------------------------------------- | ---- | -------------------------- |
+| DICTIONARY_CATEGORY_NOT_FOUND / DICTIONARY_TYPE_NOT_FOUND / DICTIONARY_ITEM_NOT_FOUND                | 404  | 资源不存在或不属于当前租户 |
+| DICTIONARY_CATEGORY_CODE_CONFLICT / DICTIONARY_TYPE_CODE_CONFLICT / DICTIONARY_ITEM_CODE_CONFLICT    | 409  | 稳定 code 在所属范围内重复 |
+| DICTIONARY_CATEGORY_NOT_EMPTY                                                                        | 409  | 删除分类前需先移动类型     |
+| DICTIONARY_REVISION_CONFLICT                                                                         | 409  | 数据已被其他管理员修改     |
+| DICTIONARY_CATEGORY_LIMIT_EXCEEDED / DICTIONARY_TYPE_LIMIT_EXCEEDED / DICTIONARY_ITEM_LIMIT_EXCEEDED | 409  | 有界目录数量超限           |
+
+## 8. 调用示例
 
 以下示例假设服务运行在 `http://localhost:3000`：
 
@@ -379,7 +420,7 @@ curl -i \
 
 刷新和退出时还要从 `jingwei_csrf` Cookie 中读取 CSRF 值，并放入 `x-csrf-token` 请求头，同时携带 `Origin`。常量以 `@jingwei/auth` 导出为准，不要在业务模块重复硬编码。
 
-## 8. 新增接口检查表
+## 9. 新增接口检查表
 
 - 路由由模块自己的 `ServerModule.install` 返回，并挂载到模块 basePath。
 - URL 使用 `/api/v1/<module-code>` 命名空间。

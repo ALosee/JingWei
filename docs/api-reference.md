@@ -199,7 +199,7 @@ IAM 的 `getSessionStatus()` typed client 使用一个允许匿名的 `200` 状�
 
 ### Dictionary
 
-`DictionaryQuery.findItems(...)` 用于按字典类型查询稳定条目快照。调用方不应直接依赖字典表结构。
+`DictionaryQuery.getSnapshot(...)` 按租户和稳定类型 code 返回类型 revision 及全部条目；`resolveItems(...)` 为已存储 code 解析当前 label，并保留已停用条目的历史显示能力。字典分类只是管理目录，不进入跨模块契约。调用方不应直接依赖字典表结构、内部 UUID 或可修改 label。
 
 ## 12. 选择同步调用还是事件
 

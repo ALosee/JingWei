@@ -1,0 +1,230 @@
+import { createRoute, z } from '@hono/zod-openapi'
+
+import { apiErrorSchema, openApiSecurityNames } from '@jingwei/http-contract'
+
+import {
+  createDictionaryCategorySchema,
+  createDictionaryItemSchema,
+  createDictionaryTypeSchema,
+  deleteDictionaryCategoryQuerySchema,
+  dictionaryCatalogSchema,
+  dictionaryCategorySchema,
+  dictionaryRefSchema,
+  dictionaryTypeDetailSchema,
+  updateDictionaryCategorySchema,
+  updateDictionaryItemSchema,
+  updateDictionaryTypeSchema,
+} from '../../shared/index.js'
+
+const json = <TSchema>(schema: TSchema) => ({ 'application/json': { schema } })
+const error = (description: string) => ({ description, content: json(apiErrorSchema) })
+const authenticated = [{ [openApiSecurityNames.accessTokenCookie]: [] }]
+const mutation = [
+  {
+    [openApiSecurityNames.accessTokenCookie]: [],
+    [openApiSecurityNames.csrfHeader]: [],
+  },
+]
+const idParam = z.object({ id: z.uuid() })
+const itemParam = z.object({ id: z.uuid(), itemId: z.uuid() })
+
+export const dictionaryApiRoutes = {
+  catalog: createRoute({
+    method: 'get',
+    path: '/catalog',
+    operationId: 'dictionaryGetCatalog',
+    tags: ['Dictionary'],
+    summary: '读取字典分类和类型目录',
+    security: authenticated,
+    responses: {
+      200: { description: '字典管理目录', content: json(dictionaryCatalogSchema) },
+      401: error('尚未登录'),
+      403: error('缺少 dictionary.view 权限'),
+      500: error('服务器内部错误'),
+    },
+  }),
+  detail: createRoute({
+    method: 'get',
+    path: '/types/{id}',
+    operationId: 'dictionaryGetType',
+    tags: ['Dictionary'],
+    summary: '读取字典类型及条目',
+    security: authenticated,
+    request: { params: idParam },
+    responses: {
+      200: { description: '字典类型详情', content: json(dictionaryTypeDetailSchema) },
+      400: error('路径参数无效'),
+      401: error('尚未登录'),
+      403: error('缺少 dictionary.view 权限'),
+      404: error('字典类型不存在'),
+      500: error('服务器内部错误'),
+    },
+  }),
+  detailByCode: createRoute({
+    method: 'get',
+    path: '/types/by-code/{code}',
+    operationId: 'dictionaryGetTypeByCode',
+    tags: ['Dictionary'],
+    summary: '按稳定编码读取字典类型及条目',
+    security: authenticated,
+    request: { params: z.object({ code: z.string().min(1).max(120) }) },
+    responses: {
+      200: { description: '字典类型详情', content: json(dictionaryTypeDetailSchema) },
+      400: error('路径参数无效'),
+      401: error('尚未登录'),
+      403: error('缺少 dictionary.view 权限'),
+      404: error('字典类型不存在'),
+      500: error('服务器内部错误'),
+    },
+  }),
+  createCategory: createRoute({
+    method: 'post',
+    path: '/categories',
+    operationId: 'dictionaryCreateCategory',
+    tags: ['Dictionary'],
+    summary: '创建字典分类',
+    security: mutation,
+    request: { body: { required: true, content: json(createDictionaryCategorySchema) } },
+    responses: {
+      201: { description: '已创建分类', content: json(dictionaryCategorySchema) },
+      400: error('请求体无效'),
+      401: error('尚未登录'),
+      403: error('权限、Origin 或 CSRF 校验失败'),
+      409: error('分类编码冲突或超过数量上限'),
+      415: error('Content-Type 不受支持'),
+      500: error('服务器内部错误'),
+    },
+  }),
+  updateCategory: createRoute({
+    method: 'patch',
+    path: '/categories/{id}',
+    operationId: 'dictionaryUpdateCategory',
+    tags: ['Dictionary'],
+    summary: '更新字典分类',
+    security: mutation,
+    request: {
+      params: idParam,
+      body: { required: true, content: json(updateDictionaryCategorySchema) },
+    },
+    responses: {
+      200: { description: '已更新分类', content: json(dictionaryCategorySchema) },
+      400: error('路径参数或请求体无效'),
+      401: error('尚未登录'),
+      403: error('权限、Origin 或 CSRF 校验失败'),
+      404: error('分类不存在'),
+      409: error('编辑版本冲突'),
+      415: error('Content-Type 不受支持'),
+      500: error('服务器内部错误'),
+    },
+  }),
+  deleteCategory: createRoute({
+    method: 'delete',
+    path: '/categories/{id}',
+    operationId: 'dictionaryDeleteCategory',
+    tags: ['Dictionary'],
+    summary: '删除空字典分类',
+    security: mutation,
+    request: { params: idParam, query: deleteDictionaryCategoryQuerySchema },
+    responses: {
+      200: { description: '已删除分类 ID', content: json(dictionaryRefSchema) },
+      400: error('路径参数或查询参数无效'),
+      401: error('尚未登录'),
+      403: error('权限、Origin 或 CSRF 校验失败'),
+      404: error('分类不存在'),
+      409: error('分类非空或编辑版本冲突'),
+      500: error('服务器内部错误'),
+    },
+  }),
+  createType: createRoute({
+    method: 'post',
+    path: '/types',
+    operationId: 'dictionaryCreateType',
+    tags: ['Dictionary'],
+    summary: '创建字典类型',
+    security: mutation,
+    request: { body: { required: true, content: json(createDictionaryTypeSchema) } },
+    responses: {
+      201: { description: '已创建类型', content: json(dictionaryTypeDetailSchema) },
+      400: error('请求体无效'),
+      401: error('尚未登录'),
+      403: error('权限、Origin 或 CSRF 校验失败'),
+      404: error('分类不存在'),
+      409: error('类型编码冲突或超过数量上限'),
+      415: error('Content-Type 不受支持'),
+      500: error('服务器内部错误'),
+    },
+  }),
+  updateType: createRoute({
+    method: 'patch',
+    path: '/types/{id}',
+    operationId: 'dictionaryUpdateType',
+    tags: ['Dictionary'],
+    summary: '更新字典类型',
+    security: mutation,
+    request: {
+      params: idParam,
+      body: { required: true, content: json(updateDictionaryTypeSchema) },
+    },
+    responses: {
+      200: { description: '已更新类型', content: json(dictionaryTypeDetailSchema) },
+      400: error('路径参数或请求体无效'),
+      401: error('尚未登录'),
+      403: error('权限、Origin 或 CSRF 校验失败'),
+      404: error('分类或类型不存在'),
+      409: error('编辑版本冲突'),
+      415: error('Content-Type 不受支持'),
+      500: error('服务器内部错误'),
+    },
+  }),
+  createItem: createRoute({
+    method: 'post',
+    path: '/types/{id}/items',
+    operationId: 'dictionaryCreateItem',
+    tags: ['Dictionary'],
+    summary: '创建字典条目',
+    security: mutation,
+    request: {
+      params: idParam,
+      body: { required: true, content: json(createDictionaryItemSchema) },
+    },
+    responses: {
+      201: { description: '已创建条目的类型快照', content: json(dictionaryTypeDetailSchema) },
+      400: error('路径参数或请求体无效'),
+      401: error('尚未登录'),
+      403: error('权限、Origin 或 CSRF 校验失败'),
+      404: error('类型不存在'),
+      409: error('条目编码冲突、编辑版本冲突或超过数量上限'),
+      415: error('Content-Type 不受支持'),
+      500: error('服务器内部错误'),
+    },
+  }),
+  updateItem: createRoute({
+    method: 'patch',
+    path: '/types/{id}/items/{itemId}',
+    operationId: 'dictionaryUpdateItem',
+    tags: ['Dictionary'],
+    summary: '更新字典条目',
+    security: mutation,
+    request: {
+      params: itemParam,
+      body: { required: true, content: json(updateDictionaryItemSchema) },
+    },
+    responses: {
+      200: { description: '已更新条目的类型快照', content: json(dictionaryTypeDetailSchema) },
+      400: error('路径参数或请求体无效'),
+      401: error('尚未登录'),
+      403: error('权限、Origin 或 CSRF 校验失败'),
+      404: error('类型或条目不存在'),
+      409: error('编辑版本冲突'),
+      415: error('Content-Type 不受支持'),
+      500: error('服务器内部错误'),
+    },
+  }),
+} as const
+
+export const dictionaryOpenApiContract = {
+  id: 'dictionary',
+  title: 'Dictionary',
+  basePath: '/dictionary',
+  routes: Object.values(dictionaryApiRoutes),
+} as const

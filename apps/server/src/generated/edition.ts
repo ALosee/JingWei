@@ -7,7 +7,7 @@ import { manifest as organizationManifest } from '@jingwei/module-organization/m
 import { defineEdition, resolveEdition } from '@jingwei/module-sdk'
 
 const edition = defineEdition({
-  id: 'development',
+  id: 'full',
   modules: {
     'iam': { capabilities: ["iam.authentication","iam.authorization"] },
     'dictionary': { capabilities: ["dictionary.core"] },

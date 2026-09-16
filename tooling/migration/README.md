@@ -51,6 +51,10 @@ TEST_ADMIN_PASSWORD='<seed 时使用的密码>' pnpm test:auth:real
 - 不读取或修改密码；角色、版本与授权操作记录审计/Outbox。
 - 拒绝 NODE_ENV=production。正常应用启动不自动运行该工具。
 
+### `seed:dictionary`
+
+在 seed:dev 之后执行 `pnpm seed:dictionary`。幂等写入开发租户样例字典：分类 `common`，类型 `common.source` / `common.priority` / `common.tag` 及其启用条目。不会覆盖已有类型或条目；`NODE_ENV=production` 下拒绝运行。
+
 ### 显式使用 .env.test
 
 一次性 CLI 不自动读取 .env 文件。若数据库配置位于仓库根目录 .env.test，使用 Node 的 env-file 参数（从仓库根运行）：

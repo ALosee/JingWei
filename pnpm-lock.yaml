@@ -357,18 +357,48 @@ importers:
 
   packages/modules/dictionary:
     dependencies:
+      '@hono/zod-openapi':
+        specifier: 'catalog:'
+        version: 1.6.3(hono@4.13.5)(zod@4.5.4)
+      '@jingwei/api-client':
+        specifier: workspace:*
+        version: link:../../platform/api-client
+      '@jingwei/audit':
+        specifier: workspace:*
+        version: link:../../platform/audit
+      '@jingwei/database':
+        specifier: workspace:*
+        version: link:../../platform/database
+      '@jingwei/http-contract':
+        specifier: workspace:*
+        version: link:../../platform/http-contract
+      '@jingwei/kernel':
+        specifier: workspace:*
+        version: link:../../platform/kernel
+      '@jingwei/module-iam':
+        specifier: workspace:*
+        version: link:../iam
       '@jingwei/module-sdk':
         specifier: workspace:*
         version: link:../../platform/module-sdk
+      '@jingwei/outbox':
+        specifier: workspace:*
+        version: link:../../platform/outbox
       '@jingwei/ui':
         specifier: workspace:*
         version: link:../../platform/ui
+      hono:
+        specifier: 'catalog:'
+        version: 4.13.5
       kysely:
         specifier: 'catalog:'
         version: 0.29.5
       vue:
         specifier: 'catalog:'
         version: 3.5.42(typescript@5.9.3)
+      zod:
+        specifier: 'catalog:'
+        version: 4.5.4
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -877,6 +907,9 @@ importers:
       '@jingwei/http-contract':
         specifier: workspace:*
         version: link:../../packages/platform/http-contract
+      '@jingwei/module-dictionary':
+        specifier: workspace:*
+        version: link:../../packages/modules/dictionary
       '@jingwei/module-iam':
         specifier: workspace:*
         version: link:../../packages/modules/iam

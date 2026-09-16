@@ -28,6 +28,7 @@
     "api:check": "tsx tooling/openapi/src/cli.ts --check",
     "seed:dev": "tsx tooling/migration/src/seed-dev.ts",
     "seed:navigation": "tsx tooling/migration/src/seed-navigation.ts",
+    "seed:dictionary": "tsx tooling/migration/src/seed-dictionary.ts",
     "test:auth:real": "tsx tooling/migration/src/smoke-auth.ts",
     "test:navigation:real": "tsx tooling/migration/src/test-navigation-real.ts",
     "ui:add": "sbean add --cwd packages/platform/ui",
