@@ -56,7 +56,7 @@ export function createIamServerModule(
         policy: context.config.login,
       })
       const sessionLifecycle = new SessionLifecycle({ sessions: context.sessionService, audit })
-      const access = createIamAccess(context.database, context.moduleRegistry)
+      const access = createIamAccess(context.database, context.moduleRegistry, context.logger)
       const manageRoles = new ManageIamRoles(
         new PostgresRoleStore(database),
         new PostgresRoleUnitOfWork(database),

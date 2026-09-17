@@ -74,6 +74,9 @@ Navigation 的 install 通过 IAM 公开工厂获取活跃角色/功能授权服
 6. 在 `finally` 中记录 method、path、status、duration 和安全上下文。
 
 中间件只建立身份上下文。具体路由仍要决定是否允许匿名、需要何种权限和数据范围。
+Module OpenAPI route 通过 `x-jingwei-authorization` 声明该决定；全部模块安装后，
+`createApp` 会在返回前用 Edition Registry 校验 permission、capability 和数据范围入口。
+声明只负责 fail-fast 与文档，Application Use Case 继续执行真实授权。
 
 安全阶段提前拒绝的请求不会进入后置访问日志中间件，仍由统一错误边界处理；本次职责拆分保留原有顺序。
 

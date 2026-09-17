@@ -12,6 +12,7 @@ import type {
   UpdateDictionaryItem,
   UpdateDictionaryType,
 } from '../../shared/index.js'
+import { dictionaryPermissionRequirements } from './authorization-requirements.js'
 import type { DictionaryStore, DictionaryUnitOfWork } from './dictionary-store.js'
 
 const CATEGORY_LIMIT = 100
@@ -31,7 +32,7 @@ export class ManageDictionary {
   ) {}
 
   private authorize(context: AuthContext, action: 'view' | 'manage') {
-    return this.access.requireUnscopedPermission(context, `dictionary.${action}`, 'dictionary.core')
+    return this.access.requireUnscopedPermission(context, dictionaryPermissionRequirements[action])
   }
 
   async catalog(context: AuthContext): Promise<DictionaryCatalog> {

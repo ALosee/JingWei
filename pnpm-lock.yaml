@@ -433,6 +433,9 @@ importers:
       '@jingwei/module-sdk':
         specifier: workspace:*
         version: link:../../platform/module-sdk
+      '@jingwei/observability':
+        specifier: workspace:*
+        version: link:../../platform/observability
       '@jingwei/ui':
         specifier: workspace:*
         version: link:../../platform/ui

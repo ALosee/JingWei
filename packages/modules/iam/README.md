@@ -222,6 +222,12 @@ Web 登录页只调用 `useSignIn()` 绑定字段和提交事件。登录 client
 
 已经实现认证、登录失败计数/临时锁定/成功时间更新、opaque Access/Refresh Token Family 创建/状态恢复/轮换/复用检测/撤销、凭据 PostgreSQL store，以及供 Navigation 使用的真实 IamAccess。IamAccess 每次查询活跃用户/角色，多角色取并集，不使用 is_super 绕过；`requireUnscopedPermission` 先检查 Edition registry/capability，并拒绝 scoped permission。`AuthorizationEvaluator.requireScopedPermission` 只处理带 Data Scope 的权限，成功结果保证包含显式范围；两个入口通过命名和运行时错误共同防止混用。
 
+无范围权限判断和有效权限目录使用 tenant-scoped join 一次读取活跃用户、角色与 grant；
+带范围判断同样一次读取活跃 grant，仅 CUSTOM 追加组织引用查询。每次授权评估记录结构化
+`durationMs`、permission、evaluator 与 outcome：正常结果为 debug，慢于 50ms 或执行失败为
+warn。无效 CUSTOM 历史引用继续 fail closed；数据库或事实适配器故障保留内部错误路径，
+不再伪装成普通 403。
+
 角色管理（CRUD、权限目录、整组替换授权）与用户管理（列表、创建、资料/状态更新、重置密码、角色分配）及对应管理页已实现。授权展示与校验以 Module Registry 为 Source of Truth；`iam.permission_definition` 仍可由 seed/运维投影，但服务端安装不再强制写库。Permission 通过 `dataScope.allowedTypes` 精确声明可选范围，Organization 的查看权限不提供 `SELF`。完整 Data Scope evaluator 已实现并被 Organization 读路径使用；CUSTOM ID 在保存时校验，并在求值时按当前租户再次校验，失效、停用或跨租户 ID 会令授权 fail closed。启用 Organization 时，Edition 生成代码显式注入服务端事实适配器和 Web `CustomScopeReferenceDirectory`；IAM-only Edition 不保留组织运行时端口。角色管理员通过专用 scope-options API 读取本租户全部有效组织，不依赖 `organization.view`。邮箱/手机变更与验证码、多设备会话列表仍是后续工作。开发种子会投影当前 Edition 的功能权限并初始化显式管理员 grant，但不能当作生产权限同步服务。
 
 个人账号页已支持资料查看/编辑、修改密码（全会话撤销）和角色只读展示；路由使用 `/account?tab=profile|security|roles`，不引入无意义的 path id。

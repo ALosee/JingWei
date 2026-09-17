@@ -50,6 +50,7 @@ export function inspectSourceResponsibilities(
   const domain = moduleFile && file.includes('/server/domain/')
   const application = moduleFile && file.includes('/server/application/')
   const api = moduleFile && file.includes('/server/api/')
+  const apiContract = moduleFile && file.endsWith('/server/api/openapi.ts')
   const page = moduleFile && file.includes('/web/pages/') && file.endsWith('.vue')
   const composition =
     /^apps\/[^/]+\/src\/(?:bootstrap\/|app\.ts$)/u.test(file) ||
@@ -123,7 +124,16 @@ export function inspectSourceResponsibilities(
       inspectImport(specifier, portableType)
       if (statement.importClause?.name) imports.set(statement.importClause.name.text, specifier)
       if (bindings && ts.isNamedImports(bindings))
-        for (const binding of bindings.elements) imports.set(binding.name.text, specifier)
+        for (const binding of bindings.elements) {
+          imports.set(binding.name.text, specifier)
+          const importedName = binding.propertyName?.text ?? binding.name.text
+          if (apiContract && specifier === '@hono/zod-openapi' && importedName === 'createRoute') {
+            report(
+              'api-authorization-contract',
+              'Module OpenAPI routes must use createApiRoute and declare authorization metadata',
+            )
+          }
+        }
       if (bindings && ts.isNamespaceImport(bindings)) imports.set(bindings.name.text, specifier)
     }
   }
@@ -197,6 +207,16 @@ export function inspectSourceResponsibilities(
         ts.isIdentifier(node.expression.expression)
           ? node.expression.expression.text
           : ''
+      if (
+        apiContract &&
+        method === 'createRoute' &&
+        imports.get(receiver) === '@hono/zod-openapi'
+      ) {
+        report(
+          'api-authorization-contract',
+          'Module OpenAPI routes must use createApiRoute and declare authorization metadata',
+        )
+      }
       if (
         (page || composition) &&
         (callee === 'fetch' ||

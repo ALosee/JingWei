@@ -46,7 +46,7 @@ package exports 显式列出 manifest、shared、server、server/public、client
 2. 说明职责、非职责和数据所有权；
 3. 声明必需/可选模块依赖；
 4. 设计 capability、permission 和 route definition；
-5. 实现 Server/Web module；
+5. 使用 `createApiRoute` 声明每个 HTTP endpoint 的授权契约，并实现 Server/Web module；
 6. 定义最小 public API 或事件契约；
 7. 新增向前迁移和测试；
 8. 把模块加入需要它的 Edition；

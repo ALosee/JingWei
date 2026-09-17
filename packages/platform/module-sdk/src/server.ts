@@ -10,6 +10,8 @@ import type { AppLogger } from '@jingwei/observability'
 import type { ModuleManifest } from './manifest.js'
 import type { ModuleRegistry } from './registry.js'
 
+export * from './api-authorization.js'
+
 export interface ServerAppVariables {
   authContext: AuthContext | null
   requestId: RequestId

@@ -43,3 +43,19 @@ Navigation 的 PERMISSION 模式表示 User -> 活跃 Role -> navigation code。
 功能权限和导航权限不能相互推导。授予导航入口不能授予 navigation.publish 等 API 操作；同名字符串也属于不同授权关系。多个角色的导航 code 取并集，容器只按后代可见性显示，不独立授予权限。详情见 [导航设计](./navigation-routing-design.md#5-rbac角色获授-navigation-code)。
 
 当前 IAM 已提供两个不可混用的授权入口：`IamAccess.requireUnscopedPermission` 只校验无数据范围的功能权限，误传 scoped permission 会抛出明确的编程错误；`AuthorizationEvaluator.requireScopedPermission` 只处理带范围权限，成功时必定返回非空 `DataScopeGrant`，拒绝直接抛出 403。两者都实时查询活跃用户/角色，不使用 is_super 通配。Evaluator 实现多角色 scope 并集、任一 ALL 直接 ALL，组织范围经 Organization 提供的 `OrganizationalScopeFacts` 展开（成员组织 + 后代，CUSTOM 取角色配置的组织并在保存及求值时按当前租户与启用状态校验；无效 ID fail closed）。Permission 以 `dataScope.allowedTypes` 和 provider 描述能力；Organization 的 `organization.view` 不允许 SELF。受限组织树由 Repository 按 `organizationIds` 查询目标节点及祖先，岗位/成员详情要求目标组织落在 scope 内；写操作走无数据范围的 `organization.manage`。事实适配器由 Edition Composition Root 显式注入，IAM-only Edition 不创建 Organization 端口。业务模块若要按数据范围过滤，应在 Application 层把 scope 转换为本模块查询条件并下推 Repository，不能先读取全量数据再在内存过滤，也不能让 Repository 依赖 IAM 类型。
+
+## HTTP 授权契约
+
+每个 Module OpenAPI operation 必须通过 `createApiRoute` 显式声明 `PUBLIC`、
+`AUTHENTICATED`、`REFRESH_TOKEN` 或 `PERMISSION`。功能权限契约同时声明 capability、
+permission 和 scoped/unscoped 入口，并以 `x-jingwei-authorization` 写入 OpenAPI。Server 在
+完成模块装配后使用当前 Edition Registry 校验全部 `/api/v1` 契约；架构检查禁止模块绕过
+授权契约工厂。
+
+功能权限 requirement 由 Owner Module 定义为不可变对象，Application 授权调用与 OpenAPI
+共同引用；跨模块 requirement 只能通过 Owner Module Public API 使用。启动校验负责契约结构、
+Manifest、Capability 和 scope mode 的一致性，不声称能够静态推导任意 Application 控制流。
+
+该契约用于文档、启动校验和测试，不替代 Application 授权。接口路径和 HTTP method 不是
+权限身份；多个接口可以继续共享稳定的业务 permission，需要独立控制时再由 Owner Module
+增加新的业务权限。详见 [ADR 0015](./adr/0015-declare-http-authorization-contracts.md)。

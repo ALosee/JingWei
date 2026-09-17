@@ -17,7 +17,7 @@ export const serverModule: ServerModule = {
     const manage = new ManageDictionary(
       new PostgresDictionaryStore(database),
       new PostgresDictionaryUnitOfWork(database),
-      createIamAccess(context.database, context.moduleRegistry),
+      createIamAccess(context.database, context.moduleRegistry, context.logger),
     )
     return Promise.resolve({
       id: manifest.id,

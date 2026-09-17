@@ -60,6 +60,17 @@ RouteDefinition.requiredPermission 保留功能权限的静态关联和注册校
 
 有 HTTP endpoint 的模块使用 `createApiRouter()` 建立带统一 Zod validation error 语义的 `OpenAPIHono`，route contract 位于模块 `server/api/openapi.ts`。空模块也不得在 `server/module.ts` 内联 handler。
 
+每个 Module route 必须使用 `createApiRoute()`，并声明 `PUBLIC`、`AUTHENTICATED`、
+`REFRESH_TOKEN` 或 `PERMISSION`。PERMISSION 同时列出 capability、permission 与
+scoped/unscoped 模式；工厂把它写入 OpenAPI `x-jingwei-authorization`。Server 启动会用
+当前 `ModuleRegistry` 校验所有已启用 `/api/v1` operation。该 metadata 不执行授权，最终
+安全边界仍是 Application Use Case。
+
+功能权限使用 `definePermissionRequirement()` 在 Owner Module 定义一次不可变 requirement；
+Application 的 IAM 授权端口和 `permissionApiAccess()` 接收同一个对象。不要在 OpenAPI 和
+Use Case 中分别书写 permission/capability 字符串。跨模块 requirement 必须从 Owner Module
+的公开 package export 导入。
+
 安装函数可以创建仓储和用例，但导入 manifest 本身必须无副作用。模块不能监听端口或关闭共享数据库池。
 
 ## Web Module

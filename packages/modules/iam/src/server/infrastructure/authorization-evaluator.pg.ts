@@ -2,15 +2,21 @@ import type { Kysely } from 'kysely'
 
 import { ApplicationError } from '@jingwei/kernel'
 import type { ModuleRegistry } from '@jingwei/module-sdk'
+import type { AppLogger } from '@jingwei/observability'
 
 import type { RoleDataScopeType } from '../../shared/index.js'
-import { mergeDataScopes, type ScopeGrantInput } from '../application/merge-data-scopes.js'
+import {
+  InvalidDataScopeGrantError,
+  mergeDataScopes,
+  type ScopeGrantInput,
+} from '../application/merge-data-scopes.js'
 import type {
   AuthorizationEvaluator,
   AuthorizationRequest,
   DataScopeGrant,
   OrganizationalScopeFacts,
 } from '../public/authorization.js'
+import { observeAuthorization } from './authorization-telemetry.js'
 
 interface AuthorizationDatabase {
   'iam.user': { id: string; tenant_id: string; status: string }
@@ -47,11 +53,23 @@ export class PostgresAuthorizationEvaluator implements AuthorizationEvaluator {
     private readonly database: Kysely<AuthorizationDatabase>,
     private readonly registry: ModuleRegistry,
     private readonly organization: OrganizationalScopeFacts,
+    private readonly logger?: AppLogger,
   ) {}
 
   async requireScopedPermission(request: AuthorizationRequest): Promise<DataScopeGrant> {
-    const definition = this.registry.permission(request.permission)
-    if (definition === null || !this.registry.hasCapability(request.capability)) return deny()
+    return observeAuthorization({
+      logger: this.logger,
+      context: request.context,
+      permission: request.requirement.permission,
+      evaluator: 'SCOPED',
+      evaluate: () => this.evaluate(request),
+    })
+  }
+
+  private async evaluate(request: AuthorizationRequest): Promise<DataScopeGrant> {
+    const { requirement } = request
+    const definition = this.registry.permission(requirement.permission)
+    if (definition === null || !this.registry.hasCapability(requirement.capability)) return deny()
     if (definition.dataScope === undefined) {
       throw new ApplicationError({
         code: 'AUTHZ_UNSCOPED_PERMISSION_REQUIRES_ACCESS',
@@ -61,17 +79,26 @@ export class PostgresAuthorizationEvaluator implements AuthorizationEvaluator {
     }
 
     const { context } = request
-    const activeRoles = await this.activeRoleIds(context.tenantId, context.userId)
-    if (activeRoles.length === 0) return deny()
-
     const grantRows = await this.database
-      .selectFrom('iam.role_permission')
-      .select(['role_id', 'scope_type'])
-      .where('tenant_id', '=', context.tenantId)
-      .where('role_id', 'in', activeRoles)
-      .where('permission_code', '=', request.permission)
+      .selectFrom('iam.user as u')
+      .innerJoin('iam.user_role as ur', (join) =>
+        join.onRef('ur.user_id', '=', 'u.id').onRef('ur.tenant_id', '=', 'u.tenant_id'),
+      )
+      .innerJoin('iam.role as r', (join) =>
+        join.onRef('r.id', '=', 'ur.role_id').onRef('r.tenant_id', '=', 'ur.tenant_id'),
+      )
+      .innerJoin('iam.role_permission as rp', (join) =>
+        join.onRef('rp.role_id', '=', 'r.id').onRef('rp.tenant_id', '=', 'r.tenant_id'),
+      )
+      .select(['rp.role_id', 'rp.scope_type'])
+      .where('u.tenant_id', '=', context.tenantId)
+      .where('u.id', '=', context.userId)
+      .where('u.status', '=', 'ACTIVE')
+      .where('r.status', '=', 'ACTIVE')
+      .where('rp.permission_code', '=', requirement.permission)
       .execute()
     if (grantRows.length === 0) return deny()
+    const activeRoles = grantRows.map((row) => row.role_id)
 
     const allowedTypes: ReadonlySet<string> = new Set(definition.dataScope.allowedTypes)
     if (grantRows.some((row) => !allowedTypes.has(row.scope_type))) return deny()
@@ -84,7 +111,7 @@ export class PostgresAuthorizationEvaluator implements AuthorizationEvaluator {
         .select(['role_id', 'org_unit_id'])
         .where('tenant_id', '=', context.tenantId)
         .where('role_id', 'in', activeRoles)
-        .where('permission_code', '=', request.permission)
+        .where('permission_code', '=', requirement.permission)
         .execute()
       for (const row of orgRows) {
         const bucket = customOrgByRole.get(row.role_id)
@@ -100,30 +127,10 @@ export class PostgresAuthorizationEvaluator implements AuthorizationEvaluator {
 
     try {
       return await mergeDataScopes(grants, this.organization, context.tenantId, context.userId)
-    } catch {
-      // Fail closed if organization expansion is unavailable or returns dirty data.
-      return deny()
+    } catch (error) {
+      // Invalid persisted scope data denies access; infrastructure failures keep their real 500 path.
+      if (error instanceof InvalidDataScopeGrantError) return deny()
+      throw error
     }
-  }
-
-  private async activeRoleIds(tenantId: string, userId: string): Promise<string[]> {
-    const user = await this.database
-      .selectFrom('iam.user')
-      .select('id')
-      .where('tenant_id', '=', tenantId)
-      .where('id', '=', userId)
-      .where('status', '=', 'ACTIVE')
-      .executeTakeFirst()
-    if (user === undefined) return []
-    const rows = await this.database
-      .selectFrom('iam.user_role as ur')
-      .innerJoin('iam.role as r', 'r.id', 'ur.role_id')
-      .select('r.id')
-      .where('ur.tenant_id', '=', tenantId)
-      .where('r.tenant_id', '=', tenantId)
-      .where('ur.user_id', '=', userId)
-      .where('r.status', '=', 'ACTIVE')
-      .execute()
-    return rows.map((row) => row.id)
   }
 }

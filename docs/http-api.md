@@ -62,6 +62,12 @@ Refresh 请求在 Access Token 已过期时仍必须校验 Origin 与 CSRF；刷
 
 `@jingwei/api-client` 会为修改请求自动读取 `jingwei_csrf` Cookie 并写入 `x-csrf-token`；业务模块客户端不得再次解析 Cookie 或手写该 Header。
 
+### 2.3 接口授权契约
+
+每个 `/api/v1` OpenAPI operation 都必须通过 `x-jingwei-authorization` 声明自身的授权类别：`PUBLIC`、`AUTHENTICATED`、`REFRESH_TOKEN` 或 `PERMISSION`。`PERMISSION` 还会声明稳定的 permission code、所属 capability，以及该接口是否需要 Data Scope。
+
+该扩展用于架构校验、文档和后续自动化测试，不代替运行时授权。服务启动时会把声明与启用模块的 Manifest 做一致性检查；请求仍须由对应 Application Use Case 按 `Edition -> Module -> Capability -> Permission -> Data Scope` 顺序执行授权。前端菜单、按钮或读取 OpenAPI 声明都不能作为安全边界。
+
 ## 3. 成功与错误响应
 
 ### 3.1 成功响应

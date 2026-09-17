@@ -16,6 +16,7 @@ import type {
   UserRoleList,
 } from '../../shared/index.js'
 import type { IamAccess } from '../public/navigation-access.js'
+import { iamPermissionRequirements } from '../public/permission-requirements.js'
 import type { UserAdminStore, UserAdminUnitOfWork } from './user-admin-store.js'
 
 function fail(code: string, message: string, status = 409): never {
@@ -46,8 +47,7 @@ export class ManageIamUsers {
   private authorize(context: AuthContext, action: 'view' | 'manage') {
     return this.access.requireUnscopedPermission(
       context,
-      'iam.user.' + action,
-      'iam.authentication',
+      action === 'view' ? iamPermissionRequirements.userView : iamPermissionRequirements.userManage,
     )
   }
 

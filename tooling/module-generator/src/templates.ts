@@ -114,7 +114,7 @@ server/module.ts 只装配依赖与路由；HTTP handler 放在 server/api，规
 
 ## HTTP 与 Client API
 
-在 server/api/openapi.ts 中列出每个端点、输入、输出、认证/权限要求和稳定错误码；运行 pnpm api:generate 后在 module client 使用生成的 typed client。没有端点时明确写“无”。
+在 server/api/openapi.ts 中使用 createApiRoute 列出每个端点、输入、输出、授权契约和稳定错误码；运行 pnpm api:generate 后在 module client 使用生成的 typed client。没有端点时明确写“无”。
 
 ## Public API 与事件
 

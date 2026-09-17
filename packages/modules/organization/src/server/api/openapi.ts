@@ -1,6 +1,8 @@
-import { createRoute, z } from '@hono/zod-openapi'
+import { z } from '@hono/zod-openapi'
 
 import { apiErrorSchema, openApiSecurityNames } from '@jingwei/http-contract'
+import { iamPermissionRequirements } from '@jingwei/module-iam/server/public'
+import { createApiRoute, permissionApiAccess } from '@jingwei/module-sdk/server'
 
 import {
   createOrganizationMemberSchema,
@@ -23,6 +25,7 @@ import {
   updateOrganizationPositionSchema,
   updateOrganizationUnitSchema,
 } from '../../shared/index.js'
+import { organizationPermissionRequirements } from '../public/permission-requirements.js'
 
 const json = <TSchema>(schema: TSchema) => ({
   'application/json': { schema },
@@ -41,9 +44,12 @@ const mutation = [
 const unitParam = z.object({ id: z.uuid() })
 const unitPositionParam = z.object({ id: z.uuid(), positionId: z.uuid() })
 const unitMemberParam = z.object({ id: z.uuid(), userId: z.uuid() })
+const viewAccess = permissionApiAccess(organizationPermissionRequirements.view)
+const manageAccess = permissionApiAccess(organizationPermissionRequirements.manage)
+const scopeOptionsAccess = permissionApiAccess(iamPermissionRequirements.roleManage)
 
 export const organizationApiRoutes = {
-  scopeOptions: createRoute({
+  scopeOptions: createApiRoute(scopeOptionsAccess, {
     method: 'get',
     path: '/scope-options',
     operationId: 'organizationListScopeOptions',
@@ -58,7 +64,7 @@ export const organizationApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  tree: createRoute({
+  tree: createApiRoute(viewAccess, {
     method: 'get',
     path: '/org-units',
     operationId: 'organizationGetTree',
@@ -73,7 +79,7 @@ export const organizationApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  create: createRoute({
+  create: createApiRoute(manageAccess, {
     method: 'post',
     path: '/org-units',
     operationId: 'organizationCreateUnit',
@@ -94,7 +100,7 @@ export const organizationApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  update: createRoute({
+  update: createApiRoute(manageAccess, {
     method: 'patch',
     path: '/org-units/{id}',
     operationId: 'organizationUpdateUnit',
@@ -117,7 +123,7 @@ export const organizationApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  remove: createRoute({
+  remove: createApiRoute(manageAccess, {
     method: 'delete',
     path: '/org-units/{id}',
     operationId: 'organizationDeleteUnit',
@@ -136,7 +142,7 @@ export const organizationApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  listPositions: createRoute({
+  listPositions: createApiRoute(viewAccess, {
     method: 'get',
     path: '/org-units/{id}/positions',
     operationId: 'organizationListPositions',
@@ -153,7 +159,7 @@ export const organizationApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  createPosition: createRoute({
+  createPosition: createApiRoute(manageAccess, {
     method: 'post',
     path: '/org-units/{id}/positions',
     operationId: 'organizationCreatePosition',
@@ -175,7 +181,7 @@ export const organizationApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  updatePosition: createRoute({
+  updatePosition: createApiRoute(manageAccess, {
     method: 'patch',
     path: '/org-units/{id}/positions/{positionId}',
     operationId: 'organizationUpdatePosition',
@@ -197,7 +203,7 @@ export const organizationApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  removePosition: createRoute({
+  removePosition: createApiRoute(manageAccess, {
     method: 'delete',
     path: '/org-units/{id}/positions/{positionId}',
     operationId: 'organizationDeletePosition',
@@ -216,7 +222,7 @@ export const organizationApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  listMembers: createRoute({
+  listMembers: createApiRoute(viewAccess, {
     method: 'get',
     path: '/org-units/{id}/members',
     operationId: 'organizationListMembers',
@@ -234,7 +240,7 @@ export const organizationApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  listMemberCandidates: createRoute({
+  listMemberCandidates: createApiRoute(manageAccess, {
     method: 'get',
     path: '/member-candidates',
     operationId: 'organizationListMemberCandidates',
@@ -249,7 +255,7 @@ export const organizationApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  createMember: createRoute({
+  createMember: createApiRoute(manageAccess, {
     method: 'post',
     path: '/org-units/{id}/members',
     operationId: 'organizationCreateMember',
@@ -271,7 +277,7 @@ export const organizationApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  updateMember: createRoute({
+  updateMember: createApiRoute(manageAccess, {
     method: 'patch',
     path: '/org-units/{id}/members/{userId}',
     operationId: 'organizationUpdateMember',
@@ -292,7 +298,7 @@ export const organizationApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  removeMember: createRoute({
+  removeMember: createApiRoute(manageAccess, {
     method: 'delete',
     path: '/org-units/{id}/members/{userId}',
     operationId: 'organizationDeleteMember',
@@ -310,7 +316,7 @@ export const organizationApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  replaceMemberPositions: createRoute({
+  replaceMemberPositions: createApiRoute(manageAccess, {
     method: 'put',
     path: '/org-units/{id}/members/{userId}/positions',
     operationId: 'organizationReplaceMemberPositions',

@@ -1,4 +1,5 @@
 import type { AuthContext, TenantId } from '@jingwei/kernel'
+import type { UnscopedPermissionRequirement } from '@jingwei/module-sdk'
 
 /** Minimal IAM port consumed by Navigation; no IAM database types cross the boundary. */
 export interface IamAccess {
@@ -9,7 +10,6 @@ export interface IamAccess {
   /** Require a permission whose manifest definition has no data scope. */
   requireUnscopedPermission(
     context: AuthContext,
-    permission: string,
-    capability: string,
+    requirement: UnscopedPermissionRequirement,
   ): Promise<void>
 }

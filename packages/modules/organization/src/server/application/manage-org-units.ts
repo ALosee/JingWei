@@ -6,6 +6,7 @@ import type {
   OrganizationUnit,
   UpdateOrganizationUnit,
 } from '../../shared/index.js'
+import { organizationPermissionRequirements } from '../public/permission-requirements.js'
 import type { OrgUnitStore, OrgUnitOfWork } from './org-unit-store.js'
 
 function fail(code: string, message: string, status = 409): never {
@@ -22,18 +23,13 @@ export class ManageOrganizationUnits {
   ) {}
 
   private authorizeManage(context: AuthContext) {
-    return this.access.requireUnscopedPermission(
-      context,
-      'organization.manage',
-      'organization.core',
-    )
+    return this.access.requireUnscopedPermission(context, organizationPermissionRequirements.manage)
   }
 
   async tree(context: AuthContext) {
     const dataScope = await this.evaluator.requireScopedPermission({
       context,
-      capability: 'organization.core',
-      permission: 'organization.view',
+      requirement: organizationPermissionRequirements.view,
     })
     if (dataScope.type === 'ALL') return { units: await this.store.list(context.tenantId) }
     if (dataScope.type === 'SELF') return { units: [] }

@@ -1,4 +1,5 @@
 import type { AuthContext } from '@jingwei/kernel'
+import type { ScopedPermissionRequirement } from '@jingwei/module-sdk'
 
 export const dataScopeTypes = [
   'ALL',
@@ -24,8 +25,7 @@ export interface DataScopeGrant {
 
 export interface AuthorizationRequest {
   readonly context: AuthContext
-  readonly capability: string
-  readonly permission: string
+  readonly requirement: ScopedPermissionRequirement
 }
 
 /**

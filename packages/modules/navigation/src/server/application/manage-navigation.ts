@@ -1,5 +1,5 @@
 import { ApplicationError, newEntityId, type AuthContext } from '@jingwei/kernel'
-import type { IamAccess } from '@jingwei/module-iam/server/public'
+import { iamPermissionRequirements, type IamAccess } from '@jingwei/module-iam/server/public'
 import type { ModuleRegistry } from '@jingwei/module-sdk'
 
 import {
@@ -10,6 +10,7 @@ import {
   type SaveDraft,
   type SaveRoleGrants,
 } from '../../shared/index.js'
+import { navigationPermissionRequirements } from './authorization-requirements.js'
 import { createDefaultConfiguration } from './default-configuration.js'
 import type { NavigationStore, NavigationUnitOfWork } from './navigation-store.js'
 import { validateNavigation } from './validate-navigation.js'
@@ -28,7 +29,7 @@ export class ManageNavigation {
   ) {}
 
   private authorize(context: AuthContext, action: 'view' | 'manage' | 'publish') {
-    return this.access.requireUnscopedPermission(context, 'navigation.' + action, 'navigation.core')
+    return this.access.requireUnscopedPermission(context, navigationPermissionRequirements[action])
   }
   async list(context: AuthContext) {
     await this.authorize(context, 'view')
@@ -157,7 +158,7 @@ export class ManageNavigation {
   /** Replace the complete grant set, guarded by both functional permissions and the previously read code set. */
   async grantRole(context: AuthContext, roleId: string, input: SaveRoleGrants) {
     await this.authorize(context, 'manage')
-    await this.access.requireUnscopedPermission(context, 'iam.role.manage', 'iam.authorization')
+    await this.access.requireUnscopedPermission(context, iamPermissionRequirements.roleManage)
     await this.assertRole(context, roleId)
     return this.work.run(async (tx) => {
       const root = await tx.store.root(context.tenantId, true)

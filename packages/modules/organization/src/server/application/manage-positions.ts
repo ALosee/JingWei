@@ -7,6 +7,7 @@ import {
   type OrganizationPosition,
   type UpdateOrganizationPosition,
 } from '../../shared/index.js'
+import { organizationPermissionRequirements } from '../public/permission-requirements.js'
 import type { PositionStore, PositionUnitOfWork } from './position-store.js'
 
 function fail(code: string, message: string, status = 409): never {
@@ -23,19 +24,14 @@ export class ManageOrganizationPositions {
   ) {}
 
   private authorizeManage(context: AuthContext) {
-    return this.access.requireUnscopedPermission(
-      context,
-      'organization.manage',
-      'organization.core',
-    )
+    return this.access.requireUnscopedPermission(context, organizationPermissionRequirements.manage)
   }
 
   /** organization.view supports data scope, so view goes through the evaluator. */
   private async authorizeViewInScope(context: AuthContext, orgUnitId: string) {
     const dataScope = await this.evaluator.requireScopedPermission({
       context,
-      capability: 'organization.core',
-      permission: 'organization.view',
+      requirement: organizationPermissionRequirements.view,
     })
     if (!isOrgUnitInDataScope(orgUnitId, dataScope))
       fail('PERMISSION_DENIED', '没有该组织的数据访问范围', 403)

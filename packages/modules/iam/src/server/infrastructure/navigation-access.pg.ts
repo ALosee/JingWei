@@ -1,9 +1,11 @@
 import type { Kysely } from 'kysely'
 
 import { ApplicationError, type AuthContext, type TenantId } from '@jingwei/kernel'
-import type { ModuleRegistry } from '@jingwei/module-sdk'
+import type { ModuleRegistry, UnscopedPermissionRequirement } from '@jingwei/module-sdk'
+import type { AppLogger } from '@jingwei/observability'
 
 import type { IamAccess } from '../public/navigation-access.js'
+import { observeAuthorization } from './authorization-telemetry.js'
 
 interface AccessDatabase {
   'iam.role': { id: string; tenant_id: string; code: string; name: string; status: string }
@@ -28,10 +30,9 @@ function permissionDenied(): ApplicationError {
 /** Reject programming errors before any grant query can accidentally authorize a scoped permission. */
 export function assertUnscopedPermissionAvailable(
   registry: ModuleRegistry,
-  permission: string,
-  capability: string,
+  requirement: UnscopedPermissionRequirement,
 ): void {
-  const definition = registry.permission(permission)
+  const definition = registry.permission(requirement.permission)
   if (definition?.dataScope !== undefined) {
     throw new ApplicationError({
       code: 'AUTHZ_SCOPE_PERMISSION_REQUIRES_EVALUATOR',
@@ -39,7 +40,9 @@ export function assertUnscopedPermissionAvailable(
       status: 500,
     })
   }
-  if (definition === null || !registry.hasCapability(capability)) throw permissionDenied()
+  if (definition === null || !registry.hasCapability(requirement.capability)) {
+    throw permissionDenied()
+  }
 }
 
 /** Live role reads avoid stale role grants embedded in the session. No is_super bypass. */
@@ -47,6 +50,7 @@ export class PostgresIamAccess implements IamAccess {
   constructor(
     private readonly database: Kysely<AccessDatabase>,
     private readonly registry: ModuleRegistry,
+    private readonly logger?: AppLogger,
   ) {}
   async activeRoleIds(context: AuthContext): Promise<string[]> {
     const rows = await this.database
@@ -73,36 +77,62 @@ export class PostgresIamAccess implements IamAccess {
       .execute()
   }
   async effectivePermissionCodes(context: AuthContext): Promise<string[]> {
-    const roles = await this.activeRoleIds(context)
-    if (roles.length === 0) return []
     const rows = await this.database
-      .selectFrom('iam.role_permission')
-      .select('permission_code')
-      .where('tenant_id', '=', context.tenantId)
-      .where('role_id', 'in', roles)
+      .selectFrom('iam.user as u')
+      .innerJoin('iam.user_role as ur', (join) =>
+        join.onRef('ur.user_id', '=', 'u.id').onRef('ur.tenant_id', '=', 'u.tenant_id'),
+      )
+      .innerJoin('iam.role as r', (join) =>
+        join.onRef('r.id', '=', 'ur.role_id').onRef('r.tenant_id', '=', 'ur.tenant_id'),
+      )
+      .innerJoin('iam.role_permission as rp', (join) =>
+        join.onRef('rp.role_id', '=', 'r.id').onRef('rp.tenant_id', '=', 'r.tenant_id'),
+      )
+      .select('rp.permission_code')
+      .distinct()
+      .where('u.tenant_id', '=', context.tenantId)
+      .where('u.id', '=', context.userId)
+      .where('u.status', '=', 'ACTIVE')
+      .where('r.status', '=', 'ACTIVE')
       .execute()
     const enabled = new Set(this.registry.permissions().map((permission) => permission.code))
-    return [...new Set(rows.map((row) => row.permission_code))]
+    return rows
+      .map((row) => row.permission_code)
       .filter((code) => enabled.has(code))
       .sort((left, right) => left.localeCompare(right))
   }
   async requireUnscopedPermission(
     context: AuthContext,
-    permission: string,
-    capability: string,
+    requirement: UnscopedPermissionRequirement,
   ): Promise<void> {
-    assertUnscopedPermissionAvailable(this.registry, permission, capability)
-    const roles = await this.activeRoleIds(context)
-    if (roles.length > 0) {
-      const grant = await this.database
-        .selectFrom('iam.role_permission')
-        .select('role_id')
-        .where('tenant_id', '=', context.tenantId)
-        .where('role_id', 'in', roles)
-        .where('permission_code', '=', permission)
-        .executeTakeFirst()
-      if (grant !== undefined) return
-    }
-    throw permissionDenied()
+    return observeAuthorization({
+      logger: this.logger,
+      context,
+      permission: requirement.permission,
+      evaluator: 'UNSCOPED',
+      evaluate: async () => {
+        assertUnscopedPermissionAvailable(this.registry, requirement)
+        const grant = await this.database
+          .selectFrom('iam.user as u')
+          .innerJoin('iam.user_role as ur', (join) =>
+            join.onRef('ur.user_id', '=', 'u.id').onRef('ur.tenant_id', '=', 'u.tenant_id'),
+          )
+          .innerJoin('iam.role as r', (join) =>
+            join.onRef('r.id', '=', 'ur.role_id').onRef('r.tenant_id', '=', 'ur.tenant_id'),
+          )
+          .innerJoin('iam.role_permission as rp', (join) =>
+            join.onRef('rp.role_id', '=', 'r.id').onRef('rp.tenant_id', '=', 'r.tenant_id'),
+          )
+          .select('rp.role_id')
+          .where('u.tenant_id', '=', context.tenantId)
+          .where('u.id', '=', context.userId)
+          .where('u.status', '=', 'ACTIVE')
+          .where('r.status', '=', 'ACTIVE')
+          .where('rp.permission_code', '=', requirement.permission)
+          .executeTakeFirst()
+        if (grant !== undefined) return
+        throw permissionDenied()
+      },
+    })
   }
 }

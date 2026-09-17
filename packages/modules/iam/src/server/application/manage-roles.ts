@@ -13,6 +13,7 @@ import type {
 } from '../../shared/index.js'
 import type { OrganizationalScopeFacts } from '../public/authorization.js'
 import type { IamAccess } from '../public/navigation-access.js'
+import { iamPermissionRequirements } from '../public/permission-requirements.js'
 import type { ReadPermissionCatalog } from './permission-catalog.js'
 import type { RoleStore, RoleUnitOfWork } from './role-store.js'
 
@@ -32,7 +33,10 @@ export class ManageIamRoles {
   ) {}
 
   private authorize(context: AuthContext, action: 'view' | 'manage') {
-    return this.access.requireUnscopedPermission(context, 'iam.role.' + action, 'iam.authorization')
+    return this.access.requireUnscopedPermission(
+      context,
+      action === 'view' ? iamPermissionRequirements.roleView : iamPermissionRequirements.roleManage,
+    )
   }
 
   async list(context: AuthContext) {

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { newRequestId, newSessionId, newTenantId, newUserId } from '@jingwei/kernel'
+import { iamPermissionRequirements } from '@jingwei/module-iam/server/public'
 import type { IamAccess } from '@jingwei/module-iam/server/public'
 
 import { ReadOrganizationalScopeOptions } from './read-scope-options.js'
@@ -55,8 +56,7 @@ describe('ReadOrganizationalScopeOptions', () => {
 
     expect(requireUnscopedPermission).toHaveBeenCalledWith(
       context,
-      'iam.role.manage',
-      'iam.authorization',
+      iamPermissionRequirements.roleManage,
     )
     expect(result.units.map(({ code }) => code)).toEqual(['enabled'])
   })

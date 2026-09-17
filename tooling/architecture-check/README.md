@@ -32,6 +32,7 @@ pnpm architecture:check
 | `module-no-process-env`            | 模块自行读取 process.env，而非接收显式配置                                                      |
 | `source-controlled-ui`             | package dependency 或 authored source 引入 `@soybeanjs/ui` styled 包                            |
 | `ui-private-import`                | `#ui/*` 生成器 alias 被 `@jingwei/ui` 之外的源码导入                                            |
+| `api-authorization-contract`       | Module OpenAPI route 绕过授权契约工厂，导致接口缺少机器可读授权声明                             |
 
 检查前还会把全部模块组成临时 Edition，由 `resolveEdition` 发现同步依赖环。
 

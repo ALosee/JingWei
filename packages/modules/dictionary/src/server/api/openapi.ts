@@ -1,6 +1,7 @@
-import { createRoute, z } from '@hono/zod-openapi'
+import { z } from '@hono/zod-openapi'
 
 import { apiErrorSchema, openApiSecurityNames } from '@jingwei/http-contract'
+import { createApiRoute, permissionApiAccess } from '@jingwei/module-sdk/server'
 
 import {
   createDictionaryCategorySchema,
@@ -15,6 +16,7 @@ import {
   updateDictionaryItemSchema,
   updateDictionaryTypeSchema,
 } from '../../shared/index.js'
+import { dictionaryPermissionRequirements } from '../application/authorization-requirements.js'
 
 const json = <TSchema>(schema: TSchema) => ({ 'application/json': { schema } })
 const error = (description: string) => ({ description, content: json(apiErrorSchema) })
@@ -27,9 +29,11 @@ const mutation = [
 ]
 const idParam = z.object({ id: z.uuid() })
 const itemParam = z.object({ id: z.uuid(), itemId: z.uuid() })
+const viewAccess = permissionApiAccess(dictionaryPermissionRequirements.view)
+const manageAccess = permissionApiAccess(dictionaryPermissionRequirements.manage)
 
 export const dictionaryApiRoutes = {
-  catalog: createRoute({
+  catalog: createApiRoute(viewAccess, {
     method: 'get',
     path: '/catalog',
     operationId: 'dictionaryGetCatalog',
@@ -43,7 +47,7 @@ export const dictionaryApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  detail: createRoute({
+  detail: createApiRoute(viewAccess, {
     method: 'get',
     path: '/types/{id}',
     operationId: 'dictionaryGetType',
@@ -60,7 +64,7 @@ export const dictionaryApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  detailByCode: createRoute({
+  detailByCode: createApiRoute(viewAccess, {
     method: 'get',
     path: '/types/by-code/{code}',
     operationId: 'dictionaryGetTypeByCode',
@@ -77,7 +81,7 @@ export const dictionaryApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  createCategory: createRoute({
+  createCategory: createApiRoute(manageAccess, {
     method: 'post',
     path: '/categories',
     operationId: 'dictionaryCreateCategory',
@@ -95,7 +99,7 @@ export const dictionaryApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  updateCategory: createRoute({
+  updateCategory: createApiRoute(manageAccess, {
     method: 'patch',
     path: '/categories/{id}',
     operationId: 'dictionaryUpdateCategory',
@@ -117,7 +121,7 @@ export const dictionaryApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  deleteCategory: createRoute({
+  deleteCategory: createApiRoute(manageAccess, {
     method: 'delete',
     path: '/categories/{id}',
     operationId: 'dictionaryDeleteCategory',
@@ -135,7 +139,7 @@ export const dictionaryApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  createType: createRoute({
+  createType: createApiRoute(manageAccess, {
     method: 'post',
     path: '/types',
     operationId: 'dictionaryCreateType',
@@ -154,7 +158,7 @@ export const dictionaryApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  updateType: createRoute({
+  updateType: createApiRoute(manageAccess, {
     method: 'patch',
     path: '/types/{id}',
     operationId: 'dictionaryUpdateType',
@@ -176,7 +180,7 @@ export const dictionaryApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  createItem: createRoute({
+  createItem: createApiRoute(manageAccess, {
     method: 'post',
     path: '/types/{id}/items',
     operationId: 'dictionaryCreateItem',
@@ -198,7 +202,7 @@ export const dictionaryApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  updateItem: createRoute({
+  updateItem: createApiRoute(manageAccess, {
     method: 'patch',
     path: '/types/{id}/items/{itemId}',
     operationId: 'dictionaryUpdateItem',

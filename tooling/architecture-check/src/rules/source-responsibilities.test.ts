@@ -152,4 +152,20 @@ describe('source responsibility guardrails', () => {
       ),
     ).toEqual([])
   })
+
+  it('requires module OpenAPI routes to use the authorization-aware factory', () => {
+    const file = 'packages/modules/iam/src/server/api/openapi.ts'
+    expect(
+      codes(
+        file,
+        "import { createRoute } from '@hono/zod-openapi'; export const route = createRoute({})",
+      ),
+    ).toContain('api-authorization-contract')
+    expect(
+      codes(
+        file,
+        "import { createApiRoute } from '@jingwei/module-sdk/server'; export const route = createApiRoute(access, config)",
+      ),
+    ).not.toContain('api-authorization-contract')
+  })
 })

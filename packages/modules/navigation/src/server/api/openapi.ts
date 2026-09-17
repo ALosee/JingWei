@@ -1,6 +1,13 @@
-import { createRoute, z } from '@hono/zod-openapi'
+import { z } from '@hono/zod-openapi'
 
 import { apiErrorSchema, openApiSecurityNames } from '@jingwei/http-contract'
+import { iamPermissionRequirements } from '@jingwei/module-iam/server/public'
+import {
+  authenticatedApiAccess,
+  createApiRoute,
+  permissionApiAccess,
+  publicApiAccess,
+} from '@jingwei/module-sdk/server'
 
 import {
   adminNavigationSchema,
@@ -13,6 +20,7 @@ import {
   validationResultSchema,
   versionSchema,
 } from '../../shared/index.js'
+import { navigationPermissionRequirements } from '../application/authorization-requirements.js'
 
 const json = <TSchema>(schema: TSchema) => ({
   'application/json': { schema },
@@ -30,9 +38,16 @@ const mutation = [
 ]
 const versionParam = z.object({ id: z.uuid() })
 const roleParam = z.object({ roleId: z.uuid() })
+const viewAccess = permissionApiAccess(navigationPermissionRequirements.view)
+const manageAccess = permissionApiAccess(navigationPermissionRequirements.manage)
+const publishAccess = permissionApiAccess(navigationPermissionRequirements.publish)
+const roleGrantAccess = permissionApiAccess(
+  navigationPermissionRequirements.manage,
+  iamPermissionRequirements.roleManage,
+)
 
 export const navigationApiRoutes = {
-  bootstrap: createRoute({
+  bootstrap: createApiRoute(publicApiAccess, {
     method: 'get',
     path: '/bootstrap',
     operationId: 'navigationGetBootstrap',
@@ -49,7 +64,7 @@ export const navigationApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  me: createRoute({
+  me: createApiRoute(authenticatedApiAccess, {
     method: 'get',
     path: '/me',
     operationId: 'navigationGetMine',
@@ -63,7 +78,7 @@ export const navigationApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  admin: createRoute({
+  admin: createApiRoute(viewAccess, {
     method: 'get',
     path: '/admin',
     operationId: 'navigationGetAdminOverview',
@@ -77,7 +92,7 @@ export const navigationApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  catalog: createRoute({
+  catalog: createApiRoute(viewAccess, {
     method: 'get',
     path: '/catalog',
     operationId: 'navigationGetCatalog',
@@ -91,7 +106,7 @@ export const navigationApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  createDraft: createRoute({
+  createDraft: createApiRoute(manageAccess, {
     method: 'post',
     path: '/drafts',
     operationId: 'navigationCreateDraft',
@@ -114,7 +129,7 @@ export const navigationApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  getVersion: createRoute({
+  getVersion: createApiRoute(viewAccess, {
     method: 'get',
     path: '/versions/{id}',
     operationId: 'navigationGetVersion',
@@ -131,7 +146,7 @@ export const navigationApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  saveVersion: createRoute({
+  saveVersion: createApiRoute(manageAccess, {
     method: 'put',
     path: '/versions/{id}',
     operationId: 'navigationSaveVersion',
@@ -154,7 +169,7 @@ export const navigationApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  validateVersion: createRoute({
+  validateVersion: createApiRoute(viewAccess, {
     method: 'post',
     path: '/versions/{id}/validate',
     operationId: 'navigationValidateVersion',
@@ -171,7 +186,7 @@ export const navigationApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  publishVersion: createRoute({
+  publishVersion: createApiRoute(publishAccess, {
     method: 'post',
     path: '/versions/{id}/publish',
     operationId: 'navigationPublishVersion',
@@ -194,7 +209,7 @@ export const navigationApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  rollbackVersion: createRoute({
+  rollbackVersion: createApiRoute(publishAccess, {
     method: 'post',
     path: '/versions/{id}/rollback',
     operationId: 'navigationRollbackVersion',
@@ -217,7 +232,7 @@ export const navigationApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  deleteDraft: createRoute({
+  deleteDraft: createApiRoute(manageAccess, {
     method: 'delete',
     path: '/versions/{id}',
     operationId: 'navigationDeleteDraft',
@@ -238,7 +253,7 @@ export const navigationApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  getRoleGrants: createRoute({
+  getRoleGrants: createApiRoute(viewAccess, {
     method: 'get',
     path: '/roles/{roleId}/grants',
     operationId: 'navigationGetRoleGrants',
@@ -255,7 +270,7 @@ export const navigationApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  saveRoleGrants: createRoute({
+  saveRoleGrants: createApiRoute(roleGrantAccess, {
     method: 'put',
     path: '/roles/{roleId}/grants',
     operationId: 'navigationSaveRoleGrants',

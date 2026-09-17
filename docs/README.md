@@ -131,3 +131,4 @@
 - [0007](./adr/0007-unified-navigation-and-role-grants.md)：统一五类导航节点、数据库布局配置与角色 navigation code 授权
 - [0008](./adr/0008-thin-entrypoints-and-owned-workflows.md)：调用式入口、装配与功能流程分离、状态所有权和自动职责检查
 - [0009](./adr/0009-openapi-contract-and-soybean-fetch.md)：Zod OpenAPI 单一契约、Scalar 文档与 Soybean Fetch 模块客户端
+- [0015](./adr/0015-declare-http-authorization-contracts.md)：接口授权契约、启动校验与授权评估观测

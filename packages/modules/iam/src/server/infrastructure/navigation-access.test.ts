@@ -41,14 +41,22 @@ function registry(): ModuleRegistry {
 describe('unscoped authorization entry', () => {
   it('accepts permissions without data scope metadata', () => {
     expect(() =>
-      assertUnscopedPermissionAvailable(registry(), 'sample.manage', 'sample.core'),
+      assertUnscopedPermissionAvailable(registry(), {
+        permission: 'sample.manage',
+        capability: 'sample.core',
+        scope: 'UNSCOPED',
+      }),
     ).not.toThrow()
   })
 
   it('reports an explicit programming error for scoped permissions', () => {
     const error = (() => {
       try {
-        assertUnscopedPermissionAvailable(registry(), 'sample.view', 'sample.core')
+        assertUnscopedPermissionAvailable(registry(), {
+          permission: 'sample.view',
+          capability: 'sample.core',
+          scope: 'UNSCOPED',
+        })
         return null
       } catch (cause) {
         return cause

@@ -1,7 +1,7 @@
 import { OpenAPIHono } from '@hono/zod-openapi'
 import { Scalar } from '@scalar/hono-api-reference'
 
-import type { ServerAppEnv } from '@jingwei/module-sdk/server'
+import { assertApiAuthorizationContracts, type ServerAppEnv } from '@jingwei/module-sdk/server'
 
 import type { Runtime } from './bootstrap/runtime.js'
 import { createGeneratedServerModules } from './generated/modules.js'
@@ -22,6 +22,7 @@ export async function createApp(runtime: Runtime) {
     api.route(installed.basePath, installed.routes)
   }
   app.route('/api/v1', api)
+  assertApiAuthorizationContracts(app.openAPIRegistry.definitions, runtime.moduleRegistry)
   app.doc31('/openapi/v1.json', openApiDocumentConfig)
   app.get(
     '/docs',

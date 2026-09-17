@@ -1,5 +1,5 @@
 import type { AuthContext } from '@jingwei/kernel'
-import type { IamAccess } from '@jingwei/module-iam/server/public'
+import { iamPermissionRequirements, type IamAccess } from '@jingwei/module-iam/server/public'
 
 import type { OrgUnitStore } from './org-unit-store.js'
 
@@ -11,7 +11,7 @@ export class ReadOrganizationalScopeOptions {
   ) {}
 
   async list(context: AuthContext) {
-    await this.access.requireUnscopedPermission(context, 'iam.role.manage', 'iam.authorization')
+    await this.access.requireUnscopedPermission(context, iamPermissionRequirements.roleManage)
     const units = await this.store.list(context.tenantId)
     return {
       units: units

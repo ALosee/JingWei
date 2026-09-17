@@ -16,7 +16,7 @@ export const serverModule: ServerModule = {
   install(context) {
     const database = context.database.view<NavigationDatabase>()
     const store = new PostgresNavigationStore(database)
-    const access = createIamAccess(context.database, context.moduleRegistry)
+    const access = createIamAccess(context.database, context.moduleRegistry, context.logger)
     const manage = new ManageNavigation(
       store,
       new PostgresNavigationUnitOfWork(database),

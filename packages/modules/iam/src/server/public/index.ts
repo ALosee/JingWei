@@ -1,5 +1,6 @@
 export * from './authorization.js'
 export * from './navigation-access.js'
+export * from './permission-requirements.js'
 export * from './user-directory.js'
 export { createIamAccess } from './create-access.js'
 export { createIamUserDirectory } from './create-user-directory.js'

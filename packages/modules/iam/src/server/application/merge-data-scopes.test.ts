@@ -1,7 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
 import type { OrganizationalScopeFacts } from '../public/authorization.js'
-import { mergeDataScopes, type ScopeGrantInput } from './merge-data-scopes.js'
+import {
+  InvalidDataScopeGrantError,
+  mergeDataScopes,
+  type ScopeGrantInput,
+} from './merge-data-scopes.js'
 
 function createPort(options?: {
   members?: readonly string[]
@@ -79,7 +83,7 @@ describe('mergeDataScopes', () => {
     const { port, calls } = createPort({ valid: ['org-a'] })
     await expect(
       mergeDataScopes([grant('CUSTOM', ['org-a', 'other-tenant-org'])], port, 't', 'u'),
-    ).rejects.toThrow('unknown organization unit')
+    ).rejects.toBeInstanceOf(InvalidDataScopeGrantError)
     expect(calls.valid).toBe(1)
   })
 

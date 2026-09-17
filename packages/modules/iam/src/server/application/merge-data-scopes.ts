@@ -6,6 +6,13 @@ export interface ScopeGrantInput {
   readonly organizationIds: readonly string[]
 }
 
+export class InvalidDataScopeGrantError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'InvalidDataScopeGrantError'
+  }
+}
+
 const emptyGrant: DataScopeGrant = {
   type: 'CUSTOM',
   organizationIds: [],
@@ -55,7 +62,9 @@ export async function mergeDataScopes(
     const requestedIds = [...customIds]
     const validIds = new Set(await port.validOrgUnitIds(tenantId, requestedIds))
     if (requestedIds.some((id) => !validIds.has(id)))
-      throw new Error('CUSTOM data scope contains an unknown organization unit')
+      throw new InvalidDataScopeGrantError(
+        'CUSTOM data scope contains an unknown organization unit',
+      )
     for (const id of requestedIds) orgIds.add(id)
   }
 

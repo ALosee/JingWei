@@ -27,6 +27,7 @@
     "@jingwei/http-contract": "workspace:*",
     "@jingwei/kernel": "workspace:*",
     "@jingwei/module-sdk": "workspace:*",
+    "@jingwei/observability": "workspace:*",
     "@jingwei/ui": "workspace:*",
     "hono": "catalog:",
     "kysely": "catalog:",

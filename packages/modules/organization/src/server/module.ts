@@ -39,13 +39,14 @@ export function createOrganizationServerModule(
     install(context) {
       const database = context.database.view<OrganizationDatabase>()
       const store = new PostgresOrgUnitStore(database)
-      const access = createIamAccess(context.database, context.moduleRegistry)
+      const access = createIamAccess(context.database, context.moduleRegistry, context.logger)
       const organizationalScopeFacts =
         dependencies.organizationalScopeFacts ?? createOrganizationalScopeFacts(context.database)
       const evaluator = createAuthorizationEvaluator(
         context.database,
         context.moduleRegistry,
         organizationalScopeFacts,
+        context.logger,
       )
       const manage = new ManageOrganizationUnits(
         store,

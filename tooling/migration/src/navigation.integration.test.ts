@@ -10,12 +10,15 @@ import {
   refreshTokenCookieName,
 } from '@jingwei/auth/shared'
 import { StaticMigrationProvider } from '@jingwei/database'
-import { newEntityId, newTenantId, newUserId } from '@jingwei/kernel'
+import { newEntityId, newRequestId, newTenantId, newUserId } from '@jingwei/kernel'
+import { createAuthorizationEvaluator } from '@jingwei/module-iam/server/public'
 import {
   navigationResponseSchema,
   versionSchema,
   type NavigationVersion,
 } from '@jingwei/module-navigation/shared'
+import { organizationPermissionRequirements } from '@jingwei/module-organization/server/public'
+import { organizationTreeSchema } from '@jingwei/module-organization/shared'
 
 import { createApp } from '../../../apps/server/src/app.js'
 import { createRuntime, type Runtime } from '../../../apps/server/src/bootstrap/runtime.js'
@@ -115,6 +118,14 @@ describe.skipIf(databaseUrl === undefined)('real PostgreSQL navigation/API', () 
       method,
       headers,
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+    })
+  }
+  async function requestOrganization(path: string, session: CreatedSession) {
+    return app.request('/api/v1/organization' + path, {
+      headers: {
+        origin: 'http://localhost:5173',
+        cookie: accessTokenCookieName + '=' + session.accessToken,
+      },
     })
   }
   async function fixture() {
@@ -366,6 +377,96 @@ describe.skipIf(databaseUrl === undefined)('real PostgreSQL navigation/API', () 
     })
     expect(malformed.status).toBe(400)
     expect(await malformed.json()).toMatchObject({ code: 'INVALID_REQUEST' })
+  })
+
+  it('evaluates ALL and CUSTOM organization scopes through live authorization joins', async () => {
+    const f = await fixture()
+    const db = runtime.database.view()
+    const rootId = newEntityId()
+    const childId = newEntityId()
+    const hiddenId = newEntityId()
+    await sql`INSERT INTO organization.org_unit
+      (id, tenant_id, parent_id, code, name, type, status, sort_order, created_at, updated_at)
+      VALUES
+      (${rootId}, ${f.tenantId}, NULL, 'root', 'Root', 'COMPANY', 'ENABLED', 0, now(), now()),
+      (${childId}, ${f.tenantId}, ${rootId}, 'child', 'Child', 'DEPARTMENT', 'ENABLED', 0, now(), now()),
+      (${hiddenId}, ${f.tenantId}, NULL, 'hidden', 'Hidden', 'DEPARTMENT', 'ENABLED', 1, now(), now())`.execute(
+      db,
+    )
+
+    const all = await requestOrganization('/org-units', f.admin.session)
+    expect(all.status).toBe(200)
+    expect(
+      organizationTreeSchema
+        .parse(await all.json())
+        .units.map((unit) => unit.code)
+        .sort(),
+    ).toEqual(['child', 'hidden', 'root'])
+
+    await sql`UPDATE iam.role_permission
+      SET scope_type = 'CUSTOM'
+      WHERE tenant_id = ${f.tenantId}
+        AND role_id = ${f.admin.roleId}
+        AND permission_code = 'organization.view'`.execute(db)
+    await sql`INSERT INTO iam.role_permission_org_scope
+      (tenant_id, role_id, permission_code, org_unit_id)
+      VALUES (${f.tenantId}, ${f.admin.roleId}, 'organization.view', ${childId})`.execute(db)
+
+    const custom = await requestOrganization('/org-units', f.admin.session)
+    expect(custom.status).toBe(200)
+    expect(
+      organizationTreeSchema.parse(await custom.json()).units.map((unit) => unit.code),
+    ).toEqual(['child', 'root'])
+
+    const factsFailure = new Error('organization facts unavailable')
+    const failingEvaluator = createAuthorizationEvaluator(
+      runtime.database,
+      runtime.moduleRegistry,
+      {
+        memberOrgUnitIds: () => Promise.resolve([]),
+        descendantsOf: () => Promise.resolve([]),
+        validOrgUnitIds: () => Promise.reject(factsFailure),
+      },
+    )
+    await expect(
+      failingEvaluator.requireScopedPermission({
+        context: {
+          requestId: newRequestId(),
+          tenantId: f.tenantId,
+          userId: f.admin.userId,
+          sessionId: f.admin.session.id,
+          roleIds: [],
+        },
+        requirement: organizationPermissionRequirements.view,
+      }),
+    ).rejects.toBe(factsFailure)
+
+    const otherTenantId = newTenantId()
+    const foreignOrgId = newEntityId()
+    await sql`INSERT INTO platform.tenant
+      (id, code, name, status, default_locale, default_timezone, default_currency, settings, created_at, updated_at)
+      VALUES (${otherTenantId}, ${'foreign-' + otherTenantId}, 'Foreign Tenant', 'ACTIVE', 'zh-CN', 'UTC', 'CNY', '{}', now(), now())`.execute(
+      db,
+    )
+    await sql`INSERT INTO organization.org_unit
+      (id, tenant_id, parent_id, code, name, type, status, sort_order, created_at, updated_at)
+      VALUES (${foreignOrgId}, ${otherTenantId}, NULL, 'foreign', 'Foreign', 'COMPANY', 'ENABLED', 0, now(), now())`.execute(
+      db,
+    )
+    await sql`INSERT INTO iam.role_permission_org_scope
+      (tenant_id, role_id, permission_code, org_unit_id)
+      VALUES (${f.tenantId}, ${f.admin.roleId}, 'organization.view', ${foreignOrgId})`.execute(db)
+
+    const invalidCustom = await requestOrganization('/org-units', f.admin.session)
+    expect(invalidCustom.status).toBe(403)
+    expect(await invalidCustom.json()).toMatchObject({ code: 'PERMISSION_DENIED' })
+
+    await sql`DELETE FROM iam.role_permission_org_scope
+      WHERE role_id = ${f.admin.roleId} AND org_unit_id = ${foreignOrgId}`.execute(db)
+    await sql`UPDATE iam.role SET status = 'DISABLED' WHERE id = ${f.admin.roleId}`.execute(db)
+    const disabledRole = await requestOrganization('/org-units', f.admin.session)
+    expect(disabledRole.status).toBe(403)
+    expect(await disabledRole.json()).toMatchObject({ code: 'PERMISSION_DENIED' })
   })
 
   it('saves defaults/layout in draft, rejects stale writes and keeps published versions immutable', async () => {

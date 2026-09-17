@@ -1,6 +1,13 @@
-import { createRoute, z } from '@hono/zod-openapi'
+import { z } from '@hono/zod-openapi'
 
 import { apiErrorSchema, openApiSecurityNames } from '@jingwei/http-contract'
+import {
+  authenticatedApiAccess,
+  createApiRoute,
+  permissionApiAccess,
+  publicApiAccess,
+  refreshTokenApiAccess,
+} from '@jingwei/module-sdk/server'
 
 import {
   accountProfileSchema,
@@ -27,6 +34,7 @@ import {
   updateManagedUserSchema,
   userRoleListSchema,
 } from '../../shared/index.js'
+import { iamPermissionRequirements } from '../public/permission-requirements.js'
 
 const json = <TSchema>(schema: TSchema) => ({
   'application/json': { schema },
@@ -44,9 +52,13 @@ const mutation = [
 ]
 const roleParam = z.object({ roleId: z.uuid() })
 const userParam = z.object({ userId: z.uuid() })
+const roleViewAccess = permissionApiAccess(iamPermissionRequirements.roleView)
+const roleManageAccess = permissionApiAccess(iamPermissionRequirements.roleManage)
+const userViewAccess = permissionApiAccess(iamPermissionRequirements.userView)
+const userManageAccess = permissionApiAccess(iamPermissionRequirements.userManage)
 
 export const iamApiRoutes = {
-  createSession: createRoute({
+  createSession: createApiRoute(publicApiAccess, {
     method: 'post',
     path: '/sessions',
     operationId: 'iamCreateSession',
@@ -69,7 +81,7 @@ export const iamApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  getSession: createRoute({
+  getSession: createApiRoute(publicApiAccess, {
     method: 'get',
     path: '/session',
     operationId: 'iamGetSession',
@@ -81,7 +93,7 @@ export const iamApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  refreshSession: createRoute({
+  refreshSession: createApiRoute(refreshTokenApiAccess, {
     method: 'post',
     path: '/sessions/refresh',
     operationId: 'iamRefreshSession',
@@ -103,7 +115,7 @@ export const iamApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  deleteSession: createRoute({
+  deleteSession: createApiRoute(authenticatedApiAccess, {
     method: 'delete',
     path: '/sessions/current',
     operationId: 'iamDeleteCurrentSession',
@@ -117,7 +129,7 @@ export const iamApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  getAccount: createRoute({
+  getAccount: createApiRoute(authenticatedApiAccess, {
     method: 'get',
     path: '/account',
     operationId: 'iamGetAccount',
@@ -132,7 +144,7 @@ export const iamApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  updateAccount: createRoute({
+  updateAccount: createApiRoute(authenticatedApiAccess, {
     method: 'patch',
     path: '/account',
     operationId: 'iamUpdateAccount',
@@ -154,7 +166,7 @@ export const iamApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  changePassword: createRoute({
+  changePassword: createApiRoute(authenticatedApiAccess, {
     method: 'post',
     path: '/account/password',
     operationId: 'iamChangeAccountPassword',
@@ -177,7 +189,7 @@ export const iamApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  getAccountRoles: createRoute({
+  getAccountRoles: createApiRoute(authenticatedApiAccess, {
     method: 'get',
     path: '/account/roles',
     operationId: 'iamGetAccountRoles',
@@ -190,7 +202,7 @@ export const iamApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  listRoles: createRoute({
+  listRoles: createApiRoute(roleViewAccess, {
     method: 'get',
     path: '/roles',
     operationId: 'iamListRoles',
@@ -204,7 +216,7 @@ export const iamApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  createRole: createRoute({
+  createRole: createApiRoute(roleManageAccess, {
     method: 'post',
     path: '/roles',
     operationId: 'iamCreateRole',
@@ -225,7 +237,7 @@ export const iamApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  getRole: createRoute({
+  getRole: createApiRoute(roleViewAccess, {
     method: 'get',
     path: '/roles/{roleId}',
     operationId: 'iamGetRole',
@@ -242,7 +254,7 @@ export const iamApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  updateRole: createRoute({
+  updateRole: createApiRoute(roleManageAccess, {
     method: 'patch',
     path: '/roles/{roleId}',
     operationId: 'iamUpdateRole',
@@ -264,7 +276,7 @@ export const iamApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  deleteRole: createRoute({
+  deleteRole: createApiRoute(roleManageAccess, {
     method: 'delete',
     path: '/roles/{roleId}',
     operationId: 'iamDeleteRole',
@@ -283,7 +295,7 @@ export const iamApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  listPermissionCatalog: createRoute({
+  listPermissionCatalog: createApiRoute(roleViewAccess, {
     method: 'get',
     path: '/permissions',
     operationId: 'iamListPermissionCatalog',
@@ -297,7 +309,7 @@ export const iamApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  listRolePermissions: createRoute({
+  listRolePermissions: createApiRoute(roleViewAccess, {
     method: 'get',
     path: '/roles/{roleId}/permissions',
     operationId: 'iamListRolePermissions',
@@ -314,7 +326,7 @@ export const iamApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  replaceRolePermissions: createRoute({
+  replaceRolePermissions: createApiRoute(roleManageAccess, {
     method: 'put',
     path: '/roles/{roleId}/permissions',
     operationId: 'iamReplaceRolePermissions',
@@ -336,7 +348,7 @@ export const iamApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  listUsers: createRoute({
+  listUsers: createApiRoute(userViewAccess, {
     method: 'get',
     path: '/users',
     operationId: 'iamListUsers',
@@ -350,7 +362,7 @@ export const iamApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  createUser: createRoute({
+  createUser: createApiRoute(userManageAccess, {
     method: 'post',
     path: '/users',
     operationId: 'iamCreateUser',
@@ -371,7 +383,7 @@ export const iamApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  getUser: createRoute({
+  getUser: createApiRoute(userViewAccess, {
     method: 'get',
     path: '/users/{userId}',
     operationId: 'iamGetUser',
@@ -388,7 +400,7 @@ export const iamApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  updateUser: createRoute({
+  updateUser: createApiRoute(userManageAccess, {
     method: 'patch',
     path: '/users/{userId}',
     operationId: 'iamUpdateUser',
@@ -411,7 +423,7 @@ export const iamApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  resetUserPassword: createRoute({
+  resetUserPassword: createApiRoute(userManageAccess, {
     method: 'post',
     path: '/users/{userId}/password',
     operationId: 'iamResetUserPassword',
@@ -433,7 +445,7 @@ export const iamApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  listUserRoles: createRoute({
+  listUserRoles: createApiRoute(userViewAccess, {
     method: 'get',
     path: '/users/{userId}/roles',
     operationId: 'iamListUserRoles',
@@ -450,7 +462,7 @@ export const iamApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
-  replaceUserRoles: createRoute({
+  replaceUserRoles: createApiRoute(userManageAccess, {
     method: 'put',
     path: '/users/{userId}/roles',
     operationId: 'iamReplaceUserRoles',
