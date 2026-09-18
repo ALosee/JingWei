@@ -122,9 +122,13 @@ export type {
   SwitchShape,
   SwitchSlots,
 } from './components/switch/index.js'
+export {
+  STextarea as Textarea,
+  STextareaClear as TextareaClear,
+} from './components/textarea/index.js'
+export type { TextareaEmits, TextareaProps, TextareaSlots } from './components/textarea/index.js'
 export { SConfigProvider as ConfigProvider, useTheme } from './components/config-provider/index.js'
 export type { ConfigProviderProps, ThemeContext } from './components/config-provider/index.js'
-export { default as PageContainer } from './patterns/page-container/page-container.vue'
 export { ThemeCustomizer, ThemeSettingsPanel } from './patterns/theme-settings-panel/index.js'
 export type {
   ThemeCustomizerProps,

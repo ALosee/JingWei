@@ -2,6 +2,7 @@
 
 export const enabledPageDirs = [
   '../../packages/modules/iam/src/web/pages',
+  '../../packages/modules/branding/src/web/pages',
   '../../packages/modules/dictionary/src/web/pages',
   '../../packages/modules/navigation/src/web/pages',
   '../../packages/modules/organization/src/web/pages',

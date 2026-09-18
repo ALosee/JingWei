@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { defaultEffectiveBrand } from '@jingwei/module-branding/shared'
 import type { NavigationNode, NavigationResponse } from '@jingwei/module-navigation/shared'
 
 import { selectInitialLocation } from './initial-location.js'
@@ -55,6 +56,13 @@ const authenticated: NavigationResponse = {
 function dependencies(loggedIn: boolean) {
   const events: string[] = []
   const ports: NavigationStartupDependencies = {
+    loadBrand: vi.fn(() => {
+      events.push('brand')
+      return Promise.resolve(defaultEffectiveBrand)
+    }),
+    applyBrand: vi.fn(() => {
+      events.push('apply-brand')
+    }),
     loadBootstrap: vi.fn(() => {
       events.push('bootstrap')
       return Promise.resolve(bootstrap)
@@ -97,11 +105,13 @@ describe('navigation startup orchestration', () => {
     const { ports, events } = dependencies(false)
     await initializeNavigation('/', ports)
     expect(events).toEqual([
+      'brand',
       'bootstrap',
       'install-public',
       'session',
       'install-public',
       'replace:/signin',
+      'apply-brand',
     ])
     expect(ports.loadAuthenticated).not.toHaveBeenCalled()
     expect(ports.shell.navigation).toBe(bootstrap)
@@ -110,12 +120,14 @@ describe('navigation startup orchestration', () => {
     const { ports, events } = dependencies(true)
     await initializeNavigation('/', ports)
     expect(events).toEqual([
+      'brand',
       'bootstrap',
       'install-public',
       'session',
       'me',
       'install-user',
       'replace:/account/me?tab=profile',
+      'apply-brand',
     ])
     expect(ports.shell.navigation).toBe(authenticated)
     expect(ports.shell.currentUser?.displayName).toBe('Admin')
@@ -135,6 +147,14 @@ describe('navigation startup orchestration', () => {
     expect(ports.loadSession).not.toHaveBeenCalled()
     expect(ports.shell.bootstrapError).toBe('unavailable')
     expect(ports.replace).toHaveBeenCalledWith('/__recovery')
+    expect(ports.applyBrand).toHaveBeenCalledWith(defaultEffectiveBrand)
+  })
+  it('continues with the built-in brand when tenant branding is unavailable', async () => {
+    const { ports } = dependencies(false)
+    ports.loadBrand = () => Promise.reject(new Error('branding unavailable'))
+    await initializeNavigation('/', ports)
+    expect(ports.applyBrand).not.toHaveBeenCalled()
+    expect(ports.shell.navigation).toBe(bootstrap)
   })
 })
 describe('initial location policy', () => {

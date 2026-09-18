@@ -56,6 +56,7 @@ describe('API documentation', () => {
 
       expect(documentResponse.status).toBe(200)
       expect(document.paths).toHaveProperty('/api/v1/iam/sessions')
+      expect(document.paths).toHaveProperty('/api/v1/branding/bootstrap')
       expect(document.paths).toHaveProperty('/api/v1/navigation/versions/{id}/publish')
       expect(document.components.securitySchemes).toHaveProperty('accessTokenCookie')
       expect(document.components.securitySchemes).toHaveProperty('refreshTokenCookie')
@@ -70,7 +71,7 @@ describe('API documentation', () => {
           operationCount += 1
         }
       }
-      expect(operationCount).toBe(61)
+      expect(operationCount).toBe(72)
 
       expect(operationContract(document.paths, '/api/v1/iam/sessions', 'post')).toEqual({
         kind: 'PUBLIC',
@@ -81,6 +82,31 @@ describe('API documentation', () => {
       expect(operationContract(document.paths, '/api/v1/iam/sessions/refresh', 'post')).toEqual({
         kind: 'REFRESH_TOKEN',
       })
+      expect(operationContract(document.paths, '/api/v1/branding/bootstrap', 'get')).toEqual({
+        kind: 'PUBLIC',
+      })
+      expect(operationContract(document.paths, '/api/v1/branding/admin', 'get')).toEqual({
+        kind: 'PERMISSION',
+        requirements: [
+          {
+            permission: 'branding.view',
+            capability: 'branding.core',
+            scope: 'UNSCOPED',
+          },
+        ],
+      })
+      expect(operationContract(document.paths, '/api/v1/branding/restore-default', 'post')).toEqual(
+        {
+          kind: 'PERMISSION',
+          requirements: [
+            {
+              permission: 'branding.publish',
+              capability: 'branding.core',
+              scope: 'UNSCOPED',
+            },
+          ],
+        },
+      )
       expect(operationContract(document.paths, '/api/v1/navigation/admin', 'get')).toEqual({
         kind: 'PERMISSION',
         requirements: [

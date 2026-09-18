@@ -12,7 +12,7 @@
 ## 2. 模块边界
 
 - Module 是完整 Vertical Slice，依次包含 `shared`、`server/domain`、`server/application`、`server/infrastructure`、`server/public`、`server/api`、`client`、`web` 和模块自有 `migrations`。
-- `system` 只能是前端菜单分类，不得成为代码模块。基础模块固定拆为 `iam`、`organization`、`navigation`、`dictionary`。
+- `system` 只能是前端菜单分类，不得成为代码模块。当前基础模块按业务所有权拆为 `iam`、`organization`、`navigation`、`dictionary`、`branding`；新的 Foundation Module 必须有独立语义、数据和演进周期，并通过 ADR 说明。
 - package 必须使用显式 `exports`；禁止 `"./*": "./src/*"`。
 - 跨 Module 只能引用对方公开 package export。禁止引用其他 Module 的 repository、infrastructure、database schema、内部 domain/application 实现，禁止相对路径穿越模块边界。
 - 跨 Module 只能通过 Public API、Integration Event、Transactional Outbox 通信。需要立即结果时用 Public API；不要求同步结果时优先 Integration Event。

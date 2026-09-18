@@ -5,6 +5,7 @@ import { migrations as authMigrations } from '@jingwei/auth/migrations'
 import { migrations as auditMigrations } from '@jingwei/audit/migrations'
 import { migrations as outboxMigrations } from '@jingwei/outbox/migrations'
 import { migrations as iamMigrations } from '@jingwei/module-iam/migrations'
+import { migrations as brandingMigrations } from '@jingwei/module-branding/migrations'
 import { migrations as dictionaryMigrations } from '@jingwei/module-dictionary/migrations'
 import { migrations as navigationMigrations } from '@jingwei/module-navigation/migrations'
 import { migrations as organizationMigrations } from '@jingwei/module-organization/migrations'
@@ -15,6 +16,7 @@ export const generatedMigrations = {
   ...auditMigrations,
   ...outboxMigrations,
   ...iamMigrations,
+  ...brandingMigrations,
   ...dictionaryMigrations,
   ...navigationMigrations,
   ...organizationMigrations,

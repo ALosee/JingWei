@@ -366,11 +366,55 @@ codes 只能是当前发布版本中 PERMISSION 叶节点的 code；DIRECTORY/GR
 
 客户端函数与上述接口一一对应，见 `@jingwei/module-navigation/client`。mutation 封装读取可读 CSRF Cookie；浏览器安全常量从 `@jingwei/auth/shared` 导入，避免把 Node 端安全实现打入 Web bundle。
 
-## 7. Dictionary 接口
+## 7. Branding 接口
+
+Branding 公开读取当前租户已发布品牌，管理接口则使用独立的查看、编辑和发布权限。草稿与线上投影
+完全隔离；发布指针和审计同事务更新。匿名 bootstrap 通过 `tenantCode` 或
+`BOOTSTRAP_TENANT_CODE` 解析租户，已有会话时始终以 Session tenant 为准。
+
+| Method | Path                                      | Access           | 用途                     |
+| ------ | ----------------------------------------- | ---------------- | ------------------------ |
+| GET    | `/api/v1/branding/bootstrap`              | Public           | 生效品牌或内置默认值     |
+| GET    | `/api/v1/branding/assets/{id}`            | Public           | 不可变 PNG/SVG 品牌素材  |
+| GET    | `/api/v1/branding/admin`                  | branding.view    | 当前指针和版本摘要       |
+| GET    | `/api/v1/branding/versions/{id}`          | branding.view    | 读取租户内版本           |
+| POST   | `/api/v1/branding/drafts`                 | branding.manage  | 从默认值或指定版本建草稿 |
+| PUT    | `/api/v1/branding/versions/{id}`          | branding.manage  | 保存完整草稿配置         |
+| DELETE | `/api/v1/branding/versions/{id}`          | branding.manage  | 删除未发布草稿           |
+| POST   | `/api/v1/branding/assets`                 | branding.manage  | multipart 上传品牌素材   |
+| POST   | `/api/v1/branding/versions/{id}/publish`  | branding.publish | 发布草稿                 |
+| POST   | `/api/v1/branding/versions/{id}/rollback` | branding.publish | 切换到历史已发布版本     |
+| POST   | `/api/v1/branding/restore-default`        | branding.publish | 保留历史并恢复平台默认   |
+
+创建草稿必须显式声明来源，不使用 `null` 同时表达不同语义：
+
+```json
+{ "source": { "kind": "PLATFORM_DEFAULT" } }
+```
+
+或基于一个租户内已有版本创建：
+
+```json
+{
+  "source": {
+    "kind": "VERSION",
+    "versionId": "00000000-0000-7000-8000-000000000100"
+  }
+}
+```
+
+保存使用 `expectedEditRevision`，发布/回滚另带 `expectedPublishedVersionId`。任一预期值过期返回
+409，客户端应重新加载。素材不超过 512 KiB；服务端检查 PNG 结构、CRC、编码参数和用途尺寸；横向
+Logo 也允许只含基础绘图元素、静态颜色和本地几何属性的严格 SVG 子集，任何未知/活动内容都会整份
+拒绝且不入库。两种格式都不依赖 multipart MIME。主要稳定错误码为 `BRANDING_VERSION_NOT_FOUND`、
+`BRANDING_VERSION_IMMUTABLE`、`BRANDING_EDIT_CONFLICT`、`BRANDING_PUBLISH_CONFLICT`、
+`BRANDING_ASSET_NOT_FOUND` 和 `BRANDING_ASSET_INVALID`。
+
+## 8. Dictionary 接口
 
 所有 Dictionary HTTP 接口都是租户内的管理边界。读取要求有效会话和 `dictionary.view`，修改还要求 `dictionary.manage`、Origin 和 CSRF。业务模块不应让普通用户调用这些管理接口获取选项，而应在服务端使用 Dictionary Public API。
 
-### 7.1 目录和类型详情
+### 8.1 目录和类型详情
 
 | Method | Path                                           | Permission        | 用途                                   |
 | ------ | ---------------------------------------------- | ----------------- | -------------------------------------- |
@@ -387,7 +431,7 @@ codes 只能是当前发布版本中 PERMISSION 叶节点的 code；DIRECTORY/GR
 
 Category 只用于管理展示。Type code 在租户内全局唯一，移动分类不改变 code。Type 和 Item code 创建后不可修改。Type/Item 不提供物理删除端点，通过 `ENABLED` / `DISABLED` 保留历史取值解析能力。
 
-### 7.2 revision 并发控制
+### 8.2 revision 并发控制
 
 类型或其条目每次修改都使类型 `revision` 递增。类型、条目 mutation body 必须携带客户端最后读取的 `expectedRevision`。分类更新也使用自己的 revision；删除空分类通过 query 传递：
 
@@ -397,7 +441,7 @@ DELETE /api/v1/dictionary/categories/{id}?expectedRevision=3
 
 不匹配时返回 `DICTIONARY_REVISION_CONFLICT` / 409。客户端应重新加载，不能无条件自动重试修改请求。
 
-### 7.3 主要错误码
+### 8.3 主要错误码
 
 | Code                                                                                                 | HTTP | 含义                       |
 | ---------------------------------------------------------------------------------------------------- | ---- | -------------------------- |
@@ -407,7 +451,7 @@ DELETE /api/v1/dictionary/categories/{id}?expectedRevision=3
 | DICTIONARY_REVISION_CONFLICT                                                                         | 409  | 数据已被其他管理员修改     |
 | DICTIONARY_CATEGORY_LIMIT_EXCEEDED / DICTIONARY_TYPE_LIMIT_EXCEEDED / DICTIONARY_ITEM_LIMIT_EXCEEDED | 409  | 有界目录数量超限           |
 
-## 8. 调用示例
+## 9. 调用示例
 
 以下示例假设服务运行在 `http://localhost:3000`：
 
@@ -426,7 +470,7 @@ curl -i \
 
 刷新和退出时还要从 `jingwei_csrf` Cookie 中读取 CSRF 值，并放入 `x-csrf-token` 请求头，同时携带 `Origin`。常量以 `@jingwei/auth` 导出为准，不要在业务模块重复硬编码。
 
-## 9. 新增接口检查表
+## 10. 新增接口检查表
 
 - 路由由模块自己的 `ServerModule.install` 返回，并挂载到模块 basePath。
 - URL 使用 `/api/v1/<module-code>` 命名空间。

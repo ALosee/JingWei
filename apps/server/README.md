@@ -54,7 +54,7 @@ src/
 
 生成顺序已经满足模块依赖，模块安装代码不应再次自行排序。
 
-Navigation 的 install 通过 IAM 公开工厂获取活跃角色/功能授权服务，装配 PostgreSQL NavigationStore、事务边界和管理用例；不跨模块查询 IAM 表。公开 bootstrap 用 TenantDirectory 解析 BOOTSTRAP_TENANT_CODE（默认 default），运行时不会自动建导航或覆盖发布配置。迁移后本地显式运行 seed:navigation，详见 [迁移工具](../../tooling/migration/README.md)。
+Navigation 的 install 通过 IAM 公开工厂获取活跃角色/功能授权服务，装配 PostgreSQL NavigationStore、事务边界和管理用例；不跨模块查询 IAM 表。公开 bootstrap 用 TenantDirectory 解析 BOOTSTRAP_TENANT_CODE（默认 default），运行时不会自动建导航或覆盖发布配置。Branding 使用同一租户解析边界提供失败可降级的公开品牌投影，管理写入仍执行 IAM 权限、事务和审计。迁移后本地显式运行 seed:navigation，详见 [迁移工具](../../tooling/migration/README.md)。
 
 ## 请求处理顺序
 

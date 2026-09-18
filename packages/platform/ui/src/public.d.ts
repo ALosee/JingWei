@@ -1,6 +1,7 @@
 import type { InputClearProps } from '@soybeanjs/headless/input'
 import type { LayoutTriggerProps } from '@soybeanjs/headless/layout'
 import type { ProgressProviderProps } from '@soybeanjs/headless/progress'
+import type { TextareaClearProps } from '@soybeanjs/headless/textarea'
 import type { ToastProviderProps as HeadlessToastProviderProps } from '@soybeanjs/headless/toast'
 import type {
   FlattenedItem,
@@ -81,6 +82,7 @@ import type { SeparatorProps } from './components/separator/types'
 import type { SliderEmits, SliderProps } from './components/slider/types'
 import type { SwitchEmits, SwitchProps, SwitchShape, SwitchSlots } from './components/switch/types'
 import type { TabsEmits, TabsOptionData, TabsProps, TabsSlots } from './components/tabs/types'
+import type { TextareaEmits, TextareaProps, TextareaSlots } from './components/textarea/types'
 import type { ToastProviderProps } from './components/toast/types'
 import type { TreeMenuEmits, TreeMenuProps, TreeMenuSlots } from './components/tree-menu/types'
 import type { TreeSlots } from './components/tree/types'
@@ -112,7 +114,6 @@ export declare const Link: UiComponent<LinkProps>
 export declare const Layout: UiComponent<LayoutProps>
 export declare const LayoutTrigger: UiComponent<LayoutTriggerProps>
 export declare const Menubar: UiComponent<MenubarProps<string>>
-export declare const PageContainer: UiComponent<{ title: string; description?: string }>
 export declare const PageTabs: UiComponent<PageTabsProps<PageTabsOptionData>>
 export declare const Popover: UiComponent<PopoverProps>
 export declare const Progress: UiComponent<ProgressProps>
@@ -131,6 +132,8 @@ export declare const TreeMenu: UiComponent<TreeMenuProps>
 export declare const Tree: UiComponent<TreeRootProps>
 export declare const TreeItem: UiComponent<TreeItemProps>
 export declare const Switch: UiComponent<SwitchProps>
+export declare const Textarea: UiComponent<TextareaProps>
+export declare const TextareaClear: UiComponent<TextareaClearProps>
 
 export { dialog } from '@soybeanjs/headless/dialog'
 export { progress } from '@soybeanjs/headless/progress'
@@ -206,6 +209,9 @@ export type {
   SwitchProps,
   SwitchShape,
   SwitchSlots,
+  TextareaEmits,
+  TextareaProps,
+  TextareaSlots,
   TabsEmits,
   TabsOptionData,
   TabsProps,

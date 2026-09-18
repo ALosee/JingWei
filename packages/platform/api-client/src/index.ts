@@ -1,6 +1,8 @@
 import {
   createRequest,
   FetchError,
+  toFlatRequest,
+  type DataSchema,
   type FetchAdapter,
   type FetchAdapterInit,
   type FetchRequestConfig,
@@ -61,6 +63,7 @@ const request = createRequest<unknown, unknown>(
     isBackendSuccess: () => true,
   },
 )
+const flatRequest = toFlatRequest(request)
 
 /** Stable client-side representation of transport, protocol, and API failures. */
 export class ApiClientError extends Error {
@@ -107,6 +110,22 @@ export function createModuleApiClient<Paths extends Record<string, object>, Pref
     client: toFlatTypedClient<Paths, Prefix>(request, prefix),
     throwingClient: createTypedClient<Paths, Prefix>(request, prefix),
   }
+}
+
+/**
+ * Sends a multipart form through the same cookie, CSRF, timeout, loading and error pipeline.
+ * OpenAPI's binary format is generated as `string`, so browser `File` uploads use this narrow
+ * transport boundary while the declared route still owns the external contract.
+ */
+export async function postFormData<T>(
+  url: string,
+  body: FormData,
+  schema: DataSchema<T>,
+  options?: ApiRequestOptions,
+): Promise<ApiResult<T>> {
+  const result = await flatRequest.post<T>(url, body, { schema, ...options })
+  if (result.error !== null) return { data: null, error: toApiClientError(result.error) }
+  return { data: result.data, error: null }
 }
 
 /**

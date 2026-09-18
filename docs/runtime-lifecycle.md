@@ -96,14 +96,15 @@ throw new ApplicationError({
 入口 `apps/web/src/main.ts` 只调用 `startWebApplication()`。`bootstrap/start-web.ts` 创建对象并注入依赖，`navigation/initialize-navigation.ts` 编排导航，`navigation/initial-location.ts` 选择首屏目标：
 
 1. 创建 Vue App、Pinia 和只包含 Bootstrap/Recovery 的最小 Router。
-2. 请求 `GET /api/v1/navigation/bootstrap`。
-3. 将 PUBLIC Navigation Node 按 routeKey 映射到 Edition Page Registry。
-4. 请求 `GET /api/v1/iam/session`，以 `200` 响应恢复登录/匿名状态。
-5. 只有会话有效时才请求 `GET /api/v1/navigation/me`。
-6. 已登录时用完整用户投影替换动态 Route，清除旧路径和旧权限页面。
-7. 使用页面加载前保存的原始 URL 重新解析一次，修复动态 Route 尚未安装时被 catch-all 捕获的问题。
-8. `/` 优先跳转可见 homeCode，再选第一个非公开 MENU；匿名用户跳转 authEntryCode。
-9. 任一 Registry/Navigation 错误都跳转 `/__recovery`。
+2. 并行请求 `GET /api/v1/branding/bootstrap`；成功时更新登录页、工作区和 document 品牌，失败时继续使用内置默认值。
+3. 请求 `GET /api/v1/navigation/bootstrap`。
+4. 将 PUBLIC Navigation Node 按 routeKey 映射到 Edition Page Registry。
+5. 请求 `GET /api/v1/iam/session`，以 `200` 响应恢复登录/匿名状态。
+6. 只有会话有效时才请求 `GET /api/v1/navigation/me`。
+7. 已登录时用完整用户投影替换动态 Route，清除旧路径和旧权限页面。
+8. 使用页面加载前保存的原始 URL 重新解析一次，修复动态 Route 尚未安装时被 catch-all 捕获的问题。
+9. `/` 优先跳转可见 homeCode，再选第一个非公开 MENU；匿名用户跳转 authEntryCode。
+10. 任一 Registry/Navigation 错误都跳转 `/__recovery`；品牌请求失败不阻断认证或恢复页。
 
 Static Recovery 不依赖动态配置，因此数据库误配置或 Navigation 发布错误不会让整个前端失去入口。
 

@@ -31,7 +31,11 @@ describe.skipIf(databaseUrl === undefined)('real PostgreSQL navigation/API', () 
   let app: Awaited<ReturnType<typeof createApp>>
   const legacyTenant = newTenantId(),
     legacyRoot = newEntityId(),
-    legacyVersion = newEntityId()
+    legacyVersion = newEntityId(),
+    legacyBrandTenant = newTenantId(),
+    legacyBrandProfile = newEntityId(),
+    legacyBrandVersion = newEntityId(),
+    legacyBrandAuthor = newUserId()
   beforeAll(async () => {
     if (
       databaseUrl === undefined ||
@@ -66,6 +70,28 @@ describe.skipIf(databaseUrl === undefined)('real PostgreSQL navigation/API', () 
       (${newEntityId()}, ${legacyTenant}, ${legacyVersion}, 'ROUTE', 'iam.account', '/account', 'Legacy account', true, 'AUTHENTICATED')`.execute(
       db,
     )
+    const beforeBrandingDisplay = await migrator.migrateTo(
+      '20260918130000_branding_restore_published_immutable',
+    )
+    if (beforeBrandingDisplay.error !== undefined) {
+      throw new Error('Pre-branding-display migration failed', {
+        cause: beforeBrandingDisplay.error,
+      })
+    }
+    await sql`INSERT INTO branding.brand_profile
+      (id, tenant_id, created_at, created_by, updated_at, updated_by)
+      VALUES (${legacyBrandProfile}, ${legacyBrandTenant}, now(), ${legacyBrandAuthor}, now(), ${legacyBrandAuthor})`.execute(
+      db,
+    )
+    await sql`INSERT INTO branding.brand_version
+      (id, tenant_id, profile_id, version, status, system_name, short_name, login_title,
+       login_tagline, title_mode, created_at, created_by, published_at, published_by)
+      VALUES (${legacyBrandVersion}, ${legacyBrandTenant}, ${legacyBrandProfile}, 1, 'PUBLISHED',
+        'Legacy System', 'Legacy', 'Legacy Login', 'Legacy Tagline', 'SYSTEM_ONLY', now(),
+        ${legacyBrandAuthor}, now(), ${legacyBrandAuthor})`.execute(db)
+    await sql`UPDATE branding.brand_profile
+      SET published_version_id = ${legacyBrandVersion}
+      WHERE id = ${legacyBrandProfile}`.execute(db)
     const result = await migrator.migrateToLatest()
     if (result.error instanceof Error) throw result.error
     if (result.error !== undefined) throw new Error('Migration failed', { cause: result.error })
@@ -202,6 +228,22 @@ describe.skipIf(databaseUrl === undefined)('real PostgreSQL navigation/API', () 
     const pointer = await sql<{ published_version_id: string }>`SELECT published_version_id
       FROM navigation.navigation WHERE id = ${legacyRoot}`.execute(db)
     expect(pointer.rows[0]?.published_version_id).toBe(legacyVersion)
+  })
+
+  it('backfills display settings on immutable published brand versions', async () => {
+    const db = runtime.database.view()
+    const version = await sql<{ horizontal_brand_mode: string; logo_color_mode: string }>`
+      SELECT horizontal_brand_mode, logo_color_mode
+      FROM branding.brand_version
+      WHERE id = ${legacyBrandVersion}`.execute(db)
+    expect(version.rows[0]).toEqual({
+      horizontal_brand_mode: 'SHORT_NAME',
+      logo_color_mode: 'ORIGINAL',
+    })
+    await expect(
+      sql`UPDATE branding.brand_version SET short_name = 'Changed'
+        WHERE id = ${legacyBrandVersion}`.execute(db),
+    ).rejects.toThrow('Published brand version is immutable')
   })
 
   it('locks repeated password failures and rotates real HTTP authentication cookies', async () => {

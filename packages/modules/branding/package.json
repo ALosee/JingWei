@@ -1,0 +1,40 @@
+{
+  "name": "@jingwei/module-branding",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./manifest": "./src/manifest.ts",
+    "./shared": "./src/shared/index.ts",
+    "./server": "./src/server/index.ts",
+    "./server/public": "./src/server/public/index.ts",
+    "./openapi": "./src/server/api/openapi.ts",
+    "./client": "./src/client/index.ts",
+    "./web": "./src/web/index.ts",
+    "./migrations": "./migrations/index.ts"
+  },
+  "scripts": {
+    "typecheck": "vue-tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "@hono/zod-openapi": "catalog:",
+    "@jingwei/api-client": "workspace:*",
+    "@jingwei/audit": "workspace:*",
+    "@jingwei/database": "workspace:*",
+    "@jingwei/http-contract": "workspace:*",
+    "@jingwei/kernel": "workspace:*",
+    "@jingwei/module-iam": "workspace:*",
+    "@jingwei/module-sdk": "workspace:*",
+    "@jingwei/ui": "workspace:*",
+    "hono": "catalog:",
+    "kysely": "catalog:",
+    "saxes": "catalog:",
+    "vue": "catalog:",
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:",
+    "vue-tsc": "catalog:"
+  }
+}

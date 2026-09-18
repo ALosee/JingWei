@@ -2,7 +2,7 @@
 
 Jingwei is a tenant-aware, edition-composable enterprise platform foundation built as a TypeScript modular monolith.
 
-This repository contains only the platform foundation: module manifests and boundary checks, edition-aware registries, Hono/Vue shells, PostgreSQL/Kysely migrations, Cookie authentication, audit/outbox infrastructure, database-backed navigation, organization management, and categorized tenant dictionaries. These are foundation capabilities, not business applications.
+This repository contains only the platform foundation: module manifests and boundary checks, edition-aware registries, Hono/Vue shells, PostgreSQL/Kysely migrations, Cookie authentication, audit/outbox infrastructure, tenant branding, database-backed navigation, organization management, and categorized tenant dictionaries. These are foundation capabilities, not business applications.
 
 ## Requirements
 

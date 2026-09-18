@@ -22,6 +22,7 @@ Web 不依赖 `@soybeanjs/ui` styled 包。升级生成源码时必须复核
 
 - 创建 Vue、Pinia 和 Router 实例；
 - 调用 Navigation 模块获取匿名和已认证导航；
+- 并行加载生效租户品牌，并投影到 document metadata、favicon 和工作区 chrome；
 - 把服务端返回的 route key 映射到构建期页面注册表；
 - 加载布局、通用外壳和恢复页面；
 - 保存全局壳状态，例如导航版本和启动错误；
@@ -39,6 +40,7 @@ Web 不依赖 `@soybeanjs/ui` styled 包。升级生成源码时必须复核
 ```text
 src/
 ├── bootstrap/start-web.ts     # Vue/Pinia/Router 与实际依赖装配
+├── branding/document-brand.ts # 生效品牌到浏览器文档 metadata 的投影
 ├── layouts/
 │   ├── BaseLayout.vue         # 只组合 Headless Layout 与当前模式定义
 │   └── base/
@@ -67,14 +69,16 @@ e2e/                           # Playwright 关键路径测试
 `main.ts` 只导入并调用 `startWebApplication()`；`bootstrap/start-web.ts` 负责依赖装配与挂载，`initializeNavigation()` 负责下面的导航流程，`selectInitialLocation()` 负责首屏策略。不能把流程分支重新堆进入口或装配文件，依据见 [代码职责与入口约束](../../docs/code-structure.md)。
 
 1. 安装 Pinia 和基础 Router；
-2. 请求 `/api/v1/navigation/bootstrap`；
-3. 安装匿名可见动态路由；
-4. 请求 `/api/v1/iam/session` 恢复 HttpOnly Cookie 的会话状态；
-5. 仅在已认证时请求 `/api/v1/navigation/me` 并安装用户可见路由；
-6. 保存完整 navigation 投影（含 versionId/publishedRevision）；
-7. 重新匹配浏览器最初 URL，确保刷新动态地址不会停在静态 catch-all；
-8. 根地址优先使用可见 homeCode，再选首个非公开 MENU；匿名使用 authEntryCode，否则进入恢复页；
-9. Router ready 后挂载应用。
+2. 与导航流程并行请求 `/api/v1/branding/bootstrap`；SVG Logo 在进入全局品牌状态前再次校验，
+   品牌或素材失败时保留内置默认/安全回退展示；
+3. 请求 `/api/v1/navigation/bootstrap`；
+4. 安装匿名可见动态路由；
+5. 请求 `/api/v1/iam/session` 恢复 HttpOnly Cookie 的会话状态；
+6. 仅在已认证时请求 `/api/v1/navigation/me` 并安装用户可见路由；
+7. 保存完整 navigation 投影（含 versionId/publishedRevision）；
+8. 重新匹配浏览器最初 URL，确保刷新动态地址不会停在静态 catch-all；
+9. 根地址优先使用可见 homeCode，再选首个非公开 MENU；匿名使用 authEntryCode，否则进入恢复页；
+10. 应用品牌到登录页、工作区和 document，Router ready 后挂载应用。
 
 导航初始化阶段抛错会记录 `bootstrapError` 并进入 `/__recovery`。Vue 创建、Router 创建或最终挂载本身的异常不属于导航恢复边界。
 

@@ -30,6 +30,13 @@ export function createApiRouter(): OpenAPIHono<ServerAppEnv> {
           code: 'INVALID_REQUEST',
           message: '请求参数格式不正确',
           status: 400,
+          details: {
+            issues: result.error.issues.map((issue) => ({
+              path: issue.path.map(String).join('.'),
+              code: issue.code,
+              message: issue.message,
+            })),
+          },
         })
     },
   })

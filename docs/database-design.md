@@ -1,6 +1,6 @@
 # Database Design
 
-V1 使用一个 PostgreSQL 18 Database 与多个 module-owned schema：`platform.*`、`iam.*`、`organization.*`、`navigation.*`、`dictionary.*`。未来模块继续使用自己的 schema。
+V1 使用一个 PostgreSQL 18 Database 与多个 module-owned schema：`platform.*`、`iam.*`、`branding.*`、`organization.*`、`navigation.*`、`dictionary.*`。未来模块继续使用自己的 schema。
 
 ## Ownership 与关联
 
@@ -30,5 +30,9 @@ Navigation 使用一张版本化 navigation_node 表，统一保存 DIRECTORY/GR
 navigation.role_navigation 保存 tenant_id、IAM role_id 和稳定 navigation_code。它不外键引用 IAM 或某个版本节点；应用通过 IAM Public API 验证角色，回滚配置不会改动 grants。详细字段见 [Navigation 模块](../packages/modules/navigation/README.md)。
 
 Dictionary 使用 `dictionary_category -> dictionary_type -> dictionary_item` 三级结构。Category 只是租户管理目录；Type 与 Item code 是稳定业务身份。复合外键保证 Category/Type/Item 属于同一 tenant，不使用级联删除清空历史解析数据。Type revision 在其自身或条目变化时递增。详见 [Dictionary 模块](../packages/modules/dictionary/README.md)。
+
+Branding 使用 `brand_profile -> brand_version` 发布指针和不可变版本快照；`brand_asset` 保存经用途校验的
+小型 PNG 或横向 Logo SVG。版本显式保存横向品牌显示方式与 Logo 颜色策略，不再从素材空值推断。
+恢复平台默认只清空发布指针，历史版本和素材均保留。详见 [Branding 模块](../packages/modules/branding/README.md)。
 
 Migration 位于 Owner package，文件名全局唯一且发布后不可修改。Edition Builder 将启用模块的 migration 作为静态 build artifact；生产运行器不扫描源码目录。停用模块只停止加载代码/API/menu/permission/new migration，历史 schema 默认保留，删除数据必须走独立 decommission 流程。

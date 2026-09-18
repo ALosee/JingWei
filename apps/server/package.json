@@ -20,6 +20,7 @@
     "@jingwei/database": "workspace:*",
     "@jingwei/http-contract": "workspace:*",
     "@jingwei/kernel": "workspace:*",
+    "@jingwei/module-branding": "workspace:*",
     "@jingwei/module-dictionary": "workspace:*",
     "@jingwei/module-iam": "workspace:*",
     "@jingwei/module-navigation": "workspace:*",

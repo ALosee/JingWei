@@ -4,6 +4,7 @@ import { z } from 'zod'
 import {
   createModuleApiClient,
   executeApiRequest,
+  postFormData,
   refreshCookieSession,
   subscribeGlobalApiLoading,
   toApiResult,
@@ -78,6 +79,32 @@ afterEach(() => {
 })
 
 describe('platform API client', () => {
+  it('sends multipart data through the shared CSRF and loading pipeline', async () => {
+    const fetchMock = vi.fn<typeof fetch>(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ value: 'uploaded' }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+      ),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    vi.stubGlobal('document', { cookie: 'jingwei_csrf=multipart-token' })
+    const form = new FormData()
+    form.set('purpose', 'LOGO')
+    const requestState = useApiRequestState()
+
+    const result = await postFormData('/api/v1/test/upload', form, schema, requestState.options)
+
+    expect(result).toEqual({ data: { value: 'uploaded' }, error: null })
+    expect(requestState.loading.value).toBe(false)
+    const [, init] = fetchMock.mock.calls[0] ?? []
+    const headers = new Headers(init?.headers)
+    expect(init?.body).toBe(form)
+    expect(headers.get('x-csrf-token')).toBe('multipart-token')
+    expect(headers.has('content-type')).toBe(false)
+  })
+
   it('keeps operation loading active until every tracked request settles', () => {
     const requestState = useApiRequestState()
 

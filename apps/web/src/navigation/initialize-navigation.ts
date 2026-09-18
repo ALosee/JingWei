@@ -1,3 +1,4 @@
+import type { EffectiveBrand } from '@jingwei/module-branding/shared'
 import type { AuthenticatedUser, SessionStatus } from '@jingwei/module-iam/shared'
 import { setIamSessionPermissions, setIamSessionUser } from '@jingwei/module-iam/web'
 import type { NavigationResponse } from '@jingwei/module-navigation/shared'
@@ -6,6 +7,8 @@ import { selectInitialLocation } from './initial-location.js'
 
 /** Narrow ports keep startup orchestration independent of Vue, Pinia, HTTP and browser globals. */
 export interface NavigationStartupDependencies {
+  loadBrand: () => Promise<EffectiveBrand>
+  applyBrand: (brand: EffectiveBrand) => void
   loadBootstrap: () => Promise<NavigationResponse>
   loadSession: () => Promise<SessionStatus>
   loadAuthenticated: () => Promise<NavigationResponse | null>
@@ -25,6 +28,7 @@ export async function initializeNavigation(
   dependencies: NavigationStartupDependencies,
 ): Promise<void> {
   const { shell } = dependencies
+  const brand = dependencies.loadBrand().catch(() => null)
   try {
     const bootstrap = await dependencies.loadBootstrap()
     dependencies.install(bootstrap)
@@ -54,4 +58,6 @@ export async function initializeNavigation(
     shell.bootstrapError = error instanceof Error ? error.message : 'Navigation bootstrap failed'
     await dependencies.replace('/__recovery')
   }
+  const resolvedBrand = await brand
+  if (resolvedBrand !== null) dependencies.applyBrand(resolvedBrand)
 }

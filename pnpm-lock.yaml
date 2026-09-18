@@ -102,6 +102,9 @@ catalogs:
     pino:
       specifier: 10.3.1
       version: 10.3.1
+    saxes:
+      specifier: 6.0.0
+      version: 6.0.0
     sbean:
       specifier: 0.30.0
       version: 0.30.0
@@ -229,6 +232,9 @@ importers:
       '@jingwei/kernel':
         specifier: workspace:*
         version: link:../../packages/platform/kernel
+      '@jingwei/module-branding':
+        specifier: workspace:*
+        version: link:../../packages/modules/branding
       '@jingwei/module-dictionary':
         specifier: workspace:*
         version: link:../../packages/modules/dictionary
@@ -293,6 +299,9 @@ importers:
       '@jingwei/api-client':
         specifier: workspace:*
         version: link:../../packages/platform/api-client
+      '@jingwei/module-branding':
+        specifier: workspace:*
+        version: link:../../packages/modules/branding
       '@jingwei/module-dictionary':
         specifier: workspace:*
         version: link:../../packages/modules/dictionary
@@ -351,6 +360,61 @@ importers:
       vite:
         specifier: 'catalog:'
         version: 8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0)
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 3.3.11(typescript@5.9.3)
+
+  packages/modules/branding:
+    dependencies:
+      '@hono/zod-openapi':
+        specifier: 'catalog:'
+        version: 1.6.3(hono@4.13.5)(zod@4.5.4)
+      '@jingwei/api-client':
+        specifier: workspace:*
+        version: link:../../platform/api-client
+      '@jingwei/audit':
+        specifier: workspace:*
+        version: link:../../platform/audit
+      '@jingwei/database':
+        specifier: workspace:*
+        version: link:../../platform/database
+      '@jingwei/http-contract':
+        specifier: workspace:*
+        version: link:../../platform/http-contract
+      '@jingwei/kernel':
+        specifier: workspace:*
+        version: link:../../platform/kernel
+      '@jingwei/module-iam':
+        specifier: workspace:*
+        version: link:../iam
+      '@jingwei/module-sdk':
+        specifier: workspace:*
+        version: link:../../platform/module-sdk
+      '@jingwei/ui':
+        specifier: workspace:*
+        version: link:../../platform/ui
+      hono:
+        specifier: 'catalog:'
+        version: 4.13.5
+      kysely:
+        specifier: 'catalog:'
+        version: 0.29.5
+      saxes:
+        specifier: 'catalog:'
+        version: 6.0.0
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.42(typescript@5.9.3)
+      zod:
+        specifier: 'catalog:'
+        version: 4.5.4
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
       vue-tsc:
         specifier: 'catalog:'
         version: 3.3.11(typescript@5.9.3)
@@ -901,6 +965,9 @@ importers:
       '@jingwei/http-contract':
         specifier: workspace:*
         version: link:../../packages/platform/http-contract
+      '@jingwei/module-branding':
+        specifier: workspace:*
+        version: link:../../packages/modules/branding
       '@jingwei/module-dictionary':
         specifier: workspace:*
         version: link:../../packages/modules/dictionary
@@ -3672,6 +3739,10 @@ packages:
   safer-buffer@2.1.2:
     resolution: {integrity: sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==}
 
+  saxes@6.0.0:
+    resolution: {integrity: sha512-xAg7SOnEhrm5zI3puOOKyy1OMcMlIJZYNJY7xLBwSze0UjhPLnWfj2GF2EpT0jmzaJKIWKHLsaSSajf35bcYnA==}
+    engines: {node: '>=v12.22.7'}
+
   sbean@0.30.0:
     resolution: {integrity: sha512-C2IViIXZFLthIfXdC7/c772uhRNAYtnlIdQkF+ll6KJ+RnYnkgZY9QSm090IhPUO0E089bIqnQe3/HeZ5IZdnA==}
     hasBin: true
@@ -4222,6 +4293,9 @@ packages:
   xml-name-validator@5.0.0:
     resolution: {integrity: sha512-EvGK8EJ3DhaHfbRlETOWAS5pO9MZITeauHKJyb8wyajUfQUenkIg2MvLDTZ4T/TgIcm3HU0TFBgWWboAZ30UHg==}
     engines: {node: '>=18'}
+
+  xmlchars@2.2.0:
+    resolution: {integrity: sha512-JZnDKK8B0RCDw84FNdDAIpZK+JuJw+s7Lz8nksI7SIuU3UXJJslUthsi+uWBUYOwPFwW7W7PRLRfUKpxjtjFCw==}
 
   xtend@4.0.2:
     resolution: {integrity: sha512-LKYU1iAXJXUgAXn9URjiu+MWhyUXHsvfp7mcuYm9dSUKK0/CjtrUwFAxD82/mCWbtLsGjFIad0wIsod4zrTAEQ==}
@@ -6965,6 +7039,10 @@ snapshots:
 
   safer-buffer@2.1.2: {}
 
+  saxes@6.0.0:
+    dependencies:
+      xmlchars: 2.2.0
+
   sbean@0.30.0(typescript@5.9.3)(zod@4.5.4):
     dependencies:
       '@modelcontextprotocol/sdk': 1.30.0(zod@4.5.4)
@@ -7482,6 +7560,8 @@ snapshots:
   ws@8.21.3: {}
 
   xml-name-validator@5.0.0: {}
+
+  xmlchars@2.2.0: {}
 
   xtend@4.0.2: {}
 

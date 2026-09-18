@@ -10,6 +10,7 @@
     "@hono/zod-openapi": "catalog:",
     "@jingwei/auth": "workspace:*",
     "@jingwei/http-contract": "workspace:*",
+    "@jingwei/module-branding": "workspace:*",
     "@jingwei/module-dictionary": "workspace:*",
     "@jingwei/module-iam": "workspace:*",
     "@jingwei/module-navigation": "workspace:*",

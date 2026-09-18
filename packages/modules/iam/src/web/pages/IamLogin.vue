@@ -1,16 +1,36 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 
 import { ButtonLoading, Input } from '@jingwei/ui'
 
+import {
+  authPlatformWordmarkComponentKey,
+  useAuthBrandPresentation,
+} from '../auth-brand-presentation.js'
 import { useSignIn } from '../composables/use-sign-in.js'
 
+const brand = useAuthBrandPresentation()
+const platformWordmarkComponent = inject(authPlatformWordmarkComponentKey, null)
 const { tenantCode, username, password, errorMessage, submitting, submit } = useSignIn()
 const passwordVisible = ref(false)
 const capsLockActive = ref(false)
 
 const passwordType = computed(() => (passwordVisible.value ? 'text' : 'password'))
 const passwordToggleLabel = computed(() => (passwordVisible.value ? '隐藏密码' : '显示密码'))
+const horizontalBrandMode = computed(() =>
+  brand.value.horizontalBrandMode === 'CUSTOM_LOGO' && brand.value.logoUrl === null
+    ? 'SHORT_NAME'
+    : brand.value.horizontalBrandMode === 'PLATFORM_WORDMARK' && platformWordmarkComponent === null
+      ? 'SHORT_NAME'
+      : brand.value.horizontalBrandMode,
+)
+const logoMaskStyle = computed(() => {
+  const value = `url("${brand.value.logoUrl ?? ''}")`
+  return {
+    maskImage: value,
+    WebkitMaskImage: value,
+  }
+})
 
 function updateCapsLock(event: KeyboardEvent): void {
   capsLockActive.value = event.getModifierState('CapsLock')
@@ -25,19 +45,41 @@ function updateCapsLock(event: KeyboardEvent): void {
         <div class="brand-glow brand-glow-secondary" />
         <header class="brand-header">
           <span class="brand-mark" aria-hidden="true">
-            <svg viewBox="0 0 48 48">
+            <img v-if="brand.markUrl" :src="brand.markUrl" alt="" />
+            <svg v-else viewBox="0 0 48 48">
               <path d="M12 24h24M24 12v24" />
               <circle cx="24" cy="24" r="14" />
               <circle cx="24" cy="24" r="3.5" class="brand-mark-core" />
             </svg>
           </span>
-          <span class="brand-wordmark">JINGWEI</span>
+          <img
+            v-if="
+              horizontalBrandMode === 'CUSTOM_LOGO' &&
+              brand.logoUrl &&
+              brand.logoColorMode === 'ORIGINAL'
+            "
+            :src="brand.logoUrl"
+            alt=""
+            class="brand-logo"
+          />
+          <span
+            v-else-if="horizontalBrandMode === 'CUSTOM_LOGO' && brand.logoUrl"
+            class="brand-logo brand-logo-mask"
+            :style="logoMaskStyle"
+            aria-hidden="true"
+          />
+          <component
+            :is="platformWordmarkComponent"
+            v-else-if="horizontalBrandMode === 'PLATFORM_WORDMARK'"
+            class="brand-wordmark-svg"
+          />
+          <span v-else class="brand-wordmark">{{ brand.shortName }}</span>
         </header>
 
         <div class="brand-copy">
           <p class="brand-kicker">Enterprise workspace</p>
-          <h1 id="platform-title">经纬企业平台</h1>
-          <p class="brand-statement">让组织、权限与业务边界保持清晰，让每一次协作都有迹可循。</p>
+          <h1 id="platform-title">{{ brand.loginTitle }}</h1>
+          <p class="brand-statement">{{ brand.loginTagline }}</p>
         </div>
 
         <ul class="platform-principles" aria-label="平台安全能力">
@@ -82,20 +124,42 @@ function updateCapsLock(event: KeyboardEvent): void {
       <section class="auth-panel" aria-labelledby="signin-title">
         <div class="mobile-brand" aria-hidden="true">
           <span class="brand-mark brand-mark-small">
-            <svg viewBox="0 0 48 48">
+            <img v-if="brand.markUrl" :src="brand.markUrl" alt="" />
+            <svg v-else viewBox="0 0 48 48">
               <path d="M12 24h24M24 12v24" />
               <circle cx="24" cy="24" r="14" />
               <circle cx="24" cy="24" r="3.5" class="brand-mark-core" />
             </svg>
           </span>
-          <span class="brand-wordmark">JINGWEI</span>
+          <img
+            v-if="
+              horizontalBrandMode === 'CUSTOM_LOGO' &&
+              brand.logoUrl &&
+              brand.logoColorMode === 'ORIGINAL'
+            "
+            :src="brand.logoUrl"
+            alt=""
+            class="brand-logo brand-logo-on-light"
+          />
+          <span
+            v-else-if="horizontalBrandMode === 'CUSTOM_LOGO' && brand.logoUrl"
+            class="brand-logo brand-logo-mask brand-logo-on-light"
+            :style="logoMaskStyle"
+            aria-hidden="true"
+          />
+          <component
+            :is="platformWordmarkComponent"
+            v-else-if="horizontalBrandMode === 'PLATFORM_WORDMARK'"
+            class="brand-wordmark-svg brand-wordmark-svg-on-light"
+          />
+          <span v-else class="brand-wordmark">{{ brand.shortName }}</span>
         </div>
 
         <article class="auth-card">
           <header class="auth-heading">
             <p class="auth-kicker">欢迎回来</p>
             <h2 id="signin-title">登录工作空间</h2>
-            <p>请输入你的租户和账号信息，继续进入经纬企业平台。</p>
+            <p>请输入你的租户和账号信息，继续进入{{ brand.systemName }}。</p>
           </header>
 
           <form class="signin-form" @submit.prevent="submit">
@@ -349,6 +413,35 @@ function updateCapsLock(event: KeyboardEvent): void {
   stroke-width: 1.5;
 }
 
+.brand-mark img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.brand-logo {
+  width: 10rem;
+  max-width: 10rem;
+  height: 2rem;
+  object-fit: contain;
+}
+
+.brand-logo-mask {
+  display: inline-block;
+  flex-shrink: 0;
+  background: currentColor;
+  mask-position: center;
+  mask-repeat: no-repeat;
+  mask-size: contain;
+  -webkit-mask-position: center;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: contain;
+}
+
+.brand-logo-on-light {
+  color: hsl(var(--primary));
+}
+
 .brand-mark .brand-mark-core {
   fill: hsl(var(--login-brand-soft));
   stroke: none;
@@ -358,6 +451,21 @@ function updateCapsLock(event: KeyboardEvent): void {
   font-size: 0.875rem;
   font-weight: 750;
   letter-spacing: 0.22em;
+}
+
+.brand-wordmark-svg {
+  width: 6.625rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+  overflow: visible;
+  --brand-wordmark-dot-fill: hsl(var(--login-brand-deep));
+  --brand-wordmark-dot-stroke: hsl(var(--login-brand-text));
+}
+
+.brand-wordmark-svg-on-light {
+  color: hsl(var(--primary));
+  --brand-wordmark-dot-fill: hsl(var(--background));
+  --brand-wordmark-dot-stroke: hsl(var(--primary));
 }
 
 .brand-copy {

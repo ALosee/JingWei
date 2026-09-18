@@ -75,6 +75,7 @@
 | 模块         | 文档                                                                        | 当前定位                         |
 | ------------ | --------------------------------------------------------------------------- | -------------------------------- |
 | IAM          | [packages/modules/iam](../packages/modules/iam/README.md)                   | 用户、凭据、角色、权限与数据范围 |
+| Branding     | [packages/modules/branding](../packages/modules/branding/README.md)         | 租户品牌、素材与发布版本         |
 | Navigation   | [packages/modules/navigation](../packages/modules/navigation/README.md)     | 发布导航、路由校验与用户导航解析 |
 | Organization | [packages/modules/organization](../packages/modules/organization/README.md) | 组织树、岗位与用户组织关系       |
 | Dictionary   | [packages/modules/dictionary](../packages/modules/dictionary/README.md)     | 租户字典类型和条目               |
@@ -132,3 +133,4 @@
 - [0008](./adr/0008-thin-entrypoints-and-owned-workflows.md)：调用式入口、装配与功能流程分离、状态所有权和自动职责检查
 - [0009](./adr/0009-openapi-contract-and-soybean-fetch.md)：Zod OpenAPI 单一契约、Scalar 文档与 Soybean Fetch 模块客户端
 - [0015](./adr/0015-declare-http-authorization-contracts.md)：接口授权契约、启动校验与授权评估观测
+- [0016](./adr/0016-own-tenant-branding-in-a-dedicated-module.md)：独立租户品牌所有权、发布模型与壳层组合
