@@ -13,9 +13,7 @@ export interface BrandRoot {
   readonly publishedVersionId: string | null
 }
 
-export interface StoredBrandAsset extends BrandAsset {
-  readonly bytes: Uint8Array
-}
+export type StoredBrandAsset = BrandAsset & { readonly bytes: Uint8Array }
 
 export interface BrandingStore {
   root(tenantId: TenantId, lock?: boolean): Promise<BrandRoot | null>

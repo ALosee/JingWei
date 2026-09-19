@@ -6,6 +6,7 @@ import { PostgresAuditWriter } from '@jingwei/audit'
 import { newEntityId, type ApplicationContext, type TenantId } from '@jingwei/kernel'
 
 import {
+  brandAssetSchema,
   brandAssetUrl,
   brandVersionSchema,
   type BrandAsset,
@@ -72,7 +73,7 @@ export interface BrandingDatabase {
 }
 
 function assetMetadata(row: AssetRow): BrandAsset {
-  return {
+  return brandAssetSchema.parse({
     id: row.id,
     purpose: row.purpose,
     contentType: row.content_type,
@@ -81,7 +82,7 @@ function assetMetadata(row: AssetRow): BrandAsset {
     height: row.height,
     byteSize: row.byte_size,
     url: brandAssetUrl(row.id),
-  }
+  })
 }
 
 export class PostgresBrandingStore implements BrandingStore {

@@ -10,6 +10,7 @@ import {
   brandVersionSchema,
   createBrandDraftSchema,
   effectiveBrandSchema,
+  maximumBrandAssetBytes,
   publishBrandSchema,
   restoreDefaultBrandSchema,
   saveBrandDraftSchema,
@@ -54,10 +55,11 @@ export const brandingApiRoutes = {
     request: { params: z.object({ id: z.uuid() }) },
     responses: {
       200: {
-        description: 'PNG 或通过严格配置校验的 SVG 品牌素材',
+        description: '通过用途与结构校验的 PNG、SVG 或 ICO 品牌素材',
         content: {
           'image/png': { schema: z.string().meta({ format: 'binary' }) },
           'image/svg+xml': { schema: z.string().meta({ format: 'binary' }) },
+          'image/x-icon': { schema: z.string().meta({ format: 'binary' }) },
         },
       },
       400: error('素材 ID 无效'),
@@ -235,7 +237,7 @@ export const brandingApiRoutes = {
               purpose: z.enum(brandAssetPurposes),
               file: z
                 .file()
-                .max(512 * 1024)
+                .max(maximumBrandAssetBytes)
                 .openapi({ type: 'string', format: 'binary' }),
             }),
           },

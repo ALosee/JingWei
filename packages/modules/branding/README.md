@@ -8,7 +8,7 @@ Logo/方形标志和浏览器 favicon，同时保持发布历史、权限、审�
 本模块负责：
 
 - 租户品牌草稿、不可变发布版本、显式回滚、恢复平台默认和乐观并发；
-- 有界 PNG 素材及严格白名单 Logo SVG 的内容、尺寸和用途校验；
+- 有界 PNG、严格白名单 Logo/Mark SVG 与 Favicon ICO 的内容、尺寸和用途校验；
 - 匿名生效品牌投影，以及管理端的版本与素材 API；
 - `branding.view`、`branding.manage`、`branding.publish` 授权和关键写操作审计；
 - 品牌管理页面及前端生效品牌状态。
@@ -29,7 +29,7 @@ Manifest 只描述稳定 metadata，不读取数据库或安装运行时。
 
 - `brand_profile`：每个租户唯一根和当前发布指针；
 - `brand_version`：草稿与不可变发布快照，按租户递增 revision；
-- `brand_asset`：按租户、用途和 SHA-256 去重的已验证 PNG/SVG 字节及尺寸 metadata。
+- `brand_asset`：按租户、用途和 SHA-256 去重的已验证 PNG/SVG/ICO 字节及尺寸 metadata。
 
 所有管理查询和写入都包含 `tenant_id`。版本对素材使用租户内复合外键，发布指针只能指向同一 profile
 的版本。发布/回滚锁住根记录；草稿保存和发布均比较 `edit_revision`。公开素材 URL 使用不可猜测 UUID，
@@ -50,19 +50,19 @@ Integration Event；匿名 HTTP 投影是 Web/其他客户端的稳定消费边�
 
 ## HTTP 与权限
 
-| Method | Path                                      | Access             | 用途                    |
-| ------ | ----------------------------------------- | ------------------ | ----------------------- |
-| GET    | `/api/v1/branding/bootstrap`              | Public             | 读取租户生效品牌        |
-| GET    | `/api/v1/branding/assets/{id}`            | Public             | 读取不可变 PNG/SVG 素材 |
-| GET    | `/api/v1/branding/admin`                  | `branding.view`    | 版本概览                |
-| GET    | `/api/v1/branding/versions/{id}`          | `branding.view`    | 版本详情                |
-| POST   | `/api/v1/branding/drafts`                 | `branding.manage`  | 从默认/指定版本建草稿   |
-| PUT    | `/api/v1/branding/versions/{id}`          | `branding.manage`  | 保存草稿                |
-| DELETE | `/api/v1/branding/versions/{id}`          | `branding.manage`  | 删除草稿                |
-| POST   | `/api/v1/branding/assets`                 | `branding.manage`  | 上传品牌素材            |
-| POST   | `/api/v1/branding/versions/{id}/publish`  | `branding.publish` | 发布草稿                |
-| POST   | `/api/v1/branding/versions/{id}/rollback` | `branding.publish` | 切换到历史发布版本      |
-| POST   | `/api/v1/branding/restore-default`        | `branding.publish` | 恢复平台默认品牌        |
+| Method | Path                                      | Access             | 用途                  |
+| ------ | ----------------------------------------- | ------------------ | --------------------- |
+| GET    | `/api/v1/branding/bootstrap`              | Public             | 读取租户生效品牌      |
+| GET    | `/api/v1/branding/assets/{id}`            | Public             | 读取不可变品牌素材    |
+| GET    | `/api/v1/branding/admin`                  | `branding.view`    | 版本概览              |
+| GET    | `/api/v1/branding/versions/{id}`          | `branding.view`    | 版本详情              |
+| POST   | `/api/v1/branding/drafts`                 | `branding.manage`  | 从默认/指定版本建草稿 |
+| PUT    | `/api/v1/branding/versions/{id}`          | `branding.manage`  | 保存草稿              |
+| DELETE | `/api/v1/branding/versions/{id}`          | `branding.manage`  | 删除草稿              |
+| POST   | `/api/v1/branding/assets`                 | `branding.manage`  | 上传品牌素材          |
+| POST   | `/api/v1/branding/versions/{id}/publish`  | `branding.publish` | 发布草稿              |
+| POST   | `/api/v1/branding/versions/{id}/rollback` | `branding.publish` | 切换到历史发布版本    |
+| POST   | `/api/v1/branding/restore-default`        | `branding.publish` | 恢复平台默认品牌      |
 
 已登录 bootstrap 始终使用 Session tenant；匿名请求只允许通过 `tenantCode` 或服务器
 `BOOTSTRAP_TENANT_CODE` 解析活跃租户。mutation 继续受全局 Origin/CSRF 中间件保护。
@@ -73,21 +73,25 @@ Integration Event；匿名 HTTP 投影是 Web/其他客户端的稳定消费边�
 - 新草稿来源必须显式选择平台默认或一个租户内版本，不用 null 隐式代表当前线上版本；
 - 横向品牌显示显式选择平台内置字标、系统简称或自定义 Logo；发布版本不再根据素材是否存在隐式推断；
 - 自定义 Logo 可保持原色，也可用同一素材作为 CSS mask 生成单色剪影并跟随亮色/暗色主题；
+- 自定义方形标志按素材原有透明度和颜色展示，不继承平台默认标志的底板、圆角或阴影；
 - 草稿变化不影响线上品牌，发布后新页面加载使用新投影；
 - 已发布版本由数据库触发器保护，不允许修改或删除；回退通过将线上指针切到历史已发布版本完成；
 - 恢复平台默认会清空当前发布指针并保留全部已发布历史，不依赖删除版本；
 - 发布指针和审计处于同一事务；指针或编辑 revision 冲突返回 409，客户端必须重新加载；
-- 素材不超过 512 KiB；横向 Logo 宽高比为 1:1–12:1，并接受 PNG 或
-  `BRAND_LOGO_SVG_V1` 严格绘图子集，MARK/FAVICON
-  仍为 32–512 像素正方形 PNG；SVG 出现未知元素/属性、脚本、事件、外链、DOCTYPE 或 Entity
-  时整份拒绝且不入库，服务端验证实际字节而不信任浏览器 MIME；
+- 素材不超过 2 MiB；横向 Logo 宽高比为 1:1–12:1，并接受 PNG 或
+  `BRAND_LOGO_SVG_V2` 静态绘图子集；方形标志接受 32–512 像素的正方形 PNG，或同子集且
+  `viewBox` 为正方形的 SVG（SVG 坐标不是像素，不套用 PNG 尺寸范围）；Favicon 接受
+  16–512 正方形 PNG，或带 16–256 正方形 PNG/DIB 帧的标准 ICO（新上传使用 `ICO_V2`，
+  历史 `ICO_V1` 素材继续可读）；
+  SVG 支持基本图形、内部 `clipPath`、渐变和蒙版；出现未知元素/属性、脚本、事件、外链、DOCTYPE
+  或 Entity 时整份拒绝且不入库，服务端验证实际字节而不信任浏览器 MIME；
 - 生效品牌中的 SVG 会在进入 Web 全局品牌状态前按同一配置再次校验；失败时只回退横向展示，
   不阻断登录或动态导航启动；
 - V1 将小型素材存入 PostgreSQL，不引入尚无运行时需求的对象存储。
 
 ## 当前实现状态
 
-草稿、保存、发布、回滚、恢复默认、PNG/Logo SVG 上传、公开投影、管理页、登录页、工作区品牌和
+草稿、保存、发布、回滚、恢复默认、PNG/Logo/Mark SVG/ICO 上传、公开投影、管理页、登录页、工作区品牌和
 浏览器 metadata 均已实现。当前不包含即时推送、按语言拆分品牌文案、WebP、自定义邮件/文档模板
 或对象存储迁移。
 

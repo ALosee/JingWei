@@ -43,4 +43,16 @@ describe('document brand projection', () => {
     expect(document.title).toBe(defaultEffectiveBrand.systemName)
     expect(document.querySelector('link[data-jingwei-brand-favicon]')).toBeNull()
   })
+
+  it('projects the validated ICO media type onto the favicon link', () => {
+    applyDocumentBrand({
+      ...defaultEffectiveBrand,
+      faviconUrl: '/api/v1/branding/assets/01995b6e-f0c0-7000-8000-000000000001',
+      faviconContentType: 'image/x-icon',
+    })
+
+    expect(document.querySelector('link[data-jingwei-brand-favicon]')?.getAttribute('type')).toBe(
+      'image/x-icon',
+    )
+  })
 })

@@ -30,7 +30,14 @@ const horizontalMode = computed(() =>
   >
     <span
       aria-hidden="true"
-      class="size-8 grid shrink-0 place-items-center overflow-hidden rounded-[calc(var(--radius)+3px)] bg-primary text-primary-foreground shadow-sm transition-transform duration-200 group-hover/brand:scale-105"
+      data-global-brand-mark
+      :data-brand-mark-source="brand.markUrl ? 'custom' : 'platform-default'"
+      class="size-8 grid shrink-0 place-items-center transition-transform duration-200 group-hover/brand:scale-105"
+      :class="
+        brand.markUrl
+          ? 'overflow-visible'
+          : 'overflow-hidden rounded-[calc(var(--radius)+3px)] bg-primary text-primary-foreground shadow-sm'
+      "
     >
       <img v-if="brand.markUrl" :src="brand.markUrl" alt="" class="size-full object-contain" />
       <DefaultBrandMark v-else class="size-7" />

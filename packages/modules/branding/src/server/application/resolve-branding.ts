@@ -27,7 +27,9 @@ export class ResolveBranding {
       logoUrl: assetUrl(version.logoAsset),
       logoContentType: version.logoAsset?.contentType ?? null,
       markUrl: assetUrl(version.markAsset),
+      markContentType: version.markAsset?.contentType ?? null,
       faviconUrl: assetUrl(version.faviconAsset),
+      faviconContentType: version.faviconAsset?.contentType ?? null,
     }
   }
 

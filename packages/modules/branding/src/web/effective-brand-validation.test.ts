@@ -3,11 +3,11 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { defaultEffectiveBrand } from '../shared/index.js'
-import { validateEffectiveBrandLogo } from './effective-brand-validation.js'
+import { validateEffectiveBrandAssets } from './effective-brand-validation.js'
 
 const assetId = '01995b6e-f0c0-7000-8000-000000000001'
 
-describe('validateEffectiveBrandLogo', () => {
+describe('validateEffectiveBrandAssets', () => {
   it('revalidates an SVG before exposing its URL to renderers', async () => {
     const load = vi.fn(() =>
       Promise.resolve(
@@ -21,7 +21,7 @@ describe('validateEffectiveBrandLogo', () => {
       logoContentType: 'image/svg+xml' as const,
     }
 
-    await expect(validateEffectiveBrandLogo(brand, load)).resolves.toBe(brand)
+    await expect(validateEffectiveBrandAssets(brand, load)).resolves.toBe(brand)
     expect(load).toHaveBeenCalledWith(assetId)
   })
 
@@ -32,12 +32,26 @@ describe('validateEffectiveBrandLogo', () => {
       logoUrl: `/api/v1/branding/assets/${assetId}`,
       logoContentType: 'image/svg+xml' as const,
     }
-    const result = await validateEffectiveBrandLogo(brand, () =>
+    const result = await validateEffectiveBrandAssets(brand, () =>
       Promise.resolve(
         '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" onload="alert(1)"/>',
       ),
     )
     expect(result).toMatchObject({ logoUrl: null, logoContentType: null })
+  })
+
+  it('revalidates mark SVG with square-mark geometry', async () => {
+    const brand = {
+      ...defaultEffectiveBrand,
+      markUrl: `/api/v1/branding/assets/${assetId}`,
+      markContentType: 'image/svg+xml' as const,
+    }
+    const result = await validateEffectiveBrandAssets(brand, () =>
+      Promise.resolve(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 32"><path d="M0 0h64v32H0z"/></svg>',
+      ),
+    )
+    expect(result).toMatchObject({ markUrl: null, markContentType: null })
   })
 
   it('does not load PNG bytes for redundant client-side parsing', async () => {
@@ -47,7 +61,7 @@ describe('validateEffectiveBrandLogo', () => {
       logoUrl: `/api/v1/branding/assets/${assetId}`,
       logoContentType: 'image/png' as const,
     }
-    await expect(validateEffectiveBrandLogo(brand, load)).resolves.toBe(brand)
+    await expect(validateEffectiveBrandAssets(brand, load)).resolves.toBe(brand)
     expect(load).not.toHaveBeenCalled()
   })
 })

@@ -5,13 +5,14 @@ import { useIamPermission } from '@jingwei/module-iam/session'
 
 import * as api from '../../client/index.js'
 import {
+  maximumBrandAssetBytes,
   type BrandAdmin,
   type BrandAssetPurpose,
   type BrandDraftSource,
   type BrandVersion,
   type SaveBrandDraft,
 } from '../../shared/index.js'
-import { validateBrandLogoSvgText } from '../brand-logo-svg-validation.js'
+import { validateBrandSvgText } from '../brand-logo-svg-validation.js'
 import {
   mapServerBrandFieldIssues,
   validateSaveBrandDraft,
@@ -169,31 +170,60 @@ export function useBrandingManagement() {
 
   async function upload(purpose: BrandAssetPurpose, file: File): Promise<boolean> {
     if (version.value === null || readOnly.value) return false
+    if (purpose === 'LOGO' && version.value.horizontalBrandMode !== 'CUSTOM_LOGO') {
+      clearFeedback()
+      error.value = '请先将横向品牌显示切换为「自定义 Logo」，再上传横向 Logo'
+      return false
+    }
     clearFeedback()
+    if (file.size === 0 || file.size > maximumBrandAssetBytes) {
+      error.value = '品牌素材不能为空且不能超过 2 MiB'
+      return false
+    }
     const looksLikeSvg = file.type === 'image/svg+xml' || file.name.toLowerCase().endsWith('.svg')
+    const looksLikeIco =
+      file.type === 'image/x-icon' ||
+      file.type === 'image/vnd.microsoft.icon' ||
+      file.name.toLowerCase().endsWith('.ico')
+    if (looksLikeIco) {
+      if (purpose !== 'FAVICON') {
+        error.value = '只有 Favicon 支持 ICO，横向 Logo 与方形标志请使用 PNG 或 SVG'
+        return false
+      }
+    }
     if (looksLikeSvg) {
-      if (purpose !== 'LOGO') {
-        error.value = '只有横向 Logo 支持 SVG，方形标志和 Favicon 请上传 PNG'
+      if (purpose !== 'LOGO' && purpose !== 'MARK') {
+        error.value = '横向 Logo 与方形标志支持 SVG，Favicon 请使用 PNG 或 ICO'
         return false
       }
       try {
-        validateBrandLogoSvgText(await file.text())
+        validateBrandSvgText(await file.text(), purpose)
       } catch (validationError) {
-        error.value =
-          validationError instanceof Error ? validationError.message : 'Logo SVG 校验失败'
+        error.value = validationError instanceof Error ? validationError.message : 'SVG 校验失败'
         return false
       }
     }
     const result = await api.uploadBrandAsset(purpose, file, request.options)
     if (!feedback(result) || result.data === null) return false
     if (purpose === 'LOGO') {
+      if (result.data.purpose !== 'LOGO') {
+        error.value = '服务端返回的素材用途与上传位置不一致'
+        return false
+      }
       version.value.logoAssetId = result.data.id
       version.value.logoAsset = result.data
-      version.value.horizontalBrandMode = 'CUSTOM_LOGO'
     } else if (purpose === 'MARK') {
+      if (result.data.purpose !== 'MARK') {
+        error.value = '服务端返回的素材用途与上传位置不一致'
+        return false
+      }
       version.value.markAssetId = result.data.id
       version.value.markAsset = result.data
     } else {
+      if (result.data.purpose !== 'FAVICON') {
+        error.value = '服务端返回的素材用途与上传位置不一致'
+        return false
+      }
       version.value.faviconAssetId = result.data.id
       version.value.faviconAsset = result.data
     }
@@ -206,8 +236,9 @@ export function useBrandingManagement() {
     if (purpose === 'LOGO') {
       version.value.logoAssetId = null
       version.value.logoAsset = null
+      // Keep configuration valid: CUSTOM_LOGO requires an uploaded logo.
       if (version.value.horizontalBrandMode === 'CUSTOM_LOGO')
-        version.value.horizontalBrandMode = 'SHORT_NAME'
+        version.value.horizontalBrandMode = 'PLATFORM_WORDMARK'
     } else if (purpose === 'MARK') {
       version.value.markAssetId = null
       version.value.markAsset = null

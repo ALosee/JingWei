@@ -180,17 +180,121 @@ export type components = {
         BrandAsset: {
             byteSize: number;
             /** @enum {string} */
-            contentType: "image/png" | "image/svg+xml";
+            contentType: "image/png";
             height: number;
             /** Format: uuid */
             id: string;
             /** @enum {string} */
-            purpose: "LOGO" | "MARK" | "FAVICON";
+            purpose: "LOGO";
             url: string;
             /** @enum {string} */
-            validationProfile: "PNG_V1" | "BRAND_LOGO_SVG_V1";
+            validationProfile: "PNG_V1";
             width: number;
-        } | null;
+        } | {
+            byteSize: number;
+            /** @enum {string} */
+            contentType: "image/svg+xml";
+            height: number;
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            purpose: "LOGO";
+            url: string;
+            /** @enum {string} */
+            validationProfile: "BRAND_LOGO_SVG_V1";
+            width: number;
+        } | {
+            byteSize: number;
+            /** @enum {string} */
+            contentType: "image/svg+xml";
+            height: number;
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            purpose: "LOGO";
+            url: string;
+            /** @enum {string} */
+            validationProfile: "BRAND_LOGO_SVG_V2";
+            width: number;
+        } | {
+            byteSize: number;
+            /** @enum {string} */
+            contentType: "image/png";
+            height: number;
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            purpose: "MARK";
+            url: string;
+            /** @enum {string} */
+            validationProfile: "PNG_V1";
+            width: number;
+        } | {
+            byteSize: number;
+            /** @enum {string} */
+            contentType: "image/svg+xml";
+            height: number;
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            purpose: "MARK";
+            url: string;
+            /** @enum {string} */
+            validationProfile: "BRAND_LOGO_SVG_V1";
+            width: number;
+        } | {
+            byteSize: number;
+            /** @enum {string} */
+            contentType: "image/svg+xml";
+            height: number;
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            purpose: "MARK";
+            url: string;
+            /** @enum {string} */
+            validationProfile: "BRAND_LOGO_SVG_V2";
+            width: number;
+        } | {
+            byteSize: number;
+            /** @enum {string} */
+            contentType: "image/png";
+            height: number;
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            purpose: "FAVICON";
+            url: string;
+            /** @enum {string} */
+            validationProfile: "PNG_V1";
+            width: number;
+        } | {
+            byteSize: number;
+            /** @enum {string} */
+            contentType: "image/x-icon";
+            height: number;
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            purpose: "FAVICON";
+            url: string;
+            /** @enum {string} */
+            validationProfile: "ICO_V1";
+            width: number;
+        } | {
+            byteSize: number;
+            /** @enum {string} */
+            contentType: "image/x-icon";
+            height: number;
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            purpose: "FAVICON";
+            url: string;
+            /** @enum {string} */
+            validationProfile: "ICO_V2";
+            width: number;
+        };
         BrandCreateDraftInput: {
             source: components["schemas"]["BrandDraftSource"];
         };
@@ -233,7 +337,46 @@ export type components = {
         };
         BrandVersion: {
             editRevision: number;
-            faviconAsset: components["schemas"]["BrandAsset"];
+            faviconAsset: {
+                byteSize: number;
+                /** @enum {string} */
+                contentType: "image/png";
+                height: number;
+                /** Format: uuid */
+                id: string;
+                /** @enum {string} */
+                purpose: "FAVICON";
+                url: string;
+                /** @enum {string} */
+                validationProfile: "PNG_V1";
+                width: number;
+            } | {
+                byteSize: number;
+                /** @enum {string} */
+                contentType: "image/x-icon";
+                height: number;
+                /** Format: uuid */
+                id: string;
+                /** @enum {string} */
+                purpose: "FAVICON";
+                url: string;
+                /** @enum {string} */
+                validationProfile: "ICO_V1";
+                width: number;
+            } | {
+                byteSize: number;
+                /** @enum {string} */
+                contentType: "image/x-icon";
+                height: number;
+                /** Format: uuid */
+                id: string;
+                /** @enum {string} */
+                purpose: "FAVICON";
+                url: string;
+                /** @enum {string} */
+                validationProfile: "ICO_V2";
+                width: number;
+            } | null;
             /** Format: uuid */
             faviconAssetId: string | null;
             /** @enum {string} */
@@ -242,12 +385,90 @@ export type components = {
             id: string;
             loginTagline: string;
             loginTitle: string;
-            logoAsset: components["schemas"]["BrandAsset"];
+            logoAsset: {
+                byteSize: number;
+                /** @enum {string} */
+                contentType: "image/png";
+                height: number;
+                /** Format: uuid */
+                id: string;
+                /** @enum {string} */
+                purpose: "LOGO";
+                url: string;
+                /** @enum {string} */
+                validationProfile: "PNG_V1";
+                width: number;
+            } | {
+                byteSize: number;
+                /** @enum {string} */
+                contentType: "image/svg+xml";
+                height: number;
+                /** Format: uuid */
+                id: string;
+                /** @enum {string} */
+                purpose: "LOGO";
+                url: string;
+                /** @enum {string} */
+                validationProfile: "BRAND_LOGO_SVG_V1";
+                width: number;
+            } | {
+                byteSize: number;
+                /** @enum {string} */
+                contentType: "image/svg+xml";
+                height: number;
+                /** Format: uuid */
+                id: string;
+                /** @enum {string} */
+                purpose: "LOGO";
+                url: string;
+                /** @enum {string} */
+                validationProfile: "BRAND_LOGO_SVG_V2";
+                width: number;
+            } | null;
             /** Format: uuid */
             logoAssetId: string | null;
             /** @enum {string} */
             logoColorMode: "ORIGINAL" | "FOLLOW_THEME";
-            markAsset: components["schemas"]["BrandAsset"];
+            markAsset: {
+                byteSize: number;
+                /** @enum {string} */
+                contentType: "image/png";
+                height: number;
+                /** Format: uuid */
+                id: string;
+                /** @enum {string} */
+                purpose: "MARK";
+                url: string;
+                /** @enum {string} */
+                validationProfile: "PNG_V1";
+                width: number;
+            } | {
+                byteSize: number;
+                /** @enum {string} */
+                contentType: "image/svg+xml";
+                height: number;
+                /** Format: uuid */
+                id: string;
+                /** @enum {string} */
+                purpose: "MARK";
+                url: string;
+                /** @enum {string} */
+                validationProfile: "BRAND_LOGO_SVG_V1";
+                width: number;
+            } | {
+                byteSize: number;
+                /** @enum {string} */
+                contentType: "image/svg+xml";
+                height: number;
+                /** Format: uuid */
+                id: string;
+                /** @enum {string} */
+                purpose: "MARK";
+                url: string;
+                /** @enum {string} */
+                validationProfile: "BRAND_LOGO_SVG_V2";
+                width: number;
+            } | null;
             /** Format: uuid */
             markAssetId: string | null;
             publishedAt: string | null;
@@ -269,6 +490,8 @@ export type components = {
             status: "DRAFT" | "PUBLISHED";
         };
         EffectiveBrand: {
+            /** @enum {string|null} */
+            faviconContentType: "image/png" | "image/x-icon" | null;
             faviconUrl: string | null;
             /** @enum {string} */
             horizontalBrandMode: "PLATFORM_WORDMARK" | "SHORT_NAME" | "CUSTOM_LOGO";
@@ -279,6 +502,8 @@ export type components = {
             /** @enum {string|null} */
             logoContentType: "image/png" | "image/svg+xml" | null;
             logoUrl: string | null;
+            /** @enum {string|null} */
+            markContentType: "image/png" | "image/svg+xml" | null;
             markUrl: string | null;
             publishedRevision: number | null;
             /** @enum {number} */
@@ -449,7 +674,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description PNG 或通过严格配置校验的 SVG 品牌素材 */
+            /** @description 通过用途与结构校验的 PNG、SVG 或 ICO 品牌素材 */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -457,6 +682,7 @@ export interface operations {
                 content: {
                     "image/png": string;
                     "image/svg+xml": string;
+                    "image/x-icon": string;
                 };
             };
             /** @description 素材 ID 无效 */

@@ -2,8 +2,11 @@ import { z } from 'zod'
 
 export {
   brandLogoSvgElements,
+  brandLogoSvgLocalReference,
   brandLogoSvgNamespace,
   brandLogoSvgProfileVersion,
+  brandLogoSvgXlinkNamespace,
+  brandSvgGeometryViolation,
   hasValidBrandLogoAspectRatio,
   isBrandLogoSvgElement,
   maximumBrandAssetBytes,
@@ -16,12 +19,22 @@ export {
   validateBrandLogoSvgAttribute,
   type BrandLogoSvgElement,
   type BrandLogoSvgViewBox,
+  type BrandSvgPurpose,
 } from './brand-logo-svg-profile.js'
 
 export const brandTitleModes = ['SYSTEM_ONLY', 'PAGE_AND_SYSTEM'] as const
 export const brandAssetPurposes = ['LOGO', 'MARK', 'FAVICON'] as const
-export const brandAssetContentTypes = ['image/png', 'image/svg+xml'] as const
-export const brandAssetValidationProfiles = ['PNG_V1', 'BRAND_LOGO_SVG_V1'] as const
+export const brandAssetContentTypes = ['image/png', 'image/svg+xml', 'image/x-icon'] as const
+export const brandAssetValidationProfiles = [
+  'PNG_V1',
+  'BRAND_LOGO_SVG_V1',
+  'BRAND_LOGO_SVG_V2',
+  'ICO_V1',
+  'ICO_V2',
+] as const
+export const brandLogoContentTypes = ['image/png', 'image/svg+xml'] as const
+export const brandMarkContentTypes = ['image/png', 'image/svg+xml'] as const
+export const brandFaviconContentTypes = ['image/png', 'image/x-icon'] as const
 export const horizontalBrandModes = ['PLATFORM_WORDMARK', 'SHORT_NAME', 'CUSTOM_LOGO'] as const
 export const logoColorModes = ['ORIGINAL', 'FOLLOW_THEME'] as const
 
@@ -51,19 +64,100 @@ function requireCustomLogo(
   })
 }
 
+const brandAssetCommonShape = {
+  id: z.uuid(),
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+  byteSize: z.number().int().positive(),
+  url: z.string().startsWith('/api/v1/branding/assets/'),
+} as const
+
+function brandAssetVariant<
+  const Purpose extends BrandAssetPurpose,
+  const ContentType extends BrandAssetContentType,
+  const Profile extends BrandAssetValidationProfile,
+>(purpose: Purpose, contentType: ContentType, validationProfile: Profile) {
+  return z
+    .object({
+      ...brandAssetCommonShape,
+      purpose: z.literal(purpose),
+      contentType: z.literal(contentType),
+      validationProfile: z.literal(validationProfile),
+    })
+    .strict()
+}
+
+const logoPngAssetSchema = brandAssetVariant('LOGO', 'image/png', 'PNG_V1')
+const logoSvgV1AssetSchema = brandAssetVariant('LOGO', 'image/svg+xml', 'BRAND_LOGO_SVG_V1')
+const logoSvgV2AssetSchema = brandAssetVariant('LOGO', 'image/svg+xml', 'BRAND_LOGO_SVG_V2')
+const markPngAssetSchema = brandAssetVariant('MARK', 'image/png', 'PNG_V1')
+const markSvgV1AssetSchema = brandAssetVariant('MARK', 'image/svg+xml', 'BRAND_LOGO_SVG_V1')
+const markSvgV2AssetSchema = brandAssetVariant('MARK', 'image/svg+xml', 'BRAND_LOGO_SVG_V2')
+const faviconPngAssetSchema = brandAssetVariant('FAVICON', 'image/png', 'PNG_V1')
+const faviconIcoV1AssetSchema = brandAssetVariant('FAVICON', 'image/x-icon', 'ICO_V1')
+const faviconIcoV2AssetSchema = brandAssetVariant('FAVICON', 'image/x-icon', 'ICO_V2')
+
+export const brandLogoAssetSchema = z.union([
+  logoPngAssetSchema,
+  logoSvgV1AssetSchema,
+  logoSvgV2AssetSchema,
+])
+export const brandMarkAssetSchema = z.union([
+  markPngAssetSchema,
+  markSvgV1AssetSchema,
+  markSvgV2AssetSchema,
+])
+export const brandFaviconAssetSchema = z.union([
+  faviconPngAssetSchema,
+  faviconIcoV1AssetSchema,
+  faviconIcoV2AssetSchema,
+])
+
 export const brandAssetSchema = z
-  .object({
-    id: z.uuid(),
-    purpose: z.enum(brandAssetPurposes),
-    contentType: z.enum(brandAssetContentTypes),
-    validationProfile: z.enum(brandAssetValidationProfiles),
-    width: z.number().int().positive(),
-    height: z.number().int().positive(),
-    byteSize: z.number().int().positive(),
-    url: z.string().startsWith('/api/v1/branding/assets/'),
-  })
-  .strict()
+  .union([
+    logoPngAssetSchema,
+    logoSvgV1AssetSchema,
+    logoSvgV2AssetSchema,
+    markPngAssetSchema,
+    markSvgV1AssetSchema,
+    markSvgV2AssetSchema,
+    faviconPngAssetSchema,
+    faviconIcoV1AssetSchema,
+    faviconIcoV2AssetSchema,
+  ])
   .meta({ id: 'BrandAsset' })
+
+function requireMatchingVersionAssets(
+  value: {
+    logoAssetId: string | null
+    markAssetId: string | null
+    faviconAssetId: string | null
+    logoAsset: BrandAsset | null
+    markAsset: BrandAsset | null
+    faviconAsset: BrandAsset | null
+  },
+  context: z.core.$RefinementCtx,
+): void {
+  const slots = [
+    ['logoAssetId', 'logoAsset', 'LOGO'],
+    ['markAssetId', 'markAsset', 'MARK'],
+    ['faviconAssetId', 'faviconAsset', 'FAVICON'],
+  ] as const
+  for (const [idField, assetField, purpose] of slots) {
+    const id = value[idField]
+    const asset = value[assetField]
+    if (
+      (id === null) !== (asset === null) ||
+      (id !== null && asset !== null && (asset.id !== id || asset.purpose !== purpose))
+    )
+      context.addIssue({
+        code: 'custom',
+        path: [assetField],
+        message: `${purpose} 素材引用不一致`,
+        input: value,
+      })
+  }
+}
 
 export const brandConfigurationSchema = z
   .object(brandConfigurationShape)
@@ -79,12 +173,13 @@ export const brandVersionSchema = z
     editRevision: z.number().int().nonnegative(),
     status: z.enum(['DRAFT', 'PUBLISHED']),
     publishedAt: z.string().nullable(),
-    logoAsset: brandAssetSchema.nullable(),
-    markAsset: brandAssetSchema.nullable(),
-    faviconAsset: brandAssetSchema.nullable(),
+    logoAsset: brandLogoAssetSchema.nullable(),
+    markAsset: brandMarkAssetSchema.nullable(),
+    faviconAsset: brandFaviconAssetSchema.nullable(),
   })
   .strict()
   .superRefine(requireCustomLogo)
+  .superRefine(requireMatchingVersionAssets)
   .meta({ id: 'BrandVersion' })
 
 export const brandVersionSummarySchema = z
@@ -153,11 +248,29 @@ export const effectiveBrandSchema = z
     horizontalBrandMode: z.enum(horizontalBrandModes),
     logoColorMode: z.enum(logoColorModes),
     logoUrl: z.string().nullable(),
-    logoContentType: z.enum(brandAssetContentTypes).nullable(),
+    logoContentType: z.enum(brandLogoContentTypes).nullable(),
     markUrl: z.string().nullable(),
+    markContentType: z.enum(brandMarkContentTypes).nullable(),
     faviconUrl: z.string().nullable(),
+    faviconContentType: z.enum(brandFaviconContentTypes).nullable(),
   })
   .strict()
+  .superRefine((value, context) => {
+    const pairs = [
+      ['logoUrl', 'logoContentType'],
+      ['markUrl', 'markContentType'],
+      ['faviconUrl', 'faviconContentType'],
+    ] as const
+    for (const [urlField, contentTypeField] of pairs) {
+      if ((value[urlField] === null) !== (value[contentTypeField] === null))
+        context.addIssue({
+          code: 'custom',
+          path: [contentTypeField],
+          message: `${contentTypeField} 必须与 ${urlField} 同时存在`,
+          input: value,
+        })
+    }
+  })
   .meta({ id: 'EffectiveBrand' })
 
 export const defaultBrandConfiguration: BrandConfiguration = Object.freeze({
@@ -187,7 +300,9 @@ export const defaultEffectiveBrand: EffectiveBrand = Object.freeze({
   logoUrl: null,
   logoContentType: null,
   markUrl: null,
+  markContentType: null,
   faviconUrl: null,
+  faviconContentType: null,
 })
 
 export function brandAssetUrl(id: string): string {
@@ -207,6 +322,9 @@ export type BrandAssetValidationProfile = (typeof brandAssetValidationProfiles)[
 export type HorizontalBrandMode = (typeof horizontalBrandModes)[number]
 export type LogoColorMode = (typeof logoColorModes)[number]
 export type BrandAsset = z.infer<typeof brandAssetSchema>
+export type BrandLogoAsset = z.infer<typeof brandLogoAssetSchema>
+export type BrandMarkAsset = z.infer<typeof brandMarkAssetSchema>
+export type BrandFaviconAsset = z.infer<typeof brandFaviconAssetSchema>
 export type BrandConfiguration = z.infer<typeof brandConfigurationSchema>
 export type BrandVersion = z.infer<typeof brandVersionSchema>
 export type BrandVersionSummary = z.infer<typeof brandVersionSummarySchema>

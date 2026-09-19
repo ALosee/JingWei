@@ -2,6 +2,7 @@ import { deflateSync } from 'node:zlib'
 
 import { describe, expect, it } from 'vitest'
 
+import { brandSvgProfileContractFixtures } from '../../shared/brand-svg-profile.contract-fixtures.js'
 import { validateBrandImage } from './brand-image.js'
 
 function crc32(bytes: Uint8Array): number {
@@ -42,7 +43,59 @@ function svg(source: string): Uint8Array {
   return new TextEncoder().encode(source)
 }
 
+function buildSquareIco(size: number): Uint8Array {
+  const directory = Buffer.alloc(6 + 16)
+  directory.writeUInt16LE(0, 0)
+  directory.writeUInt16LE(1, 2)
+  directory.writeUInt16LE(1, 4)
+  const framePayload = Buffer.from(grayscalePng(size, size))
+  const offset = directory.byteLength
+  directory[6] = size >= 256 ? 0 : size
+  directory[7] = size >= 256 ? 0 : size
+  directory.writeUInt16LE(1, 10)
+  directory.writeUInt16LE(32, 12)
+  directory.writeUInt32LE(framePayload.byteLength, 14)
+  directory.writeUInt32LE(offset, 18)
+  return new Uint8Array(Buffer.concat([directory, framePayload]))
+}
+
+function buildDibIco(size: number): Uint8Array {
+  const header = Buffer.alloc(40)
+  const xorStride = Math.ceil((size * 32) / 32) * 4
+  const maskStride = Math.ceil(size / 32) * 4
+  const xor = Buffer.alloc(xorStride * size)
+  const mask = Buffer.alloc(maskStride * size)
+  header.writeUInt32LE(40, 0)
+  header.writeInt32LE(size, 4)
+  header.writeInt32LE(size * 2, 8)
+  header.writeUInt16LE(1, 12)
+  header.writeUInt16LE(32, 14)
+  header.writeUInt32LE(0, 16)
+  header.writeUInt32LE(xor.byteLength, 20)
+
+  const framePayload = Buffer.concat([header, xor, mask])
+  const directory = Buffer.alloc(6 + 16)
+  directory.writeUInt16LE(1, 2)
+  directory.writeUInt16LE(1, 4)
+  directory[6] = size >= 256 ? 0 : size
+  directory[7] = size >= 256 ? 0 : size
+  directory.writeUInt16LE(1, 10)
+  directory.writeUInt16LE(32, 12)
+  directory.writeUInt32LE(framePayload.byteLength, 14)
+  directory.writeUInt32LE(directory.byteLength, 18)
+  return new Uint8Array(Buffer.concat([directory, framePayload]))
+}
+
 describe('brand image validation', () => {
+  it.each(brandSvgProfileContractFixtures)(
+    'matches the shared SVG contract: $name',
+    ({ purpose, source, expected }) => {
+      const validate = () => validateBrandImage(purpose, svg(source))
+      if (expected === 'ACCEPT') expect(validate).not.toThrow()
+      else expect(validate).toThrow(expect.objectContaining({ code: 'BRANDING_ASSET_INVALID' }))
+    },
+  )
+
   it('accepts structurally valid PNGs within purpose-specific dimensions', () => {
     expect(validateBrandImage('MARK', grayscalePng(64, 64))).toMatchObject({
       contentType: 'image/png',
@@ -52,6 +105,10 @@ describe('brand image validation', () => {
     expect(validateBrandImage('LOGO', grayscalePng(320, 96))).toMatchObject({
       width: 320,
       height: 96,
+    })
+    expect(validateBrandImage('FAVICON', grayscalePng(16, 16))).toMatchObject({
+      width: 16,
+      height: 16,
     })
   })
 
@@ -92,12 +149,6 @@ describe('brand image validation', () => {
         svg('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 320"/>'),
       ),
     ).toThrow(expect.objectContaining({ code: 'BRANDING_ASSET_INVALID' }))
-    expect(() =>
-      validateBrandImage(
-        'LOGO',
-        svg('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 2000 24"/>'),
-      ),
-    ).toThrow(expect.objectContaining({ code: 'BRANDING_ASSET_INVALID' }))
   })
 
   it('accepts a Logo SVG made only from the strict drawing subset', () => {
@@ -113,7 +164,107 @@ describe('brand image validation', () => {
           </svg>
         `),
       ),
-    ).toMatchObject({ contentType: 'image/svg+xml', width: 320, height: 96 })
+    ).toMatchObject({
+      contentType: 'image/svg+xml',
+      validationProfile: 'BRAND_LOGO_SVG_V2',
+      width: 320,
+      height: 96,
+    })
+  })
+
+  it('accepts square mark SVG and rejects non-square mark SVG', () => {
+    expect(
+      validateBrandImage(
+        'MARK',
+        svg(`
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+            <circle cx="32" cy="32" r="24"/>
+          </svg>
+        `),
+      ),
+    ).toMatchObject({ contentType: 'image/svg+xml', width: 64, height: 64 })
+    expect(() =>
+      validateBrandImage(
+        'MARK',
+        svg(
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 32"><path d="M0 0h1v1z"/></svg>',
+        ),
+      ),
+    ).toThrow(expect.objectContaining({ code: 'BRANDING_ASSET_INVALID' }))
+
+    expect(
+      validateBrandImage(
+        'MARK',
+        svg(
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024"><path d="M0 0h1v1z"/></svg>',
+        ),
+      ),
+    ).toMatchObject({ width: 1024, height: 1024 })
+  })
+
+  it('accepts safe design-tool clip paths without enabling external references', () => {
+    const source = `
+      <svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+        version="1.1" viewBox="0 0 36 36" width="100%" height="100%">
+        <defs><clipPath id="mark_clip"><rect x="0" y="0" width="36" height="36" rx="8"/></clipPath></defs>
+        <g clip-path="url(#mark_clip)">
+          <path d="M4 4h28v28H4z" fill="#A71E32" style="mix-blend-mode:passthrough"/>
+        </g>
+      </svg>
+    `
+    expect(validateBrandImage('MARK', svg(source))).toMatchObject({ width: 36, height: 36 })
+    expect(() =>
+      validateBrandImage(
+        'MARK',
+        svg(
+          '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36"><path clip-path="url(https://example.com/clip.svg#x)" d="M0 0h1v1z"/></svg>',
+        ),
+      ),
+    ).toThrow(expect.objectContaining({ code: 'BRANDING_ASSET_INVALID' }))
+  })
+
+  it('accepts ICO for favicon only and keeps favicon SVG rejected', () => {
+    const ico = buildSquareIco(32)
+    expect(validateBrandImage('FAVICON', ico)).toMatchObject({
+      contentType: 'image/x-icon',
+      validationProfile: 'ICO_V2',
+      width: 32,
+      height: 32,
+    })
+    expect(() => validateBrandImage('MARK', ico)).toThrow(
+      expect.objectContaining({ code: 'BRANDING_ASSET_INVALID' }),
+    )
+    expect(() => validateBrandImage('LOGO', ico)).toThrow(
+      expect.objectContaining({ code: 'BRANDING_ASSET_INVALID' }),
+    )
+    expect(() =>
+      validateBrandImage(
+        'FAVICON',
+        svg('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"/>'),
+      ),
+    ).toThrow(expect.objectContaining({ code: 'BRANDING_ASSET_INVALID' }))
+  })
+
+  it('accepts a standard 32-bit BMP/DIB ICO frame', () => {
+    expect(validateBrandImage('FAVICON', buildDibIco(113))).toMatchObject({
+      contentType: 'image/x-icon',
+      validationProfile: 'ICO_V2',
+      width: 113,
+      height: 113,
+    })
+  })
+
+  it('rejects malformed ICO frame data', () => {
+    const ico = buildSquareIco(32)
+    ico.fill(0x80, 22)
+    expect(() => validateBrandImage('FAVICON', ico)).toThrow(
+      expect.objectContaining({ code: 'BRANDING_ASSET_INVALID' }),
+    )
+
+    const truncatedDib = buildDibIco(32).subarray(0, -1)
+    expect(() => validateBrandImage('FAVICON', truncatedDib)).toThrow(
+      expect.objectContaining({ code: 'BRANDING_ASSET_INVALID' }),
+    )
   })
 
   it('rejects active, externally referenced or structurally unnecessary SVG content', () => {
@@ -129,18 +280,9 @@ describe('brand image validation', () => {
       expect(() => validateBrandImage('LOGO', svg(source))).toThrow(
         expect.objectContaining({ code: 'BRANDING_ASSET_INVALID' }),
       )
+      expect(() => validateBrandImage('MARK', svg(source))).toThrow(
+        expect.objectContaining({ code: 'BRANDING_ASSET_INVALID' }),
+      )
     }
-  })
-
-  it('does not allow SVG for square mark or favicon assets', () => {
-    const source = svg(
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><circle cx="32" cy="32" r="24"/></svg>',
-    )
-    expect(() => validateBrandImage('MARK', source)).toThrow(
-      expect.objectContaining({ code: 'BRANDING_ASSET_INVALID' }),
-    )
-    expect(() => validateBrandImage('FAVICON', source)).toThrow(
-      expect.objectContaining({ code: 'BRANDING_ASSET_INVALID' }),
-    )
   })
 })

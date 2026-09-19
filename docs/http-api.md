@@ -404,9 +404,10 @@ Branding 公开读取当前租户已发布品牌，管理接口则使用独立�
 ```
 
 保存使用 `expectedEditRevision`，发布/回滚另带 `expectedPublishedVersionId`。任一预期值过期返回
-409，客户端应重新加载。素材不超过 512 KiB；服务端检查 PNG 结构、CRC、编码参数和用途尺寸；横向
-Logo 也允许只含基础绘图元素、静态颜色和本地几何属性的严格 SVG 子集，任何未知/活动内容都会整份
-拒绝且不入库。两种格式都不依赖 multipart MIME。主要稳定错误码为 `BRANDING_VERSION_NOT_FOUND`、
+409，客户端应重新加载。素材不超过 2 MiB；服务端检查 PNG 结构、CRC、编码参数和用途尺寸，Favicon
+ICO 同时支持标准 PNG 与 BMP/DIB 帧；横向 Logo 和方形标志也允许基础图形、静态颜色、本地渐变、蒙版
+和裁剪路径组成的 SVG 子集，任何未知/活动内容都会整份拒绝且不入库。格式判断均以实际字节为准，不依赖
+multipart MIME。主要稳定错误码为 `BRANDING_VERSION_NOT_FOUND`、
 `BRANDING_VERSION_IMMUTABLE`、`BRANDING_EDIT_CONFLICT`、`BRANDING_PUBLISH_CONFLICT`、
 `BRANDING_ASSET_NOT_FOUND` 和 `BRANDING_ASSET_INVALID`。
 

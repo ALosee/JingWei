@@ -52,6 +52,7 @@ test.beforeEach(async ({ page }) => {
     route.fulfill({
       json: {
         authenticated: true,
+        permissions: [],
         user: {
           id: id(200),
           tenantId: id(201),
@@ -113,6 +114,27 @@ test('restores palette, radius and global size and follows system changes', asyn
   await page.emulateMedia({ colorScheme: 'light' })
   await expect(page.locator('html')).not.toHaveClass(/dark/)
   await expect(page.locator('html')).toHaveCSS('color-scheme', 'light')
+})
+
+test('login brand canvas follows the active primary palette', async ({ page }) => {
+  await page.unroute('**/api/v1/iam/session')
+  await page.route('**/api/v1/iam/session', (route) =>
+    route.fulfill({ json: { authenticated: false } }),
+  )
+  await page.setViewportSize({ width: 1280, height: 800 })
+  await page.goto('/signin')
+
+  const canvas = page.locator('section[aria-labelledby="platform-title"]')
+  await expect(canvas).toBeVisible()
+  const defaultBackground = await canvas.evaluate(
+    (element) => getComputedStyle(element).backgroundImage,
+  )
+  await page
+    .locator('main')
+    .evaluate((element) => element.style.setProperty('--primary', '0 72% 50%'))
+  await expect
+    .poll(() => canvas.evaluate((element) => getComputedStyle(element).backgroundImage))
+    .not.toBe(defaultBackground)
 })
 
 test('invalid persisted theme falls back to a usable settings panel', async ({ page }) => {
@@ -179,6 +201,55 @@ test('layout mode, dimensions and tab visibility persist', async ({ page }) => {
   await page.reload()
   await expect(page.getByRole('navigation', { name: '顶部导航' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: '页面标签' })).toHaveCount(0)
+})
+
+test('custom brand mark keeps its original transparent presentation', async ({ page }) => {
+  await page.route('**/api/v1/iam/account', (route) =>
+    route.fulfill({
+      json: {
+        id: id(200),
+        username: 'admin',
+        displayName: '管理员',
+        email: null,
+        phone: null,
+        status: 'ACTIVE',
+        lastLoginAt: null,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        passwordChangedAt: '2026-01-01T00:00:00.000Z',
+      },
+    }),
+  )
+  await page.route('**/api/v1/branding/bootstrap*', (route) =>
+    route.fulfill({
+      json: {
+        schemaVersion: 2,
+        source: 'PUBLISHED',
+        publishedRevision: 1,
+        systemName: '智能审核平台',
+        shortName: '审核平台',
+        loginTitle: '智能审核平台',
+        loginTagline: '',
+        titleMode: 'PAGE_AND_SYSTEM',
+        horizontalBrandMode: 'SHORT_NAME',
+        logoColorMode: 'ORIGINAL',
+        logoUrl: null,
+        logoContentType: null,
+        markUrl:
+          'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAFgwJ/lbMcWQAAAABJRU5ErkJggg==',
+        markContentType: 'image/png',
+        faviconUrl: null,
+        faviconContentType: null,
+      },
+    }),
+  )
+
+  await page.goto('/account/me')
+  const frame = page.locator('[data-global-brand-mark]').first()
+  await expect(frame).toHaveAttribute('data-brand-mark-source', 'custom')
+  await expect(frame).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)')
+  await expect(frame).toHaveCSS('border-radius', '0px')
+  await expect(frame).toHaveCSS('box-shadow', 'none')
+  await expect(frame.locator('img')).toHaveCSS('object-fit', 'contain')
 })
 
 test('chrome page tabs keep both corner arcs connected to the active tab background', async ({

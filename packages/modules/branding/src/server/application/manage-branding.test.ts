@@ -13,7 +13,11 @@ import {
 import type { IamAccess } from '@jingwei/module-iam/server/public'
 
 import {
+  brandAssetSchema,
   brandAssetUrl,
+  brandFaviconAssetSchema,
+  brandLogoAssetSchema,
+  brandMarkAssetSchema,
   defaultBrandConfiguration,
   type BrandAdmin,
   type BrandAsset,
@@ -39,6 +43,19 @@ interface MemoryVersion {
 interface MemoryAsset {
   tenantId: TenantId
   value: StoredBrandAsset
+}
+
+function storedAssetMetadata(asset: StoredBrandAsset): BrandAsset {
+  return brandAssetSchema.parse({
+    id: asset.id,
+    purpose: asset.purpose,
+    contentType: asset.contentType,
+    validationProfile: asset.validationProfile,
+    width: asset.width,
+    height: asset.height,
+    byteSize: asset.byteSize,
+    url: asset.url,
+  })
 }
 
 class MemoryBrandingStore implements BrandingStore {
@@ -161,11 +178,14 @@ class MemoryBrandingStore implements BrandingStore {
     metadata: Omit<BrandAsset, 'id' | 'purpose' | 'url'>,
   ) {
     const id = newEntityId()
-    const value: StoredBrandAsset = {
+    const asset = brandAssetSchema.parse({
       id,
       purpose,
       url: brandAssetUrl(id),
       ...metadata,
+    })
+    const value: StoredBrandAsset = {
+      ...asset,
       bytes,
     }
     this.assets.set(id, { tenantId: context.tenantId, value })
@@ -193,11 +213,19 @@ class MemoryBrandingStore implements BrandingStore {
       id === null || this.assets.get(id)?.tenantId !== tenantId
         ? null
         : (this.assets.get(id)?.value ?? null)
+    const logoAsset = asset(version.logoAssetId)
+    const markAsset = asset(version.markAssetId)
+    const faviconAsset = asset(version.faviconAssetId)
     return {
       ...version,
-      logoAsset: asset(version.logoAssetId),
-      markAsset: asset(version.markAssetId),
-      faviconAsset: asset(version.faviconAssetId),
+      logoAsset:
+        logoAsset === null ? null : brandLogoAssetSchema.parse(storedAssetMetadata(logoAsset)),
+      markAsset:
+        markAsset === null ? null : brandMarkAssetSchema.parse(storedAssetMetadata(markAsset)),
+      faviconAsset:
+        faviconAsset === null
+          ? null
+          : brandFaviconAssetSchema.parse(storedAssetMetadata(faviconAsset)),
     }
   }
 }
