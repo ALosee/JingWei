@@ -1,6 +1,7 @@
 import { OpenAPIHono } from '@hono/zod-openapi'
 import { Scalar } from '@scalar/hono-api-reference'
 
+import { createControlPlaneServer } from '@jingwei/control-plane/server'
 import { assertApiAuthorizationContracts, type ServerAppEnv } from '@jingwei/module-sdk/server'
 
 import type { Runtime } from './bootstrap/runtime.js'
@@ -17,6 +18,17 @@ export async function createApp(runtime: Runtime) {
   registerOpenApiSecuritySchemes(app)
   app.route('/', createSystemRoutes(runtime.moduleRegistry.editionId))
   const api = new OpenAPIHono<ServerAppEnv>()
+  api.route(
+    '/platform',
+    await createControlPlaneServer({
+      database: runtime.database,
+      config: runtime.config,
+      logger: runtime.logger,
+      registry: runtime.moduleRegistry,
+      tenantSessions: runtime.sessionService,
+      operatorSessions: runtime.operatorSessionService,
+    }),
+  )
   for (const module of createGeneratedServerModules(runtime)) {
     const installed = await module.install(runtime)
     api.route(installed.basePath, installed.routes)

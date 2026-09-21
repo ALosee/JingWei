@@ -12,7 +12,8 @@
     "vite.config.ts",
     "playwright.config.ts",
     "e2e/**/*.ts",
-    "../../packages/modules/*/src/web/**/*.vue"
+    "../../packages/modules/*/src/web/**/*.vue",
+    "../../packages/platform/control-plane/src/web/**/*.vue"
   ],
   "exclude": ["src/router/_generated/typed-router.d.ts"]
 }

@@ -33,6 +33,8 @@ pnpm architecture:check
 | `source-controlled-ui`             | package dependency 或 authored source 引入 `@soybeanjs/ui` styled 包                            |
 | `ui-private-import`                | `#ui/*` 生成器 alias 被 `@jingwei/ui` 之外的源码导入                                            |
 | `api-authorization-contract`       | Module OpenAPI route 绕过授权契约工厂，导致接口缺少机器可读授权声明                             |
+| `platform-authorization-boundary`  | Control Plane 之外的包导入平台会话授权契约                                                      |
+| `tooling-app-boundary`             | Tooling 通过相对路径穿入 app 源码，而不是消费显式 package export                                |
 
 检查前还会把全部模块组成临时 Edition，由 `resolveEdition` 发现同步依赖环。
 
@@ -51,7 +53,7 @@ pnpm architecture:check
 
 既有模块导入与数据库所有权扫描基于正则，覆盖约定的静态语法和常见 Kysely/SQL 模式；新增职责检查解析 TypeScript AST，并从 Vue 中提取 script，避免注释、模板文本、字符串造成同类误报。两者都不是完整依赖图或任意代码语义证明：变量动态 import、包装函数、别名传播、反射等仍需 review。
 
-职责检查排除测试和 generated/_generated；所有源码扫描排除 node_modules、dist、测试产物。库的 index.ts 不当成可执行入口。Application/API 只允许 type-only 引入列举的 TenantDirectory/TenantSnapshot/AppConfig 端口，不能把这一例外扩大到 DatabaseRuntime 或 Kysely。合法装配可传入 client 函数，但不得自己调用它执行功能流程。
+职责检查排除测试和 generated/_generated；所有源码扫描排除 node_modules、dist、测试产物。库的 index.ts 不当成可执行入口。Application/API 只允许 type-only 引入列举的 TenantDirectory/ActiveTenantSnapshot/AppConfig 端口，不能把这一例外扩大到 DatabaseRuntime 或 Kysely。合法装配可传入 client 函数，但不得自己调用它执行功能流程。Control Plane 的 OpenAPI contract 与 composition root 也在对应规则覆盖范围内，不能因其位于 platform package 就成为盲区。
 
 因此：
 

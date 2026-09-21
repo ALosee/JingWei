@@ -1,8 +1,8 @@
 import type { Context } from 'hono'
 
-import type { TenantDirectory } from '@jingwei/database'
 import { ApplicationError } from '@jingwei/kernel'
 import { createApiRouter, type ServerAppEnv } from '@jingwei/module-sdk/server'
+import type { TenantDirectory } from '@jingwei/tenancy'
 
 import type { ManageNavigation } from '../application/manage-navigation.js'
 import type { ResolveNavigation } from '../application/resolve-navigation.js'

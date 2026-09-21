@@ -12,11 +12,13 @@ export function requestLogging(logger: AppLogger): MiddlewareHandler<ServerAppEn
       await next()
     } finally {
       const auth = context.get('authContext')
+      const platformAuth = context.get('platformAuthContext')
       logger.info(
         {
           requestId,
           tenantId: auth?.tenantId,
           userId: auth?.userId,
+          operatorId: platformAuth?.operatorId,
           method,
           path: context.req.path,
           status: context.res.status,

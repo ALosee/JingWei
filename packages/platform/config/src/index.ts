@@ -4,11 +4,19 @@ const configSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   HTTP_HOST: z.string().min(1).default('127.0.0.1'),
   HTTP_PORT: z.coerce.number().int().min(1).max(65_535).default(3000),
+  HTTP_TRUST_PROXY: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((value) => value === 'true'),
   DATABASE_URL: z
     .url()
     .startsWith('postgres')
     .default('postgres://jingwei:jingwei@127.0.0.1:5432/jingwei'),
   APP_ORIGIN: z.url().default('http://localhost:5173'),
+  COOKIE_SECURE: z
+    .enum(['true', 'false'])
+    .transform((value) => value === 'true')
+    .optional(),
   BOOTSTRAP_TENANT_CODE: z.string().trim().min(1).max(80).default('default'),
   AUTH_ACCESS_TOKEN_SECONDS: z.coerce.number().int().positive().default(600),
   AUTH_REFRESH_IDLE_SECONDS: z.coerce.number().int().positive().default(1_800),
@@ -23,6 +31,8 @@ export interface AppConfig {
   readonly http: {
     readonly host: string
     readonly port: number
+    readonly trustProxy: boolean
+    readonly secureCookies: boolean
   }
   readonly databaseUrl: string
   readonly appOrigin: string
@@ -48,6 +58,11 @@ export interface AppConfig {
  */
 export function loadConfig(environment: NodeJS.ProcessEnv): AppConfig {
   const value = configSchema.parse(environment)
+  const secureCookies = value.COOKIE_SECURE ?? new URL(value.APP_ORIGIN).protocol === 'https:'
+
+  if (new URL(value.APP_ORIGIN).protocol === 'https:' && !secureCookies) {
+    throw new Error('COOKIE_SECURE must be true when APP_ORIGIN uses HTTPS')
+  }
 
   if (value.AUTH_ACCESS_TOKEN_SECONDS >= value.AUTH_REFRESH_ABSOLUTE_SECONDS) {
     throw new Error('AUTH_ACCESS_TOKEN_SECONDS must be lower than AUTH_REFRESH_ABSOLUTE_SECONDS')
@@ -61,7 +76,12 @@ export function loadConfig(environment: NodeJS.ProcessEnv): AppConfig {
 
   return Object.freeze({
     environment: value.NODE_ENV,
-    http: Object.freeze({ host: value.HTTP_HOST, port: value.HTTP_PORT }),
+    http: Object.freeze({
+      host: value.HTTP_HOST,
+      port: value.HTTP_PORT,
+      trustProxy: value.HTTP_TRUST_PROXY,
+      secureCookies,
+    }),
     databaseUrl: value.DATABASE_URL,
     appOrigin: value.APP_ORIGIN,
     bootstrapTenantCode: value.BOOTSTRAP_TENANT_CODE,

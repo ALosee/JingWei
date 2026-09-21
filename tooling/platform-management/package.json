@@ -1,0 +1,19 @@
+{
+  "name": "@jingwei/platform-management",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@jingwei/config": "workspace:*",
+    "@jingwei/control-plane": "workspace:*",
+    "@jingwei/database": "workspace:*",
+    "@jingwei/kernel": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
+}

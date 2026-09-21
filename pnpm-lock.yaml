@@ -223,6 +223,9 @@ importers:
       '@jingwei/config':
         specifier: workspace:*
         version: link:../../packages/platform/config
+      '@jingwei/control-plane':
+        specifier: workspace:*
+        version: link:../../packages/platform/control-plane
       '@jingwei/database':
         specifier: workspace:*
         version: link:../../packages/platform/database
@@ -256,6 +259,9 @@ importers:
       '@jingwei/outbox':
         specifier: workspace:*
         version: link:../../packages/platform/outbox
+      '@jingwei/tenancy':
+        specifier: workspace:*
+        version: link:../../packages/platform/tenancy
       '@scalar/hono-api-reference':
         specifier: 'catalog:'
         version: 0.12.1(hono@4.13.5)
@@ -299,6 +305,9 @@ importers:
       '@jingwei/api-client':
         specifier: workspace:*
         version: link:../../packages/platform/api-client
+      '@jingwei/control-plane':
+        specifier: workspace:*
+        version: link:../../packages/platform/control-plane
       '@jingwei/module-branding':
         specifier: workspace:*
         version: link:../../packages/modules/branding
@@ -390,6 +399,9 @@ importers:
       '@jingwei/module-sdk':
         specifier: workspace:*
         version: link:../../platform/module-sdk
+      '@jingwei/tenancy':
+        specifier: workspace:*
+        version: link:../../platform/tenancy
       '@jingwei/ui':
         specifier: workspace:*
         version: link:../../platform/ui
@@ -500,6 +512,9 @@ importers:
       '@jingwei/observability':
         specifier: workspace:*
         version: link:../../platform/observability
+      '@jingwei/tenancy':
+        specifier: workspace:*
+        version: link:../../platform/tenancy
       '@jingwei/ui':
         specifier: workspace:*
         version: link:../../platform/ui
@@ -558,6 +573,9 @@ importers:
       '@jingwei/module-sdk':
         specifier: workspace:*
         version: link:../../platform/module-sdk
+      '@jingwei/tenancy':
+        specifier: workspace:*
+        version: link:../../platform/tenancy
       '@jingwei/ui':
         specifier: workspace:*
         version: link:../../platform/ui
@@ -709,6 +727,79 @@ importers:
         specifier: 'catalog:'
         version: 5.9.3
 
+  packages/platform/control-plane:
+    dependencies:
+      '@hono/zod-openapi':
+        specifier: 'catalog:'
+        version: 1.6.3(hono@4.13.5)(zod@4.5.4)
+      '@jingwei/api-client':
+        specifier: workspace:*
+        version: link:../api-client
+      '@jingwei/audit':
+        specifier: workspace:*
+        version: link:../audit
+      '@jingwei/auth':
+        specifier: workspace:*
+        version: link:../auth
+      '@jingwei/config':
+        specifier: workspace:*
+        version: link:../config
+      '@jingwei/database':
+        specifier: workspace:*
+        version: link:../database
+      '@jingwei/http-contract':
+        specifier: workspace:*
+        version: link:../http-contract
+      '@jingwei/kernel':
+        specifier: workspace:*
+        version: link:../kernel
+      '@jingwei/module-iam':
+        specifier: workspace:*
+        version: link:../../modules/iam
+      '@jingwei/module-navigation':
+        specifier: workspace:*
+        version: link:../../modules/navigation
+      '@jingwei/module-sdk':
+        specifier: workspace:*
+        version: link:../module-sdk
+      '@jingwei/observability':
+        specifier: workspace:*
+        version: link:../observability
+      '@jingwei/tenancy':
+        specifier: workspace:*
+        version: link:../tenancy
+      '@jingwei/ui':
+        specifier: workspace:*
+        version: link:../ui
+      '@soybeanjs/fetch':
+        specifier: 'catalog:'
+        version: 0.1.0
+      hono:
+        specifier: 'catalog:'
+        version: 4.13.5
+      kysely:
+        specifier: 'catalog:'
+        version: 0.29.5
+      vue:
+        specifier: 'catalog:'
+        version: 3.5.42(typescript@5.9.3)
+      vue-router:
+        specifier: 'catalog:'
+        version: 5.3.0(@vue/compiler-sfc@3.5.42)(esbuild@0.28.2)(pinia@4.0.3(@vue/devtools-api@8.2.1)(typescript@5.9.3)(vue@3.5.42(typescript@5.9.3)))(rolldown@1.2.6)(vite@8.2.2(@types/node@24.13.3)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.13)(yaml@2.9.0))(vue@3.5.42(typescript@5.9.3))
+      zod:
+        specifier: 'catalog:'
+        version: 4.5.4
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+      vue-tsc:
+        specifier: 'catalog:'
+        version: 3.3.11(typescript@5.9.3)
+
   packages/platform/database:
     dependencies:
       '@jingwei/kernel':
@@ -777,6 +868,9 @@ importers:
       '@jingwei/observability':
         specifier: workspace:*
         version: link:../observability
+      '@jingwei/tenancy':
+        specifier: workspace:*
+        version: link:../tenancy
       hono:
         specifier: 'catalog:'
         version: 4.13.5
@@ -818,6 +912,31 @@ importers:
         version: 5.9.3
 
   packages/platform/storage:
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+
+  packages/platform/tenancy:
+    dependencies:
+      '@jingwei/audit':
+        specifier: workspace:*
+        version: link:../audit
+      '@jingwei/auth':
+        specifier: workspace:*
+        version: link:../auth
+      '@jingwei/database':
+        specifier: workspace:*
+        version: link:../database
+      '@jingwei/kernel':
+        specifier: workspace:*
+        version: link:../kernel
+      kysely:
+        specifier: 'catalog:'
+        version: 0.29.5
     devDependencies:
       '@types/node':
         specifier: 'catalog:'
@@ -934,6 +1053,15 @@ importers:
       '@jingwei/module-organization':
         specifier: workspace:*
         version: link:../../packages/modules/organization
+      '@jingwei/module-sdk':
+        specifier: workspace:*
+        version: link:../../packages/platform/module-sdk
+      '@jingwei/server':
+        specifier: workspace:*
+        version: link:../../apps/server
+      '@jingwei/tenancy':
+        specifier: workspace:*
+        version: link:../../packages/platform/tenancy
       kysely:
         specifier: 'catalog:'
         version: 0.29.5
@@ -962,6 +1090,9 @@ importers:
       '@jingwei/auth':
         specifier: workspace:*
         version: link:../../packages/platform/auth
+      '@jingwei/control-plane':
+        specifier: workspace:*
+        version: link:../../packages/platform/control-plane
       '@jingwei/http-contract':
         specifier: workspace:*
         version: link:../../packages/platform/http-contract
@@ -983,6 +1114,65 @@ importers:
       openapi-typescript:
         specifier: 'catalog:'
         version: 7.13.0(typescript@5.9.3)
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+
+  tooling/platform-management:
+    dependencies:
+      '@jingwei/config':
+        specifier: workspace:*
+        version: link:../../packages/platform/config
+      '@jingwei/control-plane':
+        specifier: workspace:*
+        version: link:../../packages/platform/control-plane
+      '@jingwei/database':
+        specifier: workspace:*
+        version: link:../../packages/platform/database
+      '@jingwei/kernel':
+        specifier: workspace:*
+        version: link:../../packages/platform/kernel
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 24.13.3
+      typescript:
+        specifier: 'catalog:'
+        version: 5.9.3
+
+  tooling/tenant-management:
+    dependencies:
+      '@jingwei/audit':
+        specifier: workspace:*
+        version: link:../../packages/platform/audit
+      '@jingwei/auth':
+        specifier: workspace:*
+        version: link:../../packages/platform/auth
+      '@jingwei/config':
+        specifier: workspace:*
+        version: link:../../packages/platform/config
+      '@jingwei/control-plane':
+        specifier: workspace:*
+        version: link:../../packages/platform/control-plane
+      '@jingwei/database':
+        specifier: workspace:*
+        version: link:../../packages/platform/database
+      '@jingwei/kernel':
+        specifier: workspace:*
+        version: link:../../packages/platform/kernel
+      '@jingwei/module-sdk':
+        specifier: workspace:*
+        version: link:../../packages/platform/module-sdk
+      '@jingwei/server':
+        specifier: workspace:*
+        version: link:../../apps/server
+      '@jingwei/tenancy':
+        specifier: workspace:*
+        version: link:../../packages/platform/tenancy
     devDependencies:
       '@types/node':
         specifier: 'catalog:'

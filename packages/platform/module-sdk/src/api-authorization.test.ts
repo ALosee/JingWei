@@ -6,6 +6,8 @@ import {
   authenticatedApiAccess,
   createApiRoute,
   permissionApiAccess,
+  platformAuthenticatedApiAccess,
+  platformRefreshTokenApiAccess,
   publicApiAccess,
 } from './api-authorization.js'
 import { definePermissionRequirement } from './authorization.js'
@@ -81,6 +83,26 @@ describe('API authorization contracts', () => {
     ).toThrow('must declare OpenAPI security')
   })
 
+  it('keeps platform sessions distinct from tenant authentication contracts', () => {
+    const platformSecurity = [{ platformAccessTokenCookie: [] }]
+    expect(
+      createApiRoute(platformAuthenticatedApiAccess, {
+        method: 'get',
+        path: '/platform/tenants',
+        security: platformSecurity,
+        responses: response,
+      })[apiAuthorizationExtension],
+    ).toEqual({ kind: 'PLATFORM_AUTHENTICATED' })
+    expect(
+      createApiRoute(platformRefreshTokenApiAccess, {
+        method: 'post',
+        path: '/platform/sessions/refresh',
+        security: platformSecurity,
+        responses: response,
+      })[apiAuthorizationExtension],
+    ).toEqual({ kind: 'PLATFORM_REFRESH_TOKEN' })
+  })
+
   it('validates enabled permissions, capabilities and scope modes', () => {
     const valid = {
       type: 'route',
@@ -127,5 +149,47 @@ describe('API authorization contracts', () => {
         registry,
       ),
     ).toThrow('接口授权契约无效')
+  })
+
+  it('confines platform authorization to the platform API namespace', () => {
+    const platformRoute = (path: string, authorization: typeof platformAuthenticatedApiAccess) => ({
+      type: 'route',
+      route: {
+        path,
+        operationId: 'platformOnly',
+        [apiAuthorizationExtension]: authorization,
+      },
+    })
+
+    expect(() =>
+      assertApiAuthorizationContracts(
+        [platformRoute('/api/v1/platform/tenants', platformAuthenticatedApiAccess)],
+        registry,
+      ),
+    ).not.toThrow()
+    expect(() =>
+      assertApiAuthorizationContracts(
+        [platformRoute('/api/v1/tenant-data', platformAuthenticatedApiAccess)],
+        registry,
+      ),
+    ).toThrow('restricted to /api/v1/platform')
+  })
+
+  it('rejects tenant authorization under the platform API namespace', () => {
+    expect(() =>
+      assertApiAuthorizationContracts(
+        [
+          {
+            type: 'route',
+            route: {
+              path: '/api/v1/platform/tenants',
+              operationId: 'wrongSessionRealm',
+              [apiAuthorizationExtension]: authenticatedApiAccess,
+            },
+          },
+        ],
+        registry,
+      ),
+    ).toThrow('platform endpoints cannot use tenant authorization')
   })
 })

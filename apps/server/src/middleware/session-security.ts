@@ -10,6 +10,7 @@ import {
   requiresOriginValidation,
   type SessionService,
 } from '@jingwei/auth'
+import { isPlatformApiPath } from '@jingwei/control-plane/shared'
 import { ApplicationError, type AuthContext } from '@jingwei/kernel'
 import type { ServerAppEnv } from '@jingwei/module-sdk/server'
 
@@ -19,6 +20,10 @@ export function sessionSecurity(dependencies: {
   readonly appOrigin: string
 }): MiddlewareHandler<ServerAppEnv> {
   return async (context, next) => {
+    if (isPlatformApiPath(context.req.path)) {
+      await next()
+      return
+    }
     const requestId = context.get('requestId')
     const method = context.req.method.toUpperCase()
     if (

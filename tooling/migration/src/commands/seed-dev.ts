@@ -7,11 +7,14 @@ interface TenantTable {
   id: string
   code: string
   name: string
-  status: 'ACTIVE' | 'SUSPENDED' | 'DISABLED'
+  status: 'PROVISIONING' | 'ACTIVE' | 'SUSPENDED' | 'DISABLED'
   default_locale: string
   default_timezone: string
   default_currency: string
   settings: unknown
+  version: number
+  provisioning_step: 'TENANT_RESERVED' | 'IAM_INITIALIZED' | 'NAVIGATION_INITIALIZED' | 'COMPLETED'
+  provisioning_error_code: string | null
   created_at: Date
   updated_at: Date
 }
@@ -64,7 +67,7 @@ export async function runDevelopmentSeed(
     throw new Error('DEV_ADMIN_PASSWORD must contain at least 12 characters')
   }
 
-  const tenantCode = environmentText('DEV_TENANT_CODE', 'default')
+  const tenantCode = environmentText('DEV_TENANT_CODE', 'default').toLocaleLowerCase('en-US')
   const tenantName = environmentText('DEV_TENANT_NAME', 'Jingwei Development')
   const adminLogin = environmentText('DEV_ADMIN_LOGIN', 'admin')
   const adminDisplayName = environmentText('DEV_ADMIN_DISPLAY_NAME', 'Local Administrator')
@@ -95,6 +98,9 @@ export async function runDevelopmentSeed(
             default_timezone: 'Asia/Shanghai',
             default_currency: 'CNY',
             settings: {},
+            version: 1,
+            provisioning_step: 'COMPLETED',
+            provisioning_error_code: null,
             created_at: now,
             updated_at: now,
           })

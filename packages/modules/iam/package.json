@@ -28,6 +28,7 @@
     "@jingwei/kernel": "workspace:*",
     "@jingwei/module-sdk": "workspace:*",
     "@jingwei/observability": "workspace:*",
+    "@jingwei/tenancy": "workspace:*",
     "@jingwei/ui": "workspace:*",
     "hono": "catalog:",
     "kysely": "catalog:",

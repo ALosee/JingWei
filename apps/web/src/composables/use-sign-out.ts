@@ -1,7 +1,11 @@
 import { ref } from 'vue'
 
 import { logout } from '@jingwei/module-iam/client'
-import { clearIamSessionPermissions, setIamSessionUser } from '@jingwei/module-iam/web'
+import {
+  clearIamSessionPermissions,
+  rememberedTenantSignInPath,
+  setIamSessionUser,
+} from '@jingwei/module-iam/web'
 import { toast } from '@jingwei/ui'
 
 import { useShellStore } from '../stores/shell.js'
@@ -15,7 +19,7 @@ interface SignOutDependencies {
 export function useSignOut(
   dependencies: SignOutDependencies = {
     logout,
-    leaveWorkspace: () => window.location.assign('/'),
+    leaveWorkspace: () => window.location.assign(rememberedTenantSignInPath()),
   },
 ) {
   const shell = useShellStore()

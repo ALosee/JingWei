@@ -3,11 +3,12 @@ import { computed, ref } from 'vue'
 
 import { ButtonLoading, Input } from '@jingwei/ui'
 
-import { useAuthBrandPresentation } from '../auth-brand-presentation.js'
+import { useAuthBrandPresentation, useAuthTenantBrandSelector } from '../auth-brand-presentation.js'
 import { useSignIn } from '../composables/use-sign-in.js'
 import LoginBrandIdentity from './login-brand-identity.vue'
 
 const brand = useAuthBrandPresentation()
+const tenantBrandSelector = useAuthTenantBrandSelector()
 const { tenantCode, username, password, errorMessage, submitting, submit } = useSignIn()
 const passwordVisible = ref(false)
 const capsLockActive = ref(false)
@@ -17,6 +18,11 @@ const passwordToggleLabel = computed(() => (passwordVisible.value ? '隐藏密�
 
 function updateCapsLock(event: KeyboardEvent): void {
   capsLockActive.value = event.getModifierState('CapsLock')
+}
+
+function selectTenantBrand(): void {
+  const code = tenantCode.value.trim()
+  if (code.length > 0) void tenantBrandSelector.select(code)
 }
 </script>
 
@@ -58,6 +64,7 @@ function updateCapsLock(event: KeyboardEvent): void {
             placeholder="例如：default"
             required
             :disabled="submitting"
+            @focusout="selectTenantBrand"
           >
             <template #leading>
               <svg

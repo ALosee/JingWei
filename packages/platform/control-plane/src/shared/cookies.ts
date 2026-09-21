@@ -1,0 +1,5 @@
+export const platformAccessTokenCookieName = 'jingwei_platform_access'
+export const platformRefreshTokenCookieName = 'jingwei_platform_refresh'
+export const platformRefreshTokenCookiePath = '/api/v1/platform/sessions/refresh'
+export const platformCsrfCookieName = 'jingwei_platform_csrf'
+export const platformCsrfHeaderName = 'x-platform-csrf-token'

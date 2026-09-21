@@ -7,33 +7,35 @@ import type {
 } from '../../shared/index.js'
 import type { NavigationSource } from '../domain/navigation.js'
 
+export type NavigationWriteContext = Pick<ApplicationContext, 'tenantId' | 'userId'>
+
 export interface NavigationRoot {
   id: string
   publishedVersionId: string | null
 }
 export interface NavigationStore extends NavigationSource {
   root(tenantId: TenantId, lock?: boolean): Promise<NavigationRoot | null>
-  ensureRoot(context: ApplicationContext): Promise<NavigationRoot>
+  ensureRoot(context: NavigationWriteContext): Promise<NavigationRoot>
   list(tenantId: TenantId): Promise<AdminNavigation>
   version(tenantId: TenantId, id: string): Promise<NavigationVersion | null>
   nextRevision(tenantId: TenantId): Promise<number>
   insertVersion(
-    context: ApplicationContext,
+    context: NavigationWriteContext,
     rootId: string,
     version: NavigationVersion,
   ): Promise<void>
   saveDraft(
-    context: ApplicationContext,
+    context: NavigationWriteContext,
     id: string,
     config: NavigationConfiguration,
     editRevision: number,
   ): Promise<void>
-  markPublished(context: ApplicationContext, id: string): Promise<void>
-  pointPublished(context: ApplicationContext, rootId: string, versionId: string): Promise<void>
-  deleteDraft(context: ApplicationContext, id: string): Promise<void>
+  markPublished(context: NavigationWriteContext, id: string): Promise<void>
+  pointPublished(context: NavigationWriteContext, rootId: string, versionId: string): Promise<void>
+  deleteDraft(context: NavigationWriteContext, id: string): Promise<void>
   roleCodes(tenantId: TenantId, roleId: string): Promise<string[]>
   replaceRoleCodes(
-    context: ApplicationContext,
+    context: NavigationWriteContext,
     roleId: string,
     codes: readonly string[],
   ): Promise<void>

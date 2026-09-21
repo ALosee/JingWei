@@ -13,6 +13,7 @@ export async function generateOpenApiClients(
       await (check ? checkModuleClientTypes : writeModuleClientTypes)({
         rootDirectory,
         moduleId: contract.id,
+        ...('clientOutput' in contract ? { clientOutput: contract.clientOutput } : {}),
         source,
       }),
     )

@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { CreatedSession, PasswordHasher } from '@jingwei/auth'
-import type { TenantDirectory, TenantSnapshot } from '@jingwei/database'
 import { newRequestId, newSessionId, newTenantId, newUserId, type Clock } from '@jingwei/kernel'
+import type { ActiveTenantSnapshot, TenantDirectory } from '@jingwei/tenancy'
 
 import {
   AuthenticateUser,
@@ -44,7 +44,7 @@ function createdSession(): CreatedSession {
 }
 
 function createHarness(snapshot: CredentialSnapshot | null, passwordMatches = false) {
-  const tenant: TenantSnapshot = {
+  const tenant: ActiveTenantSnapshot = {
     id: tenantId,
     code: 'default',
     name: 'Default',
@@ -52,6 +52,7 @@ function createHarness(snapshot: CredentialSnapshot | null, passwordMatches = fa
   }
   const tenants: TenantDirectory = {
     findActiveByCode: vi.fn(() => Promise.resolve(tenant)),
+    isActive: vi.fn(() => Promise.resolve(true)),
   }
   const findByLogin = vi.fn(() => Promise.resolve(snapshot))
   const recordFailure = vi.fn(() => Promise.resolve())

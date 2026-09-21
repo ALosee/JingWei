@@ -9,6 +9,8 @@ export function correlateRequest(): MiddlewareHandler<ServerAppEnv> {
     context.set('requestId', requestId)
     context.header('x-request-id', requestId)
     context.set('authContext', null)
+    context.set('platformAuthContext', null)
+    context.set('requestMetadata', {})
     await next()
   }
 }

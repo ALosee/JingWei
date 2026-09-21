@@ -18,6 +18,7 @@
     "@jingwei/database": "workspace:*",
     "@jingwei/kernel": "workspace:*",
     "@jingwei/observability": "workspace:*",
+    "@jingwei/tenancy": "workspace:*",
     "hono": "catalog:"
   },
   "devDependencies": {

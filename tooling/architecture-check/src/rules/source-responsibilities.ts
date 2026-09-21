@@ -26,7 +26,7 @@ const httpMethods = new Set([
   'notFound',
 ])
 const technicalImports =
-  /^(?:node:|hono(?:\/|$)|@hono\/|kysely(?:\/|$)|pg$|@jingwei\/(?:database|config)(?:\/|$))/u
+  /^(?:node:|hono(?:\/|$)|@hono\/|kysely(?:\/|$)|pg$|@jingwei\/(?:database|config|tenancy)(?:\/|$))/u
 
 /** Syntactic guardrails, not a proof of business semantics. Parse TS/Vue scripts to avoid comment/string matches. */
 export function inspectSourceResponsibilities(
@@ -50,11 +50,14 @@ export function inspectSourceResponsibilities(
   const domain = moduleFile && file.includes('/server/domain/')
   const application = moduleFile && file.includes('/server/application/')
   const api = moduleFile && file.includes('/server/api/')
-  const apiContract = moduleFile && file.endsWith('/server/api/openapi.ts')
+  const apiContract =
+    (moduleFile || file.startsWith('packages/platform/control-plane/')) &&
+    file.endsWith('/server/api/openapi.ts')
   const page = moduleFile && file.includes('/web/pages/') && file.endsWith('.vue')
   const composition =
     /^apps\/[^/]+\/src\/(?:bootstrap\/|app\.ts$)/u.test(file) ||
-    (moduleFile && /\/server\/(?:module\.ts|public\/create-[^/]+\.ts)$/u.test(file))
+    (moduleFile && /\/server\/(?:module\.ts|public\/create-[^/]+\.ts)$/u.test(file)) ||
+    file === 'packages/platform/control-plane/src/server/create-control-plane.ts'
 
   function inspectImport(specifier: string, portableType = false) {
     const target = specifier.startsWith('.')
@@ -68,6 +71,12 @@ export function inspectSourceResponsibilities(
     }
     if (specifier.startsWith('#ui/') && !file.startsWith('packages/platform/ui/')) {
       report('ui-private-import', 'The #ui alias is private to packages/platform/ui')
+    }
+    if (file.startsWith('tooling/') && target.startsWith('apps/')) {
+      report(
+        'tooling-app-boundary',
+        'Tooling must consume explicit package exports instead of crossing into an app source tree',
+      )
     }
     if (
       (domain || application || api) &&
@@ -104,8 +113,8 @@ export function inspectSourceResponsibilities(
       const bindings = statement.importClause?.namedBindings
       // Deliberate platform ports may be consumed as types without admitting concrete DB/runtime classes.
       const portableNames =
-        specifier === '@jingwei/database'
-          ? new Set(['TenantDirectory', 'TenantSnapshot'])
+        specifier === '@jingwei/tenancy'
+          ? new Set(['TenantDirectory', 'ActiveTenantSnapshot'])
           : specifier === '@jingwei/config'
             ? new Set(['AppConfig'])
             : new Set<string>()
@@ -127,6 +136,17 @@ export function inspectSourceResponsibilities(
         for (const binding of bindings.elements) {
           imports.set(binding.name.text, specifier)
           const importedName = binding.propertyName?.text ?? binding.name.text
+          if (
+            (importedName === 'platformAuthenticatedApiAccess' ||
+              importedName === 'platformRefreshTokenApiAccess') &&
+            !file.startsWith('packages/platform/control-plane/') &&
+            !file.startsWith('packages/platform/module-sdk/')
+          ) {
+            report(
+              'platform-authorization-boundary',
+              'Platform authorization contracts are owned by the control-plane package',
+            )
+          }
           if (apiContract && specifier === '@hono/zod-openapi' && importedName === 'createRoute') {
             report(
               'api-authorization-contract',

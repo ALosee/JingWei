@@ -31,11 +31,12 @@ pnpm edition:generate full
 1. 加载 `editions/<name>.ts` 的默认导出；
 2. 发现全部 manifests；
 3. 调用 `resolveEdition` 计算依赖优先列表和 capability；
-4. 生成 Server ResolvedEdition；
-5. 生成 Server Module 安装列表；
-6. 合并 platform 与选中模块迁移；
-7. 生成 Web Module 列表；
-8. 生成 Elegant Router 页面目录和安全占位 imports。
+4. 校验始终启用的 Control Plane 所需 Foundation（当前为 IAM 与 Navigation）；
+5. 生成 Server ResolvedEdition；
+6. 生成 Server Module 安装列表；
+7. 合并 platform 与选中模块迁移；
+8. 生成 Web Module 列表；
+9. 生成 Elegant Router 页面目录和安全占位 imports。
 
 ## 生成文件
 
@@ -55,6 +56,7 @@ pnpm edition:generate full
 生成入口只 import 已解析模块。Bundler 从这些入口做可达性分析，因此未选模块不应进入生产制品。验证不能只看生成数组，还要检查最终 bundle 或构建 metafile。
 
 Platform 的 database/auth/audit/outbox 迁移当前始终加入 Server 迁移集合；业务模块迁移只随 Edition 加入。
+Control Plane 同样始终存在，并通过公开用例初始化租户 IAM 与 Navigation，因此当前所有 Edition 必须包含这两个 Foundation Module；缺失时生成直接失败，不允许留下可装配但运行时必然失效的组合。
 
 ## 公共 API
 

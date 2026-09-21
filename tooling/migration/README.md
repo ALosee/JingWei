@@ -21,7 +21,7 @@ pnpm migration:up
 
 ### `up`
 
-执行到生成集合的最新迁移，逐条输出 Kysely 状态；任意错误使进程非零退出。CLI 在成功或失败后都会关闭数据库连接池。
+执行到生成集合的最新迁移，逐条输出 Kysely 状态；全部 DDL 成功后，以同一个生成 Edition 显式同步 `iam.permission_definition` 运行时投影。该投影属于部署运维步骤，不由应用安装或任一租户开通修改；因此新库与 Edition 升级在创建租户前都有完整 FK 目标，又不会让并发租户操作互相停用权限。任意错误使进程非零退出。CLI 在成功或失败后都会关闭数据库连接池。
 
 ### `seed:dev`
 
@@ -86,7 +86,7 @@ node --env-file=.env.test --import tsx tooling/migration/src/test-navigation-rea
 
 ## Edition 一致性
 
-CLI 不自行选择模块，而是导入 `apps/server/src/generated/migrations.ts`。因此执行前必须先生成目标 Edition：
+CLI 不自行选择模块，而是通过 `@jingwei/server/migrations` 与 `@jingwei/server/edition` 显式 package export 消费同一组生成描述符，不以相对路径穿入 App 源码。因此执行前必须先生成目标 Edition：
 
 ```bash
 pnpm edition:generate full

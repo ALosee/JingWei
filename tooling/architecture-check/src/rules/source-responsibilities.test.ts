@@ -107,7 +107,7 @@ describe('source responsibility guardrails', () => {
     expect(
       codes(
         'packages/modules/iam/src/server/application/example.ts',
-        "import type { TenantDirectory } from '@jingwei/database'",
+        "import type { TenantDirectory } from '@jingwei/tenancy'",
       ),
     ).toEqual([])
     expect(
@@ -119,7 +119,7 @@ describe('source responsibility guardrails', () => {
     expect(
       codes(
         'packages/modules/iam/src/server/application/example.ts',
-        "import runtime, { type TenantDirectory } from '@jingwei/database'",
+        "import runtime, { type TenantDirectory } from '@jingwei/tenancy'",
       ),
     ).toContain('server-layer-boundary')
   })
@@ -167,5 +167,26 @@ describe('source responsibility guardrails', () => {
         "import { createApiRoute } from '@jingwei/module-sdk/server'; export const route = createApiRoute(access, config)",
       ),
     ).not.toContain('api-authorization-contract')
+  })
+
+  it('guards platform authorization and tooling-to-app boundaries', () => {
+    expect(
+      codes(
+        'packages/modules/iam/src/server/api/openapi.ts',
+        "import { platformAuthenticatedApiAccess } from '@jingwei/module-sdk/server'",
+      ),
+    ).toContain('platform-authorization-boundary')
+    expect(
+      codes(
+        'packages/platform/control-plane/src/server/api/openapi.ts',
+        "import { platformAuthenticatedApiAccess } from '@jingwei/module-sdk/server'",
+      ),
+    ).not.toContain('platform-authorization-boundary')
+    expect(
+      codes(
+        'tooling/tenant-management/src/commands/manage-tenants.ts',
+        "import { generatedEdition } from '../../../../apps/server/src/generated/edition.js'",
+      ),
+    ).toContain('tooling-app-boundary')
   })
 })

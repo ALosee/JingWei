@@ -11,6 +11,11 @@ export interface AuthBrandPresentation {
   readonly logoColorMode: 'ORIGINAL' | 'FOLLOW_THEME'
 }
 
+/** Consumer-owned port: the app shell may resolve a public tenant brand without coupling IAM to branding. */
+export interface AuthTenantBrandSelector {
+  select(tenantCode: string): Promise<void>
+}
+
 /** Matches branding module's platform default compact name. */
 export const defaultAuthShortName = '经纬'
 
@@ -33,7 +38,16 @@ export const authBrandPresentationKey: InjectionKey<Readonly<Ref<AuthBrandPresen
 export const authPlatformWordmarkComponentKey: InjectionKey<Component> = Symbol(
   'iam-auth-platform-wordmark-component',
 )
+export const authTenantBrandSelectorKey: InjectionKey<AuthTenantBrandSelector> = Symbol(
+  'iam-auth-tenant-brand-selector',
+)
 
 export function useAuthBrandPresentation(): Readonly<Ref<AuthBrandPresentation>> {
   return inject(authBrandPresentationKey, fallback)
+}
+
+export function useAuthTenantBrandSelector(): AuthTenantBrandSelector {
+  return inject(authTenantBrandSelectorKey, {
+    select: () => Promise.resolve(),
+  })
 }

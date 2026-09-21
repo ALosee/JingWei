@@ -5,10 +5,13 @@ import { useApiRequestState } from '@jingwei/api-client/vue'
 
 import { login } from '../../client/index.js'
 import type { LoginInput } from '../../shared/index.js'
+import { currentTenantLoginHint, rememberSuccessfulTenantCode } from '../tenant-login-hint.js'
 
 interface SignInDependencies {
   login: (input: LoginInput, options: ApiRequestOptions) => Promise<{ error: Error | null }>
   enterWorkspace: () => void
+  initialTenantCode: () => string
+  rememberTenantCode: (tenantCode: string) => void
 }
 
 function safeReturnPath(value: unknown): string {
@@ -19,16 +22,18 @@ function safeReturnPath(value: unknown): string {
 }
 
 /** Owns sign-in form submission; the page renders fields and binds actions. */
-export function useSignIn(
-  dependencies: SignInDependencies = {
+export function useSignIn(overrides: Partial<SignInDependencies> = {}) {
+  const dependencies: SignInDependencies = {
     login,
     enterWorkspace: () => {
       const redirect = safeReturnPath(new URLSearchParams(window.location.search).get('redirect'))
       window.location.assign(redirect)
     },
-  },
-) {
-  const tenantCode = ref('default')
+    initialTenantCode: currentTenantLoginHint,
+    rememberTenantCode: rememberSuccessfulTenantCode,
+    ...overrides,
+  }
+  const tenantCode = ref(dependencies.initialTenantCode())
   const username = ref('')
   const password = ref('')
   const errorMessage = ref('')
@@ -56,6 +61,7 @@ export function useSignIn(
       return
     }
 
+    dependencies.rememberTenantCode(input.tenantCode)
     dependencies.enterWorkspace()
   }
 

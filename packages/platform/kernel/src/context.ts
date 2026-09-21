@@ -1,4 +1,4 @@
-import type { RequestId, SessionId, TenantId, UserId } from './ids.js'
+import type { OperatorId, RequestId, SessionId, TenantId, UserId } from './ids.js'
 
 /**
  * Trusted identity and correlation data for one application operation.
@@ -17,4 +17,13 @@ export interface ApplicationContext {
 export interface AuthContext extends ApplicationContext {
   readonly sessionId: SessionId
   readonly roleIds: readonly string[]
+}
+
+/** Authenticated control-plane context. It deliberately has no tenant identity. */
+export interface PlatformAuthContext {
+  readonly requestId: RequestId
+  readonly operatorId: OperatorId
+  readonly sessionId: SessionId
+  readonly ipAddress?: string
+  readonly userAgent?: string
 }

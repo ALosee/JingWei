@@ -29,6 +29,8 @@
     "seed:dev": "tsx tooling/migration/src/seed-dev.ts",
     "seed:navigation": "tsx tooling/migration/src/seed-navigation.ts",
     "seed:dictionary": "tsx tooling/migration/src/seed-dictionary.ts",
+    "tenant:manage": "tsx tooling/tenant-management/src/cli.ts",
+    "platform:bootstrap": "tsx tooling/platform-management/src/cli.ts",
     "test:auth:real": "tsx tooling/migration/src/smoke-auth.ts",
     "test:navigation:real": "tsx tooling/migration/src/test-navigation-real.ts",
     "ui:add": "sbean add --cwd packages/platform/ui",

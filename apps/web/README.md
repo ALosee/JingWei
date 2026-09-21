@@ -1,6 +1,6 @@
 # `@jingwei/web`
 
-Jingwei 的 Vue 3 Web 壳应用。它负责启动 Pinia 和 Router、恢复导航、安装 Edition 页面并在启动失败时进入可用的恢复界面。
+Jingwei 的 Vue 3 Web 壳应用。它在同一套制品中按 URL namespace 启动平台控制面或租户工作空间；租户端负责恢复动态导航和 Edition 页面，平台端使用独立会话与静态管理路由。
 
 Web 构建通过 `unocss/vite` 扫描壳与各模块页面，`src/bootstrap/start-web.ts` 统一加载生成样式。
 `uno.config.ts` 使用 `@soybeanjs/ui-uno` 的 `presetSbean()` 读取 `packages/platform/ui/sbean.json`，并由
@@ -21,6 +21,7 @@ Web 不依赖 `@soybeanjs/ui` styled 包。升级生成源码时必须复核
 本应用负责：
 
 - 创建 Vue、Pinia 和 Router 实例；
+- `/platform/*` 选择固定品牌的平台控制面启动流程；
 - 调用 Navigation 模块获取匿名和已认证导航；
 - 并行加载生效租户品牌，并投影到 document metadata、favicon 和工作区 chrome；
 - 把服务端返回的 route key 映射到构建期页面注册表；
@@ -39,7 +40,9 @@ Web 不依赖 `@soybeanjs/ui` styled 包。升级生成源码时必须复核
 
 ```text
 src/
-├── bootstrap/start-web.ts     # Vue/Pinia/Router 与实际依赖装配
+├── bootstrap/start-web.ts     # 按 URL namespace 选择启动流程
+├── bootstrap/start-platform-web.ts # 平台 operator 会话与静态路由装配
+├── bootstrap/start-tenant-web.ts   # 租户品牌、导航与 IAM 会话装配
 ├── branding/document-brand.ts # 生效品牌到浏览器文档 metadata 的投影
 ├── layouts/
 │   ├── BaseLayout.vue         # 只组合 Headless Layout 与当前模式定义
@@ -53,6 +56,7 @@ src/
 ├── router/
 │   ├── _generated/            # Elegant Router 生成
 │   ├── dynamic-routes.ts      # 导航节点到真实页面的桥接
+│   ├── platform-router.ts     # /platform 固定管理路由
 │   └── index.ts              # createApplicationRouter 工厂
 ├── stores/
 │   ├── shell.ts               # 导航与当前会话用户投影
@@ -66,12 +70,12 @@ e2e/                           # Playwright 关键路径测试
 
 ## 启动流程
 
-`main.ts` 只导入并调用 `startWebApplication()`；`bootstrap/start-web.ts` 负责依赖装配与挂载，`initializeNavigation()` 负责下面的导航流程，`selectInitialLocation()` 负责首屏策略。不能把流程分支重新堆进入口或装配文件，依据见 [代码职责与入口约束](../../docs/code-structure.md)。
+`main.ts` 只导入并调用 `startWebApplication()`；`bootstrap/start-web.ts` 以精确 path segment 判断入口，并通过动态 import 只加载平台或租户组合根。`/platform` 不执行、也不静态拉入租户品牌、导航或 IAM session 启动图；`/platform-foo` 仍属于租户侧。其他路径由 `start-tenant-web.ts` 装配，`initializeNavigation()` 负责下面的租户导航流程，`selectInitialLocation()` 负责首屏策略。不能根据 Cookie 猜测用户想进入哪个入口，依据见 [代码职责与入口约束](../../docs/code-structure.md)。
 
 1. 安装 Pinia 和基础 Router；
-2. 与导航流程并行请求 `/api/v1/branding/bootstrap`；SVG Logo 在进入全局品牌状态前再次校验，
+2. 从显式 `tenantCode` query 或最近一次成功登录记录选择匿名租户提示，并与导航流程并行请求 `/api/v1/branding/bootstrap`；SVG Logo 在进入全局品牌状态前再次校验，
    品牌或素材失败时保留内置默认/安全回退展示；
-3. 请求 `/api/v1/navigation/bootstrap`；
+3. 携带同一租户提示请求 `/api/v1/navigation/bootstrap`；提示租户不可用时回退到部署默认租户；
 4. 安装匿名可见动态路由；
 5. 请求 `/api/v1/iam/session` 恢复 HttpOnly Cookie 的会话状态；
 6. 仅在已认证时请求 `/api/v1/navigation/me` 并安装用户可见路由；

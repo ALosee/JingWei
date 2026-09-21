@@ -28,6 +28,7 @@ export async function generateEdition(
     discovered.map(({ manifest }) => manifest),
   )
   const ids = resolved.modules.map(({ manifest }) => manifest.id)
+  assertControlPlaneFoundationModules(ids)
   const capabilitySelections = Object.fromEntries(
     resolved.modules.map(({ manifest, enabledCapabilities }) => [
       manifest.id,
@@ -63,6 +64,17 @@ export async function generateEdition(
   ])
 
   return resolved
+}
+
+/** The always-on control plane provisions tenant identity and navigation through these ports. */
+export function assertControlPlaneFoundationModules(moduleIds: readonly string[]): void {
+  const required = ['iam', 'navigation'] as const
+  const missing = required.filter((moduleId) => !moduleIds.includes(moduleId))
+  if (missing.length > 0) {
+    throw new Error(
+      `Edition cannot support the platform control plane without required foundation modules: ${missing.join(', ')}`,
+    )
+  }
 }
 
 function isEditionModule(value: unknown): value is EditionModule {
@@ -158,8 +170,8 @@ export function webModulesSource(moduleIds: readonly string[]): string {
   return `${imports}${integrationImports}\nimport type { App } from 'vue'\n\nexport const generatedWebModules = [\n${modules}\n] as const\n\nexport function installGeneratedWebIntegrations(app: App): void {\n${integration}}\n`
 }
 
-function migrationsSource(moduleIds: readonly string[]): string {
-  const platformPackages = ['database', 'auth', 'audit', 'outbox']
+export function migrationsSource(moduleIds: readonly string[]): string {
+  const platformPackages = ['database', 'tenancy', 'auth', 'audit', 'control-plane', 'outbox']
   const allImports = [
     ...platformPackages.map((id) => ({ specifier: `@jingwei/${id}/migrations`, id })),
     ...moduleIds.map((id) => ({ specifier: `@jingwei/module-${id}/migrations`, id })),

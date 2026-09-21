@@ -1,6 +1,6 @@
 # Database Design
 
-V1 使用一个 PostgreSQL 18 Database 与多个 module-owned schema：`platform.*`、`iam.*`、`branding.*`、`organization.*`、`navigation.*`、`dictionary.*`。未来模块继续使用自己的 schema。
+V1 使用一个 PostgreSQL 18 Database 与多个 module-owned schema：`platform.*`、`control_plane.*`、`iam.*`、`branding.*`、`organization.*`、`navigation.*`、`dictionary.*`。`platform.*` 中的表由明确的平台包分别拥有，例如 Tenancy、Auth、Audit 和 Outbox；`control_plane.*` 只保存全局平台 operator 及其独立会话；未来业务模块继续使用自己的 schema。
 
 ## Ownership 与关联
 
@@ -19,9 +19,13 @@ V1 使用一个 PostgreSQL 18 Database 与多个 module-owned schema：`platform
 
 ## Platform schema
 
-只保存跨模块基础设施：tenant、auth_session、auth_refresh_token、outbox、audit_log、number_sequence。auth_session 保存当前短期 access hash 与 token family 生命周期；auth_refresh_token 保存 refresh 代际 hash 和消费时间用于轮换与复用检测。未知归属的数据不得丢入 platform。
+只保存跨模块基础设施：tenant、auth_session、auth_refresh_token、outbox、audit_log、number_sequence。tenant 由 `@jingwei/tenancy` 拥有并使用 PROVISIONING/ACTIVE/SUSPENDED/DISABLED 生命周期；auth_session 保存当前短期 access hash 与 token family 生命周期；auth_refresh_token 保存 refresh 代际 hash 和消费时间用于轮换与复用检测。未知归属的数据不得丢入 platform。
 
 Audit Log append-only，且在统一 serializer 处过滤 password、hash、token、secret、API key 等敏感信息。Outbox 表预留 event/aggregate identity、payload、occurred/published/attempt/retry/error 字段；当前没有生产者或 worker，启用规则见 ADR 0014。
+
+## Control Plane schema
+
+`control_plane.operator`、`operator_credential`、`operator_session` 和 `operator_refresh_token` 由 `@jingwei/control-plane` 独占。operator 是全局运维身份，不带 tenant_id，也不外键关联 IAM user；平台会话的 Cookie 与 token family 不可用于租户接口。平台审计仍写入 `platform.audit_log`，全局操作的 tenant_id 为 null，租户生命周期操作可记录目标 tenant_id。
 
 ## Migration
 

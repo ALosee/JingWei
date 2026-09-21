@@ -15,6 +15,7 @@ V1 中一个 User 属于一个 Tenant；同一自然人在不同 Tenant 可以�
 - unsafe methods 执行 Origin Validation 与 CSRF Protection。刷新端点即使 Access 已过期也必须校验 CSRF。业务代码只读取 AuthContext，不读取 Cookie。
 - 连续密码失败默认 5 次后锁定 15 分钟，计数与锁定由 IAM 在 PostgreSQL 原子更新；未知租户/账号同样执行 dummy Argon2id 校验，所有认证失败保持相同外部响应。
 - 成功登录、退出与 Refresh Token 复用写入 append-only 安全审计；审计和结构化日志都禁止保存密码、原始 token 或完整凭据请求。
+- 浏览器可以把最近一次成功认证的 tenant code 保存为下一次登录提示，并在退出 URL 中携带；该值不是身份或授权依据，失败登录不得更新它，服务端仍以重新认证后的 Session tenantId 为准。
 - 密码、微信、OIDC 等是认证方式；Web Cookie、未来 Public Client Bearer 与 Machine Token 是凭证传输方式。二者不在 IAM Domain 中耦合。
 
 ## Organization
@@ -34,7 +35,9 @@ V1 中一个 User 属于一个 Tenant；同一自然人在不同 Tenant 可以�
 Authentication -> Tenant -> Module/Capability -> Permission -> Data Scope -> Application -> Repository
 ```
 
-Token Family 只证明“谁登录了”，不持久化完整 role/permission/scope；授权读取当前状态，V1 不引入 Redis session/permission cache。Tenant Admin 不能跨 Tenant；未来 Platform Operator 必须使用独立 backoffice 安全域。
+Token Family 只证明“谁登录了”，不持久化完整 role/permission/scope；授权读取当前状态，V1 不引入 Redis session/permission cache。Access 与 Refresh 都实时经过活动租户门禁，暂停或停用租户会同时批量撤销其 Token Family。Tenant Admin 不能跨 Tenant。
+
+Platform Operator 使用独立 backoffice 安全域：`/platform/login`、`control_plane.*` 表、`jingwei_platform_*` Cookie、CSRF Header 和 `PlatformAuthContext` 都不复用租户 IAM。平台页面是固定静态路由，不进入租户 Navigation 或 Branding；平台动作写入 PLATFORM scope 审计。首位 operator 由一次性 CLI 初始化，日常租户管理通过 `/platform/tenants` 完成。V1 不提供平台 operator RBAC 或跨租户业务数据浏览。
 
 ## 导航授权是独立资源
 
@@ -46,8 +49,8 @@ Navigation 的 PERMISSION 模式表示 User -> 活跃 Role -> navigation code。
 
 ## HTTP 授权契约
 
-每个 Module OpenAPI operation 必须通过 `createApiRoute` 显式声明 `PUBLIC`、
-`AUTHENTICATED`、`REFRESH_TOKEN` 或 `PERMISSION`。功能权限契约同时声明 capability、
+每个 OpenAPI operation 必须通过 `createApiRoute` 显式声明 `PUBLIC`、
+`AUTHENTICATED`、`REFRESH_TOKEN`、`PLATFORM_AUTHENTICATED`、`PLATFORM_REFRESH_TOKEN` 或 `PERMISSION`。功能权限契约同时声明 capability、
 permission 和 scoped/unscoped 入口，并以 `x-jingwei-authorization` 写入 OpenAPI。Server 在
 完成模块装配后使用当前 Edition Registry 校验全部 `/api/v1` 契约；架构检查禁止模块绕过
 授权契约工厂。

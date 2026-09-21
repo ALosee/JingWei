@@ -24,6 +24,8 @@ const authorizationContractSchema = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('PUBLIC') }).strict(),
   z.object({ kind: z.literal('AUTHENTICATED') }).strict(),
   z.object({ kind: z.literal('REFRESH_TOKEN') }).strict(),
+  z.object({ kind: z.literal('PLATFORM_AUTHENTICATED') }).strict(),
+  z.object({ kind: z.literal('PLATFORM_REFRESH_TOKEN') }).strict(),
   z
     .object({
       kind: z.literal('PERMISSION'),
@@ -58,9 +60,13 @@ describe('API documentation', () => {
       expect(document.paths).toHaveProperty('/api/v1/iam/sessions')
       expect(document.paths).toHaveProperty('/api/v1/branding/bootstrap')
       expect(document.paths).toHaveProperty('/api/v1/navigation/versions/{id}/publish')
+      expect(document.paths).toHaveProperty('/api/v1/platform/tenants')
       expect(document.components.securitySchemes).toHaveProperty('accessTokenCookie')
       expect(document.components.securitySchemes).toHaveProperty('refreshTokenCookie')
       expect(document.components.securitySchemes).toHaveProperty('csrfHeader')
+      expect(document.components.securitySchemes).toHaveProperty('platformAccessTokenCookie')
+      expect(document.components.securitySchemes).toHaveProperty('platformRefreshTokenCookie')
+      expect(document.components.securitySchemes).toHaveProperty('platformCsrfHeader')
       let operationCount = 0
       for (const [path, value] of Object.entries(document.paths)) {
         if (!path.startsWith('/api/v1/')) continue
@@ -71,7 +77,7 @@ describe('API documentation', () => {
           operationCount += 1
         }
       }
-      expect(operationCount).toBe(72)
+      expect(operationCount).toBe(83)
 
       expect(operationContract(document.paths, '/api/v1/iam/sessions', 'post')).toEqual({
         kind: 'PUBLIC',
@@ -85,6 +91,15 @@ describe('API documentation', () => {
       expect(operationContract(document.paths, '/api/v1/branding/bootstrap', 'get')).toEqual({
         kind: 'PUBLIC',
       })
+      expect(operationContract(document.paths, '/api/v1/platform/sessions', 'post')).toEqual({
+        kind: 'PUBLIC',
+      })
+      expect(operationContract(document.paths, '/api/v1/platform/tenants', 'get')).toEqual({
+        kind: 'PLATFORM_AUTHENTICATED',
+      })
+      expect(
+        operationContract(document.paths, '/api/v1/platform/sessions/refresh', 'post'),
+      ).toEqual({ kind: 'PLATFORM_REFRESH_TOKEN' })
       expect(operationContract(document.paths, '/api/v1/branding/admin', 'get')).toEqual({
         kind: 'PERMISSION',
         requirements: [
@@ -150,6 +165,14 @@ describe('API documentation', () => {
       expect(scalarResponse.status).toBe(200)
       expect(html).toContain('Jingwei API Reference')
       expect(html).toContain('/openapi/v1.json')
+
+      const tenantCookieAtPlatformApi = await app.request('/api/v1/platform/tenants', {
+        headers: { cookie: 'jingwei_access=tenant-token' },
+      })
+      expect(tenantCookieAtPlatformApi.status).toBe(401)
+      expect(apiErrorSchema.parse(await tenantCookieAtPlatformApi.json()).code).toBe(
+        'PLATFORM_AUTHENTICATION_REQUIRED',
+      )
 
       const invalidContentType = await app.request('/api/v1/iam/sessions', {
         method: 'POST',

@@ -109,15 +109,19 @@ Web 模块把 manifest route key 绑定到构建生成的 page key；URL 路径�
 
 当前配置包括运行环境、监听地址、数据库连接、Web Origin、匿名启动租户 BOOTSTRAP_TENANT_CODE 和会话 idle/absolute 有效期。Edition 由构建命令选择，不从运行时配置读取。敏感配置不得打印完整值。
 
-## 5. `@jingwei/database`
+## 5. `@jingwei/database` 与 `@jingwei/tenancy`
 
 ### `DatabaseRuntime`
 
-持有平台数据库池，并按调用方数据库类型提供 Kysely 视图。连接的创建和关闭属于应用组合根；业务模块不得自行新建全局连接池。租户目录是独立端口，由组合根基于该运行时创建。
+持有平台数据库池，并按调用方数据库类型提供 Kysely 视图。连接的创建和关闭属于应用组合根；业务模块不得自行新建全局连接池。
 
 ### `TenantDirectory`
 
-当前提供 `findActiveByCode(code)`，从平台租户表返回活动租户快照，供登录边界把 tenant code 转为可信 `TenantId`。接口隔离表结构，也为未来扩展租户数据路由保留边界。
+由 `@jingwei/tenancy` 提供 `findActiveByCode(code)` 与 `isActive(tenantId)`。前者供匿名启动和登录把 tenant code 转为可信 `TenantId`，后者让 Access/Refresh 在租户暂停后立即 fail closed。业务模块不能通过这个端口列出全部租户。
+
+### `ManageTenants`
+
+平台控制面的租户生命周期用例。创建先进入 PROVISIONING，只有 IAM 和 Navigation 初始化完成后才能激活；暂停和停用同时撤销租户会话。它接受 `PlatformAuditContext`，不接受普通租户 `AuthContext`。
 
 ### `TransactionRunner.execute(work)`
 
@@ -146,6 +150,18 @@ IAM 的 `getSessionStatus()` typed client 使用一个允许匿名的 `200` 状�
 ### CSRF API
 
 平台导出 Cookie/头名常量，以及令牌生成和安全比较函数。路由和客户端应复用这些常量；安全比较应避免普通字符串比较带来的时序差异。
+
+## 6.1 `@jingwei/control-plane`
+
+平台控制面不是 Edition Module，也不是 IAM 的跨租户扩展。它提供独立的 operator 身份、opaque
+会话、`/api/v1/platform` 契约、浏览器客户端和 `/platform` 页面。
+
+`createControlPlaneServer(...)` 只在 Server Composition Root 中装配；`createPlatformOperatorBootstrap(...)`
+只供一次性运维命令使用。`ProvisionTenant` 组合 `ManageTenants`、IAM Tenant Provisioner 与 Navigation
+Public API，失败时保留可重试的 PROVISIONING 租户。普通业务模块不得导入控制面 API 来枚举或切换租户。
+
+平台客户端使用独立 `jingwei_platform_*` Cookie 和 `x-platform-csrf-token`。它不会读取租户会话，
+也不会把 operator 转换为 `ApplicationContext`；服务端受保护用例接收 `PlatformAuthContext`。
 
 ## 7. `@jingwei/outbox`
 

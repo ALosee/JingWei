@@ -14,6 +14,7 @@
 | `PostgresSessionRepository` | PostgreSQL 实现                                                                       |
 | `SessionService`            | 创建、Access 认证、Refresh 轮换、滑动过期与撤销                                       |
 | `hashOpaqueToken`           | 对随机令牌生成 SHA-256 摘要                                                           |
+| `newOpaqueToken`            | 为独立可信会话实现生成 256-bit CSPRNG opaque token                                    |
 | `tokenMatchesHash`          | 恒定时间策略比较令牌摘要                                                              |
 | Cookie/CSRF 常量与函数      | HTTP 安全边界共享契约                                                                 |
 | `./shared`                  | 浏览器安全的 session/CSRF Cookie 与 Header 名常量，不引入 Node/Argon2/PostgreSQL 实现 |
@@ -39,11 +40,12 @@ const valid = await hasher.verify(hash, candidate)
 
 数据库只保存三者的 SHA-256 摘要。返回的 `CreatedSession` 是唯一包含原始 token 的短生命周期对象，只能由登录/刷新路由写入 Cookie，禁止日志记录或长期缓存。
 
-`authenticateAccess` 同时检查：当前 access 摘要、access 未过期、family 未撤销、idle 未过期、absolute 未过期。成功后延长 idle 时间，但永远不超过 absolute 时间。
+`authenticateAccess` 同时检查：当前 access 摘要、access 未过期、family 未撤销、idle 未过期、absolute 未过期以及租户仍为 ACTIVE。成功后延长 idle 时间，但永远不超过 absolute 时间。Refresh 轮换和新建 Session 使用同一活动租户门禁；暂停或停用后即使批量撤销尚未完成也会 fail closed。
 
 `refresh` 先验证 refresh hash 所属 family 和 CSRF，再在一个 PostgreSQL Transaction 中消费当前 generation、创建下一 generation 并替换 access hash。消费记录不会删除：同一 refresh 在 5 秒并发窗口内再次出现返回冲突供客户端重试，超过窗口则认定复用并撤销整个 family。
 
 `revoke` 撤销单个会话；`revokeUser` 可用于密码重置、账户禁用或安全事件后撤销用户全部会话。
+`revokeTenant` 用于租户暂停或停用，撤销该租户全部 Token Family。
 
 ## HTTP 安全
 

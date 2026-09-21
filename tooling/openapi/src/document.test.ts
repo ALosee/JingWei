@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import { controlPlaneOpenApiContract } from '@jingwei/control-plane/openapi'
 import { iamOpenApiContract } from '@jingwei/module-iam/openapi'
 import { navigationOpenApiContract } from '@jingwei/module-navigation/openapi'
 
@@ -38,6 +39,26 @@ describe('module OpenAPI documents', () => {
       accessTokenCookie: { type: 'apiKey', in: 'cookie', name: 'jingwei_access' },
       csrfHeader: { type: 'apiKey', in: 'header', name: 'x-csrf-token' },
       refreshTokenCookie: { type: 'apiKey', in: 'cookie', name: 'jingwei_refresh' },
+    })
+  })
+
+  it('documents independent platform cookie and CSRF credentials', () => {
+    const document = createModuleOpenApiDocument(controlPlaneOpenApiContract)
+    const tenants = document.paths?.['/api/v1/platform/tenants']?.post
+
+    expect(tenants?.security).toEqual([{ platformAccessTokenCookie: [], platformCsrfHeader: [] }])
+    expect(document.components?.securitySchemes).toMatchObject({
+      platformAccessTokenCookie: {
+        type: 'apiKey',
+        in: 'cookie',
+        name: 'jingwei_platform_access',
+      },
+      platformRefreshTokenCookie: {
+        type: 'apiKey',
+        in: 'cookie',
+        name: 'jingwei_platform_refresh',
+      },
+      platformCsrfHeader: { type: 'apiKey', in: 'header', name: 'x-platform-csrf-token' },
     })
   })
 })

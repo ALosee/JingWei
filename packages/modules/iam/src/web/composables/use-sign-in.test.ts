@@ -19,7 +19,13 @@ it('derives submitting state from the HTTP request lifecycle', async () => {
     },
   )
   const enterWorkspace = vi.fn()
-  const form = useSignIn({ login, enterWorkspace })
+  const rememberTenantCode = vi.fn()
+  const form = useSignIn({
+    login,
+    enterWorkspace,
+    rememberTenantCode,
+    initialTenantCode: () => 'hunanzhonghang',
+  })
   form.username.value = 'admin'
   form.password.value = 'test-password'
   const submission = form.submit()
@@ -28,7 +34,7 @@ it('derives submitting state from the HTTP request lifecycle', async () => {
   await form.submit()
   expect(login).toHaveBeenCalledOnce()
   expect(login.mock.calls[0]?.[0]).toEqual({
-    tenantCode: 'default',
+    tenantCode: 'hunanzhonghang',
     login: 'admin',
     password: 'test-password',
   })
@@ -37,11 +43,13 @@ it('derives submitting state from the HTTP request lifecycle', async () => {
   await submission
 
   expect(enterWorkspace).toHaveBeenCalledOnce()
+  expect(rememberTenantCode).toHaveBeenCalledWith('hunanzhonghang')
   expect(form.submitting.value).toBe(false)
 })
 
 it('renders a flat login error without exception control flow', async () => {
   const enterWorkspace = vi.fn()
+  const rememberTenantCode = vi.fn()
   const form = useSignIn({
     login: (_input, options) => {
       options.onLoadingChange?.(true)
@@ -49,6 +57,7 @@ it('renders a flat login error without exception control flow', async () => {
       return Promise.resolve({ error: new Error('Invalid credentials') })
     },
     enterWorkspace,
+    rememberTenantCode,
   })
   form.username.value = 'admin'
   form.password.value = 'incorrect'
@@ -56,6 +65,7 @@ it('renders a flat login error without exception control flow', async () => {
   expect(form.errorMessage.value).toBe('Invalid credentials')
   expect(form.submitting.value).toBe(false)
   expect(enterWorkspace).not.toHaveBeenCalled()
+  expect(rememberTenantCode).not.toHaveBeenCalled()
 })
 
 it('rejects an incomplete form before starting an HTTP request', async () => {

@@ -6,5 +6,7 @@ export {
 export {
   authBrandPresentationKey,
   authPlatformWordmarkComponentKey,
+  authTenantBrandSelectorKey,
+  type AuthTenantBrandSelector,
   type AuthBrandPresentation,
 } from '../web/auth-brand-presentation.js'

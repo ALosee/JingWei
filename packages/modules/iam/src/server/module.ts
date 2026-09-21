@@ -92,7 +92,7 @@ export function createIamServerModule(
           readAccountRoles: new ReadAccountRoles(accounts),
           manageRoles,
           manageUsers,
-          secureCookies: context.config.environment === 'production',
+          secureCookies: context.config.http.secureCookies,
           logger: context.logger,
         }),
       }

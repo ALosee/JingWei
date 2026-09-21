@@ -2,7 +2,7 @@ import { sql } from 'kysely'
 
 import { PostgresAuditWriter } from '@jingwei/audit'
 import { loadConfig } from '@jingwei/config'
-import { DatabaseRuntime, PostgresTenantDirectory } from '@jingwei/database'
+import { DatabaseRuntime } from '@jingwei/database'
 import {
   newEntityId,
   newRequestId,
@@ -12,8 +12,8 @@ import {
 } from '@jingwei/kernel'
 import { createNavigationManagement } from '@jingwei/module-navigation/server/public'
 import { ModuleRegistry } from '@jingwei/module-sdk'
-
-import { generatedEdition } from '../../../../apps/server/src/generated/edition.js'
+import { generatedEdition } from '@jingwei/server/edition'
+import { PostgresTenantDirectory } from '@jingwei/tenancy'
 
 /** Explicit command boundary; importing this module performs no I/O. */
 export async function runNavigationSeed(

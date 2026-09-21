@@ -34,6 +34,8 @@ pnpm build
 
 Local infrastructure can be started with `docker compose -f docker-compose.dev.yml up -d`. Database migrations use `pnpm migration:status` and `pnpm migration:up` after generating the target Edition.
 
+Production tenant lifecycle is managed at `/platform/tenants` with a separate platform administrator identity. After migrations, create the first operator once with `PLATFORM_OPERATOR_PASSWORD='<至少 12 个字符>' pnpm platform:bootstrap --login platform-admin --name 平台管理员`, then open `/platform/login`. The older `pnpm tenant:manage` command remains a recovery adapter. See [Control Plane](./packages/platform/control-plane/README.md), [ADR 0017](./docs/adr/0017-own-tenant-lifecycle-in-platform-tenancy.md) and [ADR 0018](./docs/adr/0018-separate-platform-control-plane.md).
+
 `pnpm dev` uses the repository-level `.env`, `.env.local`, `.env.development`, and `.env.development.local` files. `.env.test` is intentionally isolated from normal development and is loaded by `pnpm dev:test` only. Environment files are ignored by Git except for `.env.example`.
 
 Migration/seed/test commands require explicitly supplied environment variables. For the local `.env.test` database, see the [exact initialization commands](./tooling/migration/README.md#显式使用-envtest). `seed:navigation` preserves existing passwords and published configuration; `seed:dev` updates the development password. Navigation bootstrap now reads a published database version and returns 503 until one exists.

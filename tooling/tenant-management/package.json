@@ -1,0 +1,24 @@
+{
+  "name": "@jingwei/tenant-management",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@jingwei/audit": "workspace:*",
+    "@jingwei/auth": "workspace:*",
+    "@jingwei/config": "workspace:*",
+    "@jingwei/control-plane": "workspace:*",
+    "@jingwei/database": "workspace:*",
+    "@jingwei/kernel": "workspace:*",
+    "@jingwei/module-sdk": "workspace:*",
+    "@jingwei/server": "workspace:*",
+    "@jingwei/tenancy": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "catalog:",
+    "typescript": "catalog:"
+  }
+}

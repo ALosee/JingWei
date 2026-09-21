@@ -1,8 +1,36 @@
 import { describe, expect, it } from 'vitest'
 
-import { serverModulesSource, webModulesSource } from './generate.js'
+import {
+  assertControlPlaneFoundationModules,
+  migrationsSource,
+  serverModulesSource,
+  webModulesSource,
+} from './generate.js'
 
 describe('Edition integration generation', () => {
+  it('requires the foundation modules used by tenant provisioning', () => {
+    expect(() => assertControlPlaneFoundationModules(['iam', 'navigation'])).not.toThrow()
+    expect(() => assertControlPlaneFoundationModules(['iam'])).toThrow(
+      'required foundation modules: navigation',
+    )
+    expect(() => assertControlPlaneFoundationModules(['navigation'])).toThrow(
+      'required foundation modules: iam',
+    )
+  })
+
+  it('always includes tenancy and control-plane migrations before edition modules', () => {
+    const migrations = migrationsSource(['iam'])
+
+    expect(migrations).toContain('@jingwei/tenancy/migrations')
+    expect(migrations.indexOf('...tenancyMigrations')).toBeLessThan(
+      migrations.indexOf('...iamMigrations'),
+    )
+    expect(migrations).toContain('@jingwei/control-plane/migrations')
+    expect(migrations.indexOf('...controlPlaneMigrations')).toBeLessThan(
+      migrations.indexOf('...iamMigrations'),
+    )
+  })
+
   it('omits Organization providers from an IAM-only Edition', () => {
     const server = serverModulesSource(['iam'])
     const web = webModulesSource(['iam'])

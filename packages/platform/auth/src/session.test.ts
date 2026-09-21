@@ -97,6 +97,14 @@ function createMemoryStore(): MemoryStore {
       }
       return Promise.resolve()
     },
+    revokeTenant(tenantId, revokedAt, reason) {
+      for (const [id, row] of sessions) {
+        if (row.tenant_id === tenantId) {
+          sessions.set(id, { ...row, revoked_at: revokedAt, revocation_reason: reason })
+        }
+      }
+      return Promise.resolve()
+    },
   }
 
   return { repository, refreshTokens, sessions }
@@ -104,19 +112,28 @@ function createMemoryStore(): MemoryStore {
 
 function createFixture() {
   let now = new Date('2026-09-01T00:00:00.000Z')
+  let tenantActive = true
   const clock: Clock = { now: () => now }
   const store = createMemoryStore()
-  const service = new SessionService(store.repository, clock, {
-    accessSeconds: 60,
-    refreshIdleSeconds: 120,
-    refreshAbsoluteSeconds: 600,
-    refreshReuseGraceSeconds: 5,
-  })
+  const service = new SessionService(
+    store.repository,
+    clock,
+    {
+      accessSeconds: 60,
+      refreshIdleSeconds: 120,
+      refreshAbsoluteSeconds: 600,
+      refreshReuseGraceSeconds: 5,
+    },
+    { isActive: () => Promise.resolve(tenantActive) },
+  )
   return {
     service,
     store,
     advance(seconds: number) {
       now = new Date(now.getTime() + seconds * 1_000)
+    },
+    setTenantActive(active: boolean) {
+      tenantActive = active
     },
   }
 }
@@ -230,6 +247,35 @@ describe('SessionService', () => {
         csrfHeaderToken: created.csrfToken,
       }),
     ).resolves.toEqual({ status: 'invalid' })
+  })
+
+  it('revokes access and refresh credentials when the tenant becomes inactive', async () => {
+    const fixture = createFixture()
+    const created = await fixture.service.create({
+      tenantId: newTenantId(),
+      userId: newUserId(),
+    })
+    fixture.setTenantActive(false)
+
+    await expect(fixture.service.authenticateAccess(created.accessToken)).resolves.toBeNull()
+    expect(fixture.store.sessions.get(created.id)?.revocation_reason).toBe('TENANT_INACTIVE')
+    await expect(
+      fixture.service.refresh({
+        refreshToken: created.refreshToken,
+        csrfCookieToken: created.csrfToken,
+        csrfHeaderToken: created.csrfToken,
+      }),
+    ).resolves.toEqual({ status: 'invalid' })
+  })
+
+  it('refuses to create a session for an inactive tenant', async () => {
+    const fixture = createFixture()
+    fixture.setTenantActive(false)
+
+    await expect(
+      fixture.service.create({ tenantId: newTenantId(), userId: newUserId() }),
+    ).rejects.toMatchObject({ name: 'TenantInactiveSessionError' })
+    expect(fixture.store.sessions.size).toBe(0)
   })
 })
 

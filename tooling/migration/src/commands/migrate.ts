@@ -2,8 +2,10 @@ import { Migrator } from 'kysely/migration'
 
 import { loadConfig } from '@jingwei/config'
 import { DatabaseRuntime, StaticMigrationProvider } from '@jingwei/database'
-
-import { generatedMigrations } from '../../../../apps/server/src/generated/migrations.js'
+import { syncIamPermissionDefinitions } from '@jingwei/module-iam/server/public'
+import { ModuleRegistry } from '@jingwei/module-sdk'
+import { generatedEdition } from '@jingwei/server/edition'
+import { generatedMigrations } from '@jingwei/server/migrations'
 
 /** Explicit command boundary; importing this module performs no I/O. */
 export async function runMigrationCommand(
@@ -28,6 +30,8 @@ export async function runMigrationCommand(
       if (result.error !== undefined) {
         throw new Error('Migration failed with a non-error cause', { cause: result.error })
       }
+      await syncIamPermissionDefinitions(runtime, new ModuleRegistry(generatedEdition))
+      console.log('SYNCHRONIZED iam.permission_definition')
     } else if (command === 'status') {
       const migrations = await migrator.getMigrations()
       for (const migration of migrations) {

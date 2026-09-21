@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@jingwei/api-client": "workspace:*",
+    "@jingwei/control-plane": "workspace:*",
     "@jingwei/module-branding": "workspace:*",
     "@jingwei/module-dictionary": "workspace:*",
     "@jingwei/module-iam": "workspace:*",

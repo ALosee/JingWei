@@ -1,6 +1,11 @@
 import type { OpenAPIHono } from '@hono/zod-openapi'
 
 import { accessTokenCookieName, csrfHeaderName, refreshTokenCookieName } from '@jingwei/auth/shared'
+import {
+  platformAccessTokenCookieName,
+  platformCsrfHeaderName,
+  platformRefreshTokenCookieName,
+} from '@jingwei/control-plane/shared'
 import { openApiSecurityNames } from '@jingwei/http-contract'
 import type { ServerAppEnv } from '@jingwei/module-sdk/server'
 
@@ -37,4 +42,34 @@ export function registerOpenApiSecuritySchemes(app: OpenAPIHono<ServerAppEnv>): 
     name: csrfHeaderName,
     description: '修改请求使用的双提交 CSRF Token；值与 jingwei_csrf Cookie 相同。',
   })
+  app.openAPIRegistry.registerComponent(
+    'securitySchemes',
+    openApiSecurityNames.platformAccessTokenCookie,
+    {
+      type: 'apiKey',
+      in: 'cookie',
+      name: platformAccessTokenCookieName,
+      description: '平台控制面短期 opaque Access Token。',
+    },
+  )
+  app.openAPIRegistry.registerComponent(
+    'securitySchemes',
+    openApiSecurityNames.platformRefreshTokenCookie,
+    {
+      type: 'apiKey',
+      in: 'cookie',
+      name: platformRefreshTokenCookieName,
+      description: '平台控制面单次轮换 Refresh Token。',
+    },
+  )
+  app.openAPIRegistry.registerComponent(
+    'securitySchemes',
+    openApiSecurityNames.platformCsrfHeader,
+    {
+      type: 'apiKey',
+      in: 'header',
+      name: platformCsrfHeaderName,
+      description: '平台控制面双提交 CSRF Token。',
+    },
+  )
 }

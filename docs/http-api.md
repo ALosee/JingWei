@@ -64,7 +64,7 @@ Refresh 请求在 Access Token 已过期时仍必须校验 Origin 与 CSRF；刷
 
 ### 2.3 接口授权契约
 
-每个 `/api/v1` OpenAPI operation 都必须通过 `x-jingwei-authorization` 声明自身的授权类别：`PUBLIC`、`AUTHENTICATED`、`REFRESH_TOKEN` 或 `PERMISSION`。`PERMISSION` 还会声明稳定的 permission code、所属 capability，以及该接口是否需要 Data Scope。
+每个 `/api/v1` OpenAPI operation 都必须通过 `x-jingwei-authorization` 声明自身的授权类别：`PUBLIC`、`AUTHENTICATED`、`REFRESH_TOKEN`、`PLATFORM_AUTHENTICATED`、`PLATFORM_REFRESH_TOKEN` 或 `PERMISSION`。`PERMISSION` 还会声明稳定的 permission code、所属 capability，以及该接口是否需要 Data Scope。两个 `PLATFORM_*` 类型只接受平台 operator 会话，不能用租户 Access/Refresh Cookie 访问。
 
 该扩展用于架构校验、文档和后续自动化测试，不代替运行时授权。服务启动时会把声明与启用模块的 Manifest 做一致性检查；请求仍须由对应 Application Use Case 按 `Edition -> Module -> Capability -> Permission -> Data Scope` 顺序执行授权。前端菜单、按钮或读取 OpenAPI 声明都不能作为安全边界。
 
@@ -128,6 +128,24 @@ Refresh 请求在 Access Token 已过期时仍必须校验 Origin 与 CSRF；刷
 ```
 
 部署探针只能依赖已记录的字段，不应把健康接口当作诊断信息导出端点。
+
+### 4.1 平台控制面
+
+平台 UI 位于 `/platform`，使用独立身份域：
+
+- `POST /api/v1/platform/sessions`：平台 operator 登录；
+- `GET /api/v1/platform/session`：恢复平台会话状态；
+- `POST /api/v1/platform/sessions/refresh`：轮换平台 Refresh Token；
+- `DELETE /api/v1/platform/sessions/current`：退出平台后台；
+- `GET|POST /api/v1/platform/tenants`：列出或创建租户；
+- `GET /api/v1/platform/tenants/{tenantId}`：读取租户详情；
+- `POST /api/v1/platform/tenants/{tenantId}/retry`：重试初始化；
+- `POST /api/v1/platform/tenants/{tenantId}/suspend|resume|disable`：生命周期动作。
+
+平台认证 Cookie 分别为 `jingwei_platform_access` 和 `jingwei_platform_refresh`，修改请求使用
+`x-platform-csrf-token`。它们和租户 IAM Cookie 不可互换。创建租户的请求包含首位租户管理员资料和
+至少 12 位初始密码；密码只进入当次 IAM 初始化，不出现在响应、日志或审计中。完整字段以 OpenAPI
+文档为准。
 
 ## 5. IAM 接口
 

@@ -1,64 +1,13 @@
-import { createPinia } from 'pinia'
-import { createApp, readonly } from 'vue'
-
 import '@jingwei/ui/theme.css'
 import 'virtual:uno.css'
-import {
-  activeBrand,
-  DefaultBrandWordmark,
-  loadEffectiveBrand,
-  setActiveBrand,
-} from '@jingwei/module-branding/web'
-import { getSessionStatus } from '@jingwei/module-iam/client'
-import {
-  authBrandPresentationKey,
-  authPlatformWordmarkComponentKey,
-} from '@jingwei/module-iam/public/web'
-import {
-  getAuthenticatedNavigation,
-  getNavigationBootstrap,
-} from '@jingwei/module-navigation/client'
+import { isPlatformWebPath } from '@jingwei/control-plane/shared'
 
-import App from '../App.vue'
-import { applyDocumentBrand } from '../branding/document-brand.js'
-import { installSessionExpiryRedirect } from '../composables/use-session-expiry.js'
-import { installGeneratedWebIntegrations } from '../generated/modules.js'
-import { initializeNavigation } from '../navigation/initialize-navigation.js'
-import { installDynamicRoutes } from '../router/dynamic-routes.js'
-import { createApplicationRouter } from '../router/index.js'
-import { useShellStore } from '../stores/shell.js'
-
-/** Composition root: choose concrete adapters, initialize the shell, then mount once. */
+/** Select the independently authenticated platform or tenant application by URL namespace. */
 export async function startWebApplication(): Promise<void> {
-  const initialLocation = window.location.pathname + window.location.search + window.location.hash
-  const app = createApp(App)
-  app.provide(authBrandPresentationKey, readonly(activeBrand))
-  app.provide(authPlatformWordmarkComponentKey, DefaultBrandWordmark)
-  installGeneratedWebIntegrations(app)
-  const pinia = createPinia()
-  const router = createApplicationRouter()
-  app.use(pinia)
-  app.use(router)
-  installSessionExpiryRedirect()
-  await initializeNavigation(initialLocation, {
-    loadBrand: loadEffectiveBrand,
-    applyBrand: (brand) => {
-      setActiveBrand(brand)
-      const title = router.currentRoute.value.meta.title
-      applyDocumentBrand(brand, typeof title === 'string' ? title : undefined)
-    },
-    loadBootstrap: getNavigationBootstrap,
-    loadSession: getSessionStatus,
-    loadAuthenticated: getAuthenticatedNavigation,
-    install: (navigation) => installDynamicRoutes(router, navigation),
-    recognizes: (location) => router.resolve(location).name !== 'not-found-recovery',
-    replace: (location) => router.replace(location),
-    shell: useShellStore(pinia),
-  })
-  router.afterEach((route) => {
-    const title = typeof route.meta.title === 'string' ? route.meta.title : undefined
-    applyDocumentBrand(activeBrand.value, title)
-  })
-  await router.isReady()
-  app.mount('#app')
+  if (isPlatformWebPath(window.location.pathname)) {
+    const { startPlatformWebApplication } = await import('./start-platform-web.js')
+    return startPlatformWebApplication()
+  }
+  const { startTenantWebApplication } = await import('./start-tenant-web.js')
+  return startTenantWebApplication()
 }

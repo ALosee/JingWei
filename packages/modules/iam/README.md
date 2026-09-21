@@ -62,6 +62,8 @@ IAM 没有必需业务模块依赖，因此是多个 foundation 模块的依赖�
 
 IAM 不直接拥有会话表。Organization 的 org ID 作为跨模块标识保存，不建立跨模块数据库外键，避免破坏模块独立演进。
 
+`iam.permission_definition` 是当前 Edition manifest 的平台级运行时投影，只能由显式运维投影流程维护；`migration:up` 在 DDL 全部成功后同步它。租户开通只读取 `ModuleRegistry` 校验并创建该租户的角色授权，不得在每次开通或重试时 upsert、停用这张全局表，避免租户操作与部署投影相互竞态。
+
 ## 代码结构
 
 ```text
@@ -203,7 +205,9 @@ password ────> PasswordHasher.verify ──> 失败计数/成功时间
 
 用户名不存在、密码错误、用户不可用和账号锁定必须使用一致的外部错误；未知用户也执行一次 dummy Argon2id 校验，降低基于响应耗时的账号枚举风险。默认连续失败 5 次锁定 15 分钟；成功登录原子清零失败状态、更新 `last_login_at` 并写入安全审计。退出和 Refresh Token 复用同样写入审计。原始密码、密码摘要、access/refresh token 不得进入日志、审计或事件。
 
-Web 登录页只调用 `useSignIn()` 绑定字段和提交事件。登录 client 使用 Soybean Fetch 扁平结果，composable 显式判断 `error`，无需异常控制流；`submitting` 由共享 `useApiRequestState()` 订阅 Fetch lifecycle 自动产生，不手工切换。`login` 与 `enterWorkspace` 以最小端口注入，测试不用建立真实 Cookie 或浏览器全局对象。HTTP/OpenAPI/Zod 细节由 module client 负责，Cookie、CSRF 与请求状态由平台请求边界负责，页面不得直接调用 client。结构规则见 [代码职责与入口约束](../../../docs/code-structure.md)。
+Web 登录页只调用 `useSignIn()` 绑定字段和提交事件。租户代码按“显式 `tenantCode` query → 最近成功登录租户 → `default`”初始化；只有认证成功才把规范化代码保存为浏览器提示，失败输入不会污染记录。该 localStorage 值不是凭据，服务端仍重新验证租户和用户。退出链接携带最近租户代码，登录启动同时请求对应的公共导航和品牌；失效提示会回退到部署默认公共导航。
+
+登录 client 使用 Soybean Fetch 扁平结果，composable 显式判断 `error`，无需异常控制流；`submitting` 由共享 `useApiRequestState()` 订阅 Fetch lifecycle 自动产生，不手工切换。`login`、`enterWorkspace` 和提示存储以最小端口注入，测试不用建立真实 Cookie 或浏览器全局对象。HTTP/OpenAPI/Zod 细节由 module client 负责，Cookie、CSRF 与请求状态由平台请求边界负责，页面不得直接调用 client。结构规则见 [代码职责与入口约束](../../../docs/code-structure.md)。
 
 ## Public API
 
@@ -215,6 +219,8 @@ Web 登录页只调用 `useSignIn()` 绑定字段和提交事件。登录 client
 - `OrganizationalScopeFacts`：IAM 消费方定义的组织事实契约，只包含成员组织、后代展开和当前租户有效 ID 校验；具体适配器由 Organization 提供并在 Edition Composition Root 注入；
 - `IamAccess` 与 `createIamAccess(database, registry)`：返回活跃角色、租户活跃角色目录，并通过 `requireUnscopedPermission` 校验不带数据范围的功能权限。若误传 scoped permission，会抛出 `AUTHZ_SCOPE_PERMISSION_REQUIRES_EVALUATOR`，而不是伪装成普通授权拒绝。Navigation 通过它接入真实角色，不读取 IAM 内部表；
 - `IamUserDirectory` / `IamUserSafeProfile` 与 `createIamUserDirectory(database)`：跨模块安全用户查找（`findSafeProfiles`、`usersExist`）。Organization 用它水合成员列表并校验 user id，不读取 IAM 表，不暴露凭据字段。
+- `createTenantIamProvisioner(database, registry)`：平台控制面专用的幂等租户 IAM 初始化端口，接收 `PlatformAuditContext`，不要求也不伪造租户会话。初始 `tenant-administrator` 获得创建时 Edition 的全部可用 `ALL` 权限；这是初始化快照，后续 Edition 新增权限不自动同步，避免静默提权。租户管理员可通过角色管理显式更新。
+- `syncIamPermissionDefinitions(database, registry)`：部署运维使用的全局权限投影端口；当前由 `migration:up` 调用，不属于租户开通事务。
 
 授权实现必须合并所有角色授予，不能从菜单推断权限；deny 是默认结果。其他模块只能依赖这个 public 子路径，不能导入 IAM 仓储和表类型。
 

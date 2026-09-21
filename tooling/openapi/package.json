@@ -9,6 +9,7 @@
   "dependencies": {
     "@hono/zod-openapi": "catalog:",
     "@jingwei/auth": "workspace:*",
+    "@jingwei/control-plane": "workspace:*",
     "@jingwei/http-contract": "workspace:*",
     "@jingwei/module-branding": "workspace:*",
     "@jingwei/module-dictionary": "workspace:*",

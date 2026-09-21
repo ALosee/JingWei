@@ -64,13 +64,11 @@ export function createIamRoutes(dependencies: {
   })
   app.openapi(iamApiRoutes.createSession, async (context) => {
     const input = context.req.valid('json')
-    const userAgent = boundedHeader(context.req.header('user-agent'), 512)
-    const ipAddress = forwardedIp(context.req.header('x-forwarded-for'))
+    const requestMetadata = context.get('requestMetadata')
     try {
       const authenticated = await dependencies.authenticateUser.execute(input, {
         requestId: context.get('requestId'),
-        ...(userAgent === undefined ? {} : { userAgent }),
-        ...(ipAddress === undefined ? {} : { ipAddress }),
+        ...requestMetadata,
       })
       setSessionCookies(context, authenticated.session, dependencies.secureCookies)
       dependencies.logger.info(
@@ -421,14 +419,4 @@ function csrfValidationFailed(): ApplicationError {
     message: 'CSRF 校验失败',
     status: 403,
   })
-}
-
-function boundedHeader(value: string | undefined, maxLength: number): string | undefined {
-  const normalized = value?.trim()
-  if (normalized === undefined || normalized.length === 0) return undefined
-  return normalized.slice(0, maxLength)
-}
-
-function forwardedIp(value: string | undefined): string | undefined {
-  return boundedHeader(value?.split(',', 1)[0], 64)
 }

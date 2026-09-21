@@ -1,12 +1,12 @@
 import { sql } from 'kysely'
 
 import { loadConfig } from '@jingwei/config'
-import { DatabaseRuntime, PostgresTenantDirectory } from '@jingwei/database'
+import { DatabaseRuntime } from '@jingwei/database'
 import { newRequestId, newSessionId, toUserId, type AuthContext } from '@jingwei/kernel'
 import { createDictionaryManagement } from '@jingwei/module-dictionary/server/public'
 import { ModuleRegistry } from '@jingwei/module-sdk'
-
-import { generatedEdition } from '../../../../apps/server/src/generated/edition.js'
+import { generatedEdition } from '@jingwei/server/edition'
+import { PostgresTenantDirectory } from '@jingwei/tenancy'
 
 interface SeedItem {
   code: string

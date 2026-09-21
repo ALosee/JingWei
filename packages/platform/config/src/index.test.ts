@@ -8,6 +8,20 @@ it('validates and normalizes the anonymous bootstrap tenant without accepting an
   expect(() => loadConfig({ BOOTSTRAP_TENANT_CODE: ' ' })).toThrow()
 })
 
+it('derives cookie security from the external origin and requires explicit proxy trust', () => {
+  expect(loadConfig({}).http).toEqual({
+    host: '127.0.0.1',
+    port: 3000,
+    trustProxy: false,
+    secureCookies: false,
+  })
+  expect(loadConfig({ APP_ORIGIN: 'https://jingwei.example.com' }).http.secureCookies).toBe(true)
+  expect(loadConfig({ HTTP_TRUST_PROXY: 'true' }).http.trustProxy).toBe(true)
+  expect(() =>
+    loadConfig({ APP_ORIGIN: 'https://jingwei.example.com', COOKIE_SECURE: 'false' }),
+  ).toThrow('COOKIE_SECURE must be true')
+})
+
 it('builds a bounded access and refresh token policy', () => {
   expect(loadConfig({}).session).toEqual({
     accessSeconds: 600,

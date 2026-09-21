@@ -83,6 +83,7 @@ export type SessionRevocationReason =
   | 'REFRESH_TOKEN_REUSE'
   | 'TOKEN_ARCHITECTURE_MIGRATION'
   | 'USER_SECURITY_CHANGE'
+  | 'TENANT_INACTIVE'
 
 export type RefreshSessionResult =
   | { readonly status: 'refreshed'; readonly session: SessionCredentials }
@@ -131,6 +132,19 @@ export interface SessionRepository {
     revokedAt: Date,
     reason: SessionRevocationReason,
   ): Promise<void>
+  revokeTenant(tenantId: string, revokedAt: Date, reason: SessionRevocationReason): Promise<void>
+}
+
+/** Consumer-owned activity gate; the tenancy package supplies the runtime implementation. */
+export interface ActiveTenantGate {
+  isActive(tenantId: TenantId): Promise<boolean>
+}
+
+export class TenantInactiveSessionError extends Error {
+  constructor() {
+    super('Cannot create a session for an inactive tenant')
+    this.name = 'TenantInactiveSessionError'
+  }
 }
 
 export class PostgresSessionRepository implements SessionRepository {
@@ -211,6 +225,19 @@ export class PostgresSessionRepository implements SessionRepository {
       .where('revoked_at', 'is', null)
       .execute()
   }
+
+  async revokeTenant(
+    tenantId: string,
+    revokedAt: Date,
+    reason: SessionRevocationReason,
+  ): Promise<void> {
+    await this.database
+      .updateTable('platform.auth_session')
+      .set({ revoked_at: revokedAt, revocation_reason: reason })
+      .where('tenant_id', '=', tenantId)
+      .where('revoked_at', 'is', null)
+      .execute()
+  }
 }
 
 async function rotateRefreshTokenInTransaction(
@@ -286,7 +313,7 @@ async function rotateRefreshTokenInTransaction(
   return { status: 'rotated', session: nextSession }
 }
 
-function opaqueToken(): string {
+export function newOpaqueToken(): string {
   return randomBytes(32).toString('base64url')
 }
 
@@ -318,6 +345,7 @@ export class SessionService {
       readonly refreshAbsoluteSeconds: number
       readonly refreshReuseGraceSeconds: number
     },
+    private readonly tenants: ActiveTenantGate,
   ) {}
 
   async create(options: {
@@ -326,11 +354,12 @@ export class SessionService {
     readonly userAgent?: string
     readonly ipAddress?: string
   }): Promise<CreatedSession> {
+    if (!(await this.tenants.isActive(options.tenantId))) throw new TenantInactiveSessionError()
     const now = this.clock.now()
     const id = newSessionId()
-    const accessToken = opaqueToken()
-    const refreshToken = opaqueToken()
-    const csrfToken = opaqueToken()
+    const accessToken = newOpaqueToken()
+    const refreshToken = newOpaqueToken()
+    const csrfToken = newOpaqueToken()
     const absoluteExpiresAt = new Date(now.getTime() + this.expiry.refreshAbsoluteSeconds * 1_000)
     const accessExpiresAt = expiresWithin(now, this.expiry.accessSeconds, absoluteExpiresAt)
     const idleExpiresAt = expiresWithin(now, this.expiry.refreshIdleSeconds, absoluteExpiresAt)
@@ -368,6 +397,10 @@ export class SessionService {
     const now = this.clock.now()
     const row = await this.repository.findActiveByAccessTokenHash(hashOpaqueToken(token), now)
     if (row === null) return null
+    if (!(await this.tenants.isActive(toTenantId(row.tenant_id)))) {
+      await this.repository.revoke(row.id, now, 'TENANT_INACTIVE')
+      return null
+    }
 
     const idleExpiresAt = expiresWithin(
       now,
@@ -392,6 +425,10 @@ export class SessionService {
     if (found === null || !isRefreshActive(found.session, found.token, now)) {
       return { status: 'invalid' }
     }
+    if (!(await this.tenants.isActive(toTenantId(found.session.tenant_id)))) {
+      await this.repository.revoke(found.session.id, now, 'TENANT_INACTIVE')
+      return { status: 'invalid' }
+    }
     if (
       !isValidCsrfToken({
         cookieToken: options.csrfCookieToken,
@@ -402,8 +439,8 @@ export class SessionService {
       return { status: 'csrf_invalid' }
     }
 
-    const accessToken = opaqueToken()
-    const refreshToken = opaqueToken()
+    const accessToken = newOpaqueToken()
+    const refreshToken = newOpaqueToken()
     const accessExpiresAt = expiresWithin(
       now,
       this.expiry.accessSeconds,
@@ -447,6 +484,10 @@ export class SessionService {
 
   revokeUser(tenantId: TenantId, userId: UserId): Promise<void> {
     return this.repository.revokeUser(tenantId, userId, this.clock.now(), 'USER_SECURITY_CHANGE')
+  }
+
+  revokeTenant(tenantId: TenantId): Promise<void> {
+    return this.repository.revokeTenant(tenantId, this.clock.now(), 'TENANT_INACTIVE')
   }
 }
 

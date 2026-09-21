@@ -12,6 +12,8 @@ export type ApiAuthorizationContract =
   | { readonly kind: 'PUBLIC' }
   | { readonly kind: 'AUTHENTICATED' }
   | { readonly kind: 'REFRESH_TOKEN' }
+  | { readonly kind: 'PLATFORM_AUTHENTICATED' }
+  | { readonly kind: 'PLATFORM_REFRESH_TOKEN' }
   | {
       readonly kind: 'PERMISSION'
       readonly requirements: readonly [ApiPermissionRequirement, ...ApiPermissionRequirement[]]
@@ -20,6 +22,12 @@ export type ApiAuthorizationContract =
 export const publicApiAccess = Object.freeze({ kind: 'PUBLIC' } as const)
 export const authenticatedApiAccess = Object.freeze({ kind: 'AUTHENTICATED' } as const)
 export const refreshTokenApiAccess = Object.freeze({ kind: 'REFRESH_TOKEN' } as const)
+export const platformAuthenticatedApiAccess = Object.freeze({
+  kind: 'PLATFORM_AUTHENTICATED',
+} as const)
+export const platformRefreshTokenApiAccess = Object.freeze({
+  kind: 'PLATFORM_REFRESH_TOKEN',
+} as const)
 
 export function permissionApiAccess(
   first: ApiPermissionRequirement,
@@ -72,7 +80,13 @@ function routeDefinition(value: unknown): RouteDefinitionLike | null {
 
 function contractOf(value: unknown): ApiAuthorizationContract | null {
   if (!isRecord(value)) return null
-  if (value.kind === 'PUBLIC' || value.kind === 'AUTHENTICATED' || value.kind === 'REFRESH_TOKEN') {
+  if (
+    value.kind === 'PUBLIC' ||
+    value.kind === 'AUTHENTICATED' ||
+    value.kind === 'REFRESH_TOKEN' ||
+    value.kind === 'PLATFORM_AUTHENTICATED' ||
+    value.kind === 'PLATFORM_REFRESH_TOKEN'
+  ) {
     return { kind: value.kind }
   }
   if (value.kind !== 'PERMISSION' || !Array.isArray(value.requirements)) return null
@@ -116,6 +130,20 @@ export function assertApiAuthorizationContracts(
       typeof definition.route.operationId === 'string' ? definition.route.operationId : path
     const contract = contractOf(definition.route[apiAuthorizationExtension])
     if (contract === null) invalidContract(operation, 'missing or malformed authorization metadata')
+    const platformPath = hasPathSegmentPrefix(path, '/api/v1/platform')
+    const platformContract =
+      contract.kind === 'PLATFORM_AUTHENTICATED' || contract.kind === 'PLATFORM_REFRESH_TOKEN'
+    if (platformContract && !platformPath) {
+      invalidContract(operation, 'platform authorization is restricted to /api/v1/platform')
+    }
+    if (
+      platformPath &&
+      contract.kind !== 'PUBLIC' &&
+      contract.kind !== 'PLATFORM_AUTHENTICATED' &&
+      contract.kind !== 'PLATFORM_REFRESH_TOKEN'
+    ) {
+      invalidContract(operation, 'platform endpoints cannot use tenant authorization')
+    }
     if (contract.kind !== 'PERMISSION') continue
     for (const requirement of contract.requirements) {
       const permission = registry.permission(requirement.permission)
@@ -143,4 +171,8 @@ export function assertApiAuthorizationContracts(
       }
     }
   }
+}
+
+function hasPathSegmentPrefix(path: string, prefix: string): boolean {
+  return path === prefix || path.startsWith(`${prefix}/`)
 }

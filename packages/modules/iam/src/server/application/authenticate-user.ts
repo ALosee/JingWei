@@ -1,5 +1,4 @@
-import type { PasswordHasher, SessionService } from '@jingwei/auth'
-import type { TenantDirectory } from '@jingwei/database'
+import { TenantInactiveSessionError, type PasswordHasher, type SessionService } from '@jingwei/auth'
 import {
   ApplicationError,
   type Clock,
@@ -8,6 +7,7 @@ import {
   type TenantId,
   type UserId,
 } from '@jingwei/kernel'
+import type { TenantDirectory } from '@jingwei/tenancy'
 
 import type { LoginInput } from '../../shared/index.js'
 import type { UserStatus } from '../domain/user-status.js'
@@ -114,12 +114,18 @@ export class AuthenticateUser {
       throw authenticationFailed()
     }
 
-    const session = await this.dependencies.sessions.create({
-      tenantId: tenant.id,
-      userId: credential.userId,
-      ...(request.userAgent === undefined ? {} : { userAgent: request.userAgent }),
-      ...(request.ipAddress === undefined ? {} : { ipAddress: request.ipAddress }),
-    })
+    let session: Awaited<ReturnType<SessionService['create']>>
+    try {
+      session = await this.dependencies.sessions.create({
+        tenantId: tenant.id,
+        userId: credential.userId,
+        ...(request.userAgent === undefined ? {} : { userAgent: request.userAgent }),
+        ...(request.ipAddress === undefined ? {} : { ipAddress: request.ipAddress }),
+      })
+    } catch (error) {
+      if (error instanceof TenantInactiveSessionError) throw authenticationFailed()
+      throw error
+    }
     try {
       await this.dependencies.unitOfWork.run((transaction) =>
         transaction.completeLogin({

@@ -19,11 +19,11 @@ import {
 } from '@jingwei/module-navigation/shared'
 import { organizationPermissionRequirements } from '@jingwei/module-organization/server/public'
 import { organizationTreeSchema } from '@jingwei/module-organization/shared'
+import { generatedEdition } from '@jingwei/server/edition'
+import { generatedMigrations } from '@jingwei/server/migrations'
 
 import { createApp } from '../../../apps/server/src/app.js'
 import { createRuntime, type Runtime } from '../../../apps/server/src/bootstrap/runtime.js'
-import { generatedEdition } from '../../../apps/server/src/generated/edition.js'
-import { generatedMigrations } from '../../../apps/server/src/generated/migrations.js'
 
 const databaseUrl = process.env.TEST_DATABASE_URL
 describe.skipIf(databaseUrl === undefined)('real PostgreSQL navigation/API', () => {

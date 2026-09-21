@@ -89,6 +89,7 @@
 | database      | [README](../packages/platform/database/README.md)      | PostgreSQL 运行时、事务、迁移、租户目录 |
 | module-sdk    | [README](../packages/platform/module-sdk/README.md)    | Manifest、Edition、Registry、模块契约   |
 | auth          | [README](../packages/platform/auth/README.md)          | 密码、会话、Origin 与 CSRF              |
+| control-plane | [README](../packages/platform/control-plane/README.md) | 平台管理员、独立会话与租户管理          |
 | api-client    | [README](../packages/platform/api-client/README.md)    | Soybean Fetch + OpenAPI 模块客户端      |
 | http-contract | [README](../packages/platform/http-contract/README.md) | 平台 HTTP 错误与安全方案契约            |
 | audit         | [README](../packages/platform/audit/README.md)         | 审计写入                                |
@@ -100,13 +101,14 @@
 
 ### 工程工具
 
-| 工具               | 文档                                                                  |
-| ------------------ | --------------------------------------------------------------------- |
-| Architecture Check | [tooling/architecture-check](../tooling/architecture-check/README.md) |
-| Edition Builder    | [tooling/edition-builder](../tooling/edition-builder/README.md)       |
-| OpenAPI Tooling    | [tooling/openapi](../tooling/openapi/README.md)                       |
-| Migration CLI      | [tooling/migration](../tooling/migration/README.md)                   |
-| Module Generator   | [tooling/module-generator](../tooling/module-generator/README.md)     |
+| 工具                | 文档                                                                    |
+| ------------------- | ----------------------------------------------------------------------- |
+| Architecture Check  | [tooling/architecture-check](../tooling/architecture-check/README.md)   |
+| Edition Builder     | [tooling/edition-builder](../tooling/edition-builder/README.md)         |
+| OpenAPI Tooling     | [tooling/openapi](../tooling/openapi/README.md)                         |
+| Migration CLI       | [tooling/migration](../tooling/migration/README.md)                     |
+| Module Generator    | [tooling/module-generator](../tooling/module-generator/README.md)       |
+| Platform Management | [tooling/platform-management](../tooling/platform-management/README.md) |
 
 ## 就近文档原则
 
@@ -134,3 +136,5 @@
 - [0009](./adr/0009-openapi-contract-and-soybean-fetch.md)：Zod OpenAPI 单一契约、Scalar 文档与 Soybean Fetch 模块客户端
 - [0015](./adr/0015-declare-http-authorization-contracts.md)：接口授权契约、启动校验与授权评估观测
 - [0016](./adr/0016-own-tenant-branding-in-a-dedicated-module.md)：独立租户品牌所有权、发布模型与壳层组合
+- [0017](./adr/0017-own-tenant-lifecycle-in-platform-tenancy.md)：平台租户生命周期、初始化与会话门禁
+- [0018](./adr/0018-separate-platform-control-plane.md)：按 URL 与独立身份域隔离平台控制面

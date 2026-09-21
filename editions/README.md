@@ -49,6 +49,7 @@ export default defineEdition({
 - 未知模块、未知 capability、缺失 capability 依赖或循环依赖会导致生成失败。
 - `navigation` 拥有产品级公共容器、登录入口和首页；模块自己的 `navigationItems` 只提供建议叶节点；
 - Permission 引用的 Data Scope provider 必须由当前 Edition 中的模块声明，否则生成失败。
+- `iam` 与 `navigation` 是始终启用的租户控制面当前所需 Foundation；Edition Builder 会拒绝缺失其中任一模块的 Edition。
 
 ## 设计规则
 

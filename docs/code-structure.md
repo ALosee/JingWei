@@ -19,14 +19,16 @@
 
 ```text
 main.ts
-  -> bootstrap/start-web.ts           创建 Vue、Pinia、Router，注入实际客户端与适配函数
-     -> navigation/initialize-navigation.ts  编排 bootstrap → session → 可选 me
-        -> navigation/initial-location.ts   纯首屏目标选择
-     -> router/dynamic-routes.ts      Edition 页面映射与动态安装
+  -> bootstrap/start-web.ts              按 /platform 路径选择身份域
+     -> start-platform-web.ts             固定平台品牌、静态路由、operator session
+        -> router/platform-router.ts      /platform/login 与租户管理页面
+     -> start-tenant-web.ts               租户 Brand、Navigation 与 IAM session
+        -> navigation/initialize-navigation.ts  bootstrap → session → 可选 me
+        -> router/dynamic-routes.ts       Edition 页面映射与动态安装
      -> mount
 ```
 
-main.ts 只保留 startWebApplication 调用。bootstrap 可以知道“使用哪个实现”，但不负责判断“匿名或已登录应该去哪里”。这条规则没有下沉到 Navigation 服务端，因为它依赖 Web 启动场景；也没有放进 platform/utils，因为它不是通用工具。
+main.ts 只保留 startWebApplication 调用。`start-web.ts` 只按显式 URL namespace 选择控制面或租户组合根；它不按 Cookie 猜测用户意图。bootstrap 可以知道“使用哪个实现”，但不负责判断“匿名或已登录应该去哪里”。这条规则没有下沉到 Navigation 服务端，因为它依赖 Web 启动场景；也没有放进 platform/utils，因为它不是通用工具。
 
 initializeNavigation 接收最小端口：加载公开导航、恢复会话、加载用户导航、安装/识别/跳转路由，以及壳状态。不需要真正的 Vue App、Pinia 或 window，就能测试调用顺序和失败恢复。initial-location 只根据导航与初始 URL 决策，可用表格测试深链接、未知路径和默认首页。
 
@@ -41,7 +43,7 @@ index.ts -> bootstrap/start-server.ts
               `- shutdown.ts         幂等关闭流程
 
 app.ts -> middleware/request-context.ts（显式顺序）
-             request-id -> session-security -> request-logging
+             request-id -> platform-session-security -> session-security -> request-logging
        -> http/system-routes.ts
        -> http/errors.ts
        -> Module.serverModule.install()
@@ -106,7 +108,7 @@ commands 是有明确目的的运维流程，不是把一般业务规则搬出 M
 | source-controlled-ui            | package 与 authored source 不引入 `@soybeanjs/ui` styled 包                          |
 | ui-private-import               | `#ui/*` 私有 alias 不泄漏到 `@jingwei/ui` 之外                                       |
 
-检查 authored TS/Vue script，排除测试、generated、dist 和 node_modules。TypeScript AST 避免将模板文本、注释或普通字符串误认为代码。Application/API 可 type-only 引用明确的 TenantDirectory/TenantSnapshot/AppConfig 契约，但不能因此导入 DatabaseRuntime/Kysely 实现。
+检查 authored TS/Vue script，排除测试、generated、dist 和 node_modules。TypeScript AST 避免将模板文本、注释或普通字符串误认为代码。Application/API 可 type-only 引用 `@jingwei/tenancy` 的 TenantDirectory/ActiveTenantSnapshot 与 `@jingwei/config` 的 AppConfig 契约，但不能因此导入 DatabaseRuntime/Kysely 实现。
 
 规则并不证明任意包装函数都没有副作用，不能因为检查通过就认为职责正确。新增入口命名/执行形式、动态导入方式、平台端口时，需要一起更新识别逻辑和正反例。
 

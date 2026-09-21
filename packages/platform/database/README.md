@@ -1,14 +1,12 @@
 # `@jingwei/database`
 
-PostgreSQL/Kysely 的平台运行时、事务和迁移基础。它统一管理连接池，并把租户目录作为稳定端口暴露给应用。
+PostgreSQL/Kysely 的平台运行时、事务和迁移基础。它统一管理连接池；租户目录与生命周期由 `@jingwei/tenancy` 拥有。
 
 ## 导出
 
 | API                       | 作用                                             |
 | ------------------------- | ------------------------------------------------ |
 | `DatabaseRuntime`         | 持有一个进程级 `pg.Pool`，创建类型化 Kysely 视图 |
-| `TenantDirectory`         | 按租户 code 查询有效租户的端口                   |
-| `PostgresTenantDirectory` | `platform.tenant` 的 PostgreSQL 实现             |
 | `TransactionRunner<T>`    | 以统一接口执行 Kysely 事务                       |
 | `createTransactionRunner` | 从 Kysely 视图创建事务执行器                     |
 | `MigrationMap`            | 静态迁移名到 Kysely Migration 的映射             |
@@ -35,12 +33,6 @@ try {
 `TransactionRunner.execute` 保证回调成功后提交、抛错后回滚。跨多次写入的业务用例应接收 transaction，并让业务数据与审计共用它；存在已启用真实消费者时，相关 outbox append 也必须复用该 transaction。
 
 Kysely 的类型参数只描述可见表，不提供运行时租户隔离。每个模块仍必须在 SQL 中包含 `tenant_id` 条件，并用集成测试证明。
-
-## 租户目录
-
-当前 `PostgresTenantDirectory.findActiveByCode` 只返回状态为 `ACTIVE` 的平台租户快照。调用方得到 `null` 时要按“不可用租户”处理，不能绕过目录直接查询平台表。
-
-租户目录未来可演进为数据库/Schema 路由，但业务模块应继续依赖接口，而不是部署细节。
 
 ## 迁移
 

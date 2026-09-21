@@ -16,6 +16,9 @@
     "@jingwei/module-iam": "workspace:*",
     "@jingwei/module-navigation": "workspace:*",
     "@jingwei/module-organization": "workspace:*",
+    "@jingwei/module-sdk": "workspace:*",
+    "@jingwei/server": "workspace:*",
+    "@jingwei/tenancy": "workspace:*",
     "kysely": "catalog:"
   },
   "devDependencies": {

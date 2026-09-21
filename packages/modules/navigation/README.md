@@ -107,7 +107,7 @@ Application 通过 NavigationUnitOfWork 开启事务。保存、发布、回滚�
 
 匿名 bootstrap 通过 tenantCode 或 BOOTSTRAP_TENANT_CODE 解析真实租户；已登录请求始终使用会话租户。运行时只从数据库读取已发布版本，无版本返回 NAVIGATION_NOT_PUBLISHED/503，不隐式使用静态数据。
 
-`@jingwei/module-navigation/server/public` 导出 NavigationSource 端口、Edition 初始化模板物化函数 createDefaultConfiguration 和受控装配工厂 createNavigationManagement。模块 manifest 可独立提供 `navigationItems` 建议项，Edition 拥有公共容器、authEntryCode 和 homeCode；解析时按启用 capability 过滤并校验。Navigation 不再枚举全部 Route 猜测名称、路径和菜单类型。工厂封装 PostgreSQL store、IAM public service 和事务适配器；用于初始化工具，不允许普通调用方借此绕过 AuthContext/功能权限。
+`@jingwei/module-navigation/server/public` 导出 NavigationSource 端口、Edition 初始化模板物化函数 createDefaultConfiguration、租户内管理工厂 createNavigationManagement，以及控制面专用的 `createTenantNavigationProvisioner`。后者接收 `PlatformAuditContext + tenantId + 初始管理员标识`，在 Navigation 自有事务内发布首次默认版本、授予其 PERMISSION 节点并写平台审计；不会合成租户 session。模块 manifest 可独立提供 `navigationItems` 建议项，Edition 拥有公共容器、authEntryCode 和 homeCode；解析时按启用 capability 过滤并校验。Navigation 不再枚举全部 Route 猜测名称、路径和菜单类型。普通调用方仍不能借这些工厂绕过 AuthContext/功能权限。
 
 `@jingwei/module-navigation/client` 使用模块 OpenAPI 生成类型封装所有 HTTP 调用，并以模块 Zod schema 验证响应。修改请求的 CSRF 头由 `@jingwei/api-client` 统一添加；管理页面不自行拼装 URL、Cookie 或 SQL。
 

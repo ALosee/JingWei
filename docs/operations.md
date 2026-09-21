@@ -25,11 +25,13 @@ Edition 在构建前确定进入制品的模块集合。不要用同一个含全
 | ------------ | ------------------------------------------------ | ------------------------------------------------------------- |
 | 运行环境     | `NODE_ENV`                                       | 明确设置为 production                                         |
 | 监听         | host、port                                       | 与容器和探针对齐                                              |
+| 代理信任     | `HTTP_TRUST_PROXY`                               | 仅在受信代理清洗并重写转发头时开启                            |
 | 数据库       | PostgreSQL URL                                   | 通过 Secret 注入，启用 TLS/网络隔离                           |
 | 日志         | level                                            | 默认结构化输出，不记录 Secret                                 |
 | 会话         | Access/Refresh 有效期、复用窗口、Cookie 安全属性 | HTTPS 下启用 Secure，使用强随机令牌                           |
 | 登录防护     | 失败阈值、账号锁定时长                           | 结合边缘 IP 限流监控异常尝试                                  |
 | Web 来源     | allowed origins                                  | 精确白名单，不使用任意通配                                    |
+| Cookie 传输  | `COOKIE_SECURE`                                  | 按真实 HTTPS 拓扑设置；HTTPS Origin 不允许关闭                |
 | 匿名启动租户 | BOOTSTRAP_TENANT_CODE                            | 必须指向活跃真实租户，默认 default；已登录使用 Session tenant |
 | Edition      | development/full 等                              | 构建和迁移使用同一值                                          |
 
@@ -48,6 +50,19 @@ pnpm dev
 ```
 
 `seed:dev` 和 `seed:navigation` 仅用于本地非生产环境；正式环境必须通过受控初始化或用户管理流程建立首个管理员，不能使用开发种子。已有用户只初始化导航时不要重跑 seed:dev（会更新密码）。一次性 CLI 须显式加载环境，见 [迁移工具](../tooling/migration/README.md#显式使用-envtest)。
+
+迁移完成后，用一次性命令创建首位平台管理员：
+
+```bash
+PLATFORM_OPERATOR_PASSWORD='<至少 12 个字符>' \
+  pnpm platform:bootstrap --login platform-admin --name 平台管理员
+```
+
+随后访问 `http(s)://<host>:<port>/platform/login`，日常从 `/platform/tenants` 创建和管理租户。内网只使用 IP + port 时也按路径区分：`/platform/*` 是平台控制面，`/signin` 是租户登录；两者使用独立 Cookie 和会话，不需要为每个租户部署前端。租户创建只有完成 IAM、权限和默认 Navigation 初始化后才从 PROVISIONING 切换为 ACTIVE。
+
+直连部署保持 `HTTP_TRUST_PROXY=false`。只有 Server 必经受控反向代理，且该代理会丢弃客户端伪造的 `X-Forwarded-For` 并写入可信链时，才设置 `HTTP_TRUST_PROXY=true`。否则攻击者可污染会话与审计 IP。`COOKIE_SECURE` 默认按 `APP_ORIGIN` 是否为 HTTPS 推导；生产与预发布应使用 HTTPS，内网明确使用 HTTP 时才允许非 Secure Cookie。
+
+`pnpm tenant:manage` 只保留作受限灾备入口。它要求显式 `TENANT_OPERATOR_ID`，创建/重试密码通过 `TENANT_ADMIN_PASSWORD` 注入，完整说明见 [租户管理 CLI](../tooling/tenant-management/README.md)。平台管理员初始化说明见 [平台管理工具](../tooling/platform-management/README.md)。
 
 日常 `pnpm dev` 从仓库根目录读取 `.env`、`.env.local`、`.env.development` 和 `.env.development.local`；测试联调使用 `pnpm dev:test`，只加载 `.env.test`。文件名代表运行模式，不是任意别名，因此创建 `.env.test` 后仍执行 `pnpm dev` 不会改变 Server 的数据库连接。
 

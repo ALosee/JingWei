@@ -1,10 +1,15 @@
 import { PostgresSessionRepository, SessionService, type AuthDatabase } from '@jingwei/auth'
 import { loadConfig, type AppConfig } from '@jingwei/config'
-import { DatabaseRuntime, PostgresTenantDirectory, type TenantDirectory } from '@jingwei/database'
+import {
+  createOperatorSessionService,
+  type OperatorSessionService,
+} from '@jingwei/control-plane/server'
+import { DatabaseRuntime } from '@jingwei/database'
 import { systemClock } from '@jingwei/kernel'
 import { ModuleRegistry } from '@jingwei/module-sdk'
 import type { ServerModuleContext } from '@jingwei/module-sdk/server'
 import { createLogger, type AppLogger } from '@jingwei/observability'
+import { PostgresTenantDirectory, type TenantDirectory } from '@jingwei/tenancy'
 
 import { generatedEdition } from '../generated/edition.js'
 
@@ -14,6 +19,7 @@ export interface Runtime extends ServerModuleContext {
   readonly logger: AppLogger
   readonly moduleRegistry: ModuleRegistry
   readonly sessionService: SessionService
+  readonly operatorSessionService: OperatorSessionService
   readonly tenantDirectory: TenantDirectory
   dispose(): Promise<void>
 }
@@ -28,9 +34,15 @@ export function createRuntime(environment: NodeJS.ProcessEnv = process.env): Run
   const config = loadConfig(environment)
   const database = new DatabaseRuntime(config.databaseUrl)
   const logger = createLogger({ environment: config.environment })
-  const sessionRepository = new PostgresSessionRepository(database.view<AuthDatabase>())
-  const sessionService = new SessionService(sessionRepository, systemClock, config.session)
   const tenantDirectory = new PostgresTenantDirectory(database.view())
+  const sessionRepository = new PostgresSessionRepository(database.view<AuthDatabase>())
+  const sessionService = new SessionService(
+    sessionRepository,
+    systemClock,
+    config.session,
+    tenantDirectory,
+  )
+  const operatorSessionService = createOperatorSessionService(database, config)
 
   return {
     config,
@@ -38,6 +50,7 @@ export function createRuntime(environment: NodeJS.ProcessEnv = process.env): Run
     logger,
     moduleRegistry: new ModuleRegistry(generatedEdition),
     sessionService,
+    operatorSessionService,
     tenantDirectory,
     dispose: () => database.dispose(),
   }

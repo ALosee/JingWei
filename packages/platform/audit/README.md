@@ -1,6 +1,6 @@
 # `@jingwei/audit`
 
-平台审计写入契约和 PostgreSQL 实现。审计回答“谁在何时、哪个租户和请求中，对哪个业务对象执行了什么，结果如何”。
+平台审计写入契约和 PostgreSQL 实现。审计回答“谁在何时、哪个租户和请求中，对哪个业务对象执行了什么，结果如何”，并区分租户用户与平台控制面 actor。
 
 ## 公共 API
 
@@ -18,6 +18,11 @@
 ### `AuditWriter.append(entry)`
 
 模块依赖的写入端口。`PostgresAuditWriter` 将记录追加到 `platform.audit_log`，使用注入的时间函数便于测试。
+
+### `PostgresPlatformAuditWriter.appendPlatform(entry)`
+
+用于租户生命周期等控制面动作。actor 明确为 `PLATFORM_OPERATOR | CLI | SYSTEM`，目标 tenantId 独立记录；禁止用虚构的租户 UserId 代替平台操作者。
+HTTP 控制面会把经过可信代理策略解析的客户端 IP 与有界 User-Agent 放进 `PlatformAuditContext`；登录成功、失败、退出以及租户管理动作均沿用该元数据。未知账号登录失败只记录固定目标与失败类别，不保存攻击者提交的账号原文。
 
 ```ts
 await audit.append({

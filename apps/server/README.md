@@ -9,7 +9,7 @@ Jingwei 的服务端组合根。它负责把配置、数据库、会话、可观
 - 在启动边界读取并验证环境配置；
 - 创建和释放数据库连接池；
 - 根据构建期生成的 Edition 创建 `ModuleRegistry`；
-- 创建会话服务、租户目录、日志器等共享运行时对象；
+- 创建租户会话、独立平台 operator 会话、租户目录和日志器等共享运行时对象；
 - 安装 Edition 中的 Server Module；
 - 建立 requestId、会话、Origin、CSRF 与请求日志中间件；
 - 统一处理 404 和应用异常；
@@ -43,10 +43,10 @@ src/
 
 1. `createRuntime(process.env)` 调用 `loadConfig`；
 2. 创建 `DatabaseRuntime` 和结构化日志器；
-3. 创建 PostgreSQL 会话仓储、`SessionService` 与租户目录；
+3. 创建 PostgreSQL 租户会话仓储、`SessionService`、平台 `OperatorSessionService` 与租户目录；
 4. 使用生成的 `ResolvedEdition` 创建 `ModuleRegistry`；
 5. `createApp` 按生成顺序调用每个模块的 `install`；
-6. 把模块路由挂到 `/api/v1/<module-base-path>`；
+6. 把平台控制面挂到 `/api/v1/platform`，把模块路由挂到 `/api/v1/<module-base-path>`；
 7. Node adapter 开始监听；
 8. 收到退出信号后通过 `createShutdown` 停止接受请求，等待 HTTP 关闭后调用 `runtime.dispose()`。
 
@@ -61,14 +61,15 @@ Navigation 的 install 通过 IAM 公开工厂获取活跃角色/功能授权服
 `requestContextMiddleware` 返回有序中间件元组，由 `app.use` 安装，不是一个承担所有实现的 handler：
 
 - `request-id.ts`：建立 requestId 和初始身份上下文；
-- `session-security.ts`：Origin、会话恢复和 CSRF；
+- `platform-session-security.ts`：只为 `/api/v1/platform` 恢复 operator、校验 Origin/CSRF；
+- `session-security.ts`：为非平台 API 恢复租户会话并校验 Origin/CSRF；
 - `request-logging.ts`：记录通过安全阶段后的 HTTP 请求结果。
 
 执行顺序：
 
 1. 接受合法 UUIDv7 `x-request-id`，否则生成新 ID；
 2. 对修改型请求验证 Origin；
-3. 读取短期 Access Token Cookie，并通过摘要查询活动 Token Family，恢复 `AuthContext`；
+3. 根据 API namespace 读取对应短期 Access Token Cookie，恢复 `PlatformAuthContext` 或租户 `AuthContext`；
 4. 已登录的修改型请求继续验证 CSRF Cookie 与请求头；
 5. 执行路由；
 6. 在 `finally` 中记录 method、path、status、duration 和安全上下文。

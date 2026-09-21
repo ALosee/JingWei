@@ -3,9 +3,15 @@ import type { Hono } from 'hono'
 
 import type { SessionService } from '@jingwei/auth'
 import type { AppConfig } from '@jingwei/config'
-import type { DatabaseRuntime, TenantDirectory } from '@jingwei/database'
-import { ApplicationError, type AuthContext, type RequestId } from '@jingwei/kernel'
+import type { DatabaseRuntime } from '@jingwei/database'
+import {
+  ApplicationError,
+  type AuthContext,
+  type PlatformAuthContext,
+  type RequestId,
+} from '@jingwei/kernel'
 import type { AppLogger } from '@jingwei/observability'
+import type { TenantDirectory } from '@jingwei/tenancy'
 
 import type { ModuleManifest } from './manifest.js'
 import type { ModuleRegistry } from './registry.js'
@@ -14,7 +20,12 @@ export * from './api-authorization.js'
 
 export interface ServerAppVariables {
   authContext: AuthContext | null
+  platformAuthContext: PlatformAuthContext | null
   requestId: RequestId
+  requestMetadata: {
+    readonly ipAddress?: string
+    readonly userAgent?: string
+  }
 }
 
 export interface ServerAppEnv {

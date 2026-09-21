@@ -3,6 +3,10 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "exports": {
+    "./edition": "./src/generated/edition.ts",
+    "./migrations": "./src/generated/migrations.ts"
+  },
   "scripts": {
     "dev": "tsx watch --env-file-if-exists=../../.env --env-file-if-exists=../../.env.local --env-file-if-exists=../../.env.development --env-file-if-exists=../../.env.development.local src/index.ts",
     "dev:test": "tsx watch --env-file=../../.env.test src/index.ts",
@@ -17,6 +21,7 @@
     "@jingwei/audit": "workspace:*",
     "@jingwei/auth": "workspace:*",
     "@jingwei/config": "workspace:*",
+    "@jingwei/control-plane": "workspace:*",
     "@jingwei/database": "workspace:*",
     "@jingwei/http-contract": "workspace:*",
     "@jingwei/kernel": "workspace:*",
@@ -28,6 +33,7 @@
     "@jingwei/module-sdk": "workspace:*",
     "@jingwei/observability": "workspace:*",
     "@jingwei/outbox": "workspace:*",
+    "@jingwei/tenancy": "workspace:*",
     "argon2": "catalog:",
     "hono": "catalog:",
     "kysely": "catalog:",
