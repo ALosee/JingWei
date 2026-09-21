@@ -2,6 +2,7 @@
 import { computed, inject } from 'vue'
 
 import {
+  authPlatformMarkComponentKey,
   authPlatformWordmarkComponentKey,
   useAuthBrandPresentation,
 } from '../auth-brand-presentation.js'
@@ -12,7 +13,12 @@ const { surface, compact } = defineProps<{
 }>()
 
 const brand = useAuthBrandPresentation()
+const platformMarkComponent = inject(authPlatformMarkComponentKey, null)
 const platformWordmarkComponent = inject(authPlatformWordmarkComponentKey, null)
+const brandMonogram = computed(() => {
+  const source = brand.value.shortName.trim() || brand.value.systemName.trim()
+  return Array.from(source)[0] ?? '•'
+})
 
 const horizontalBrandMode = computed(() =>
   brand.value.horizontalBrandMode === 'CUSTOM_LOGO' && brand.value.logoUrl === null
@@ -49,15 +55,8 @@ const logoMaskStyle = computed(() => {
       aria-hidden="true"
     >
       <img v-if="brand.markUrl" :src="brand.markUrl" alt="" class="size-full object-contain" />
-      <svg
-        v-else
-        viewBox="0 0 48 48"
-        class="size-7.5 fill-none stroke-current [stroke-linecap:round] [stroke-linejoin:round] [stroke-width:1.5]"
-      >
-        <path d="M12 24h24M24 12v24" />
-        <circle cx="24" cy="24" r="14" />
-        <circle cx="24" cy="24" r="3.5" class="fill-current stroke-none" />
-      </svg>
+      <component :is="platformMarkComponent" v-else-if="platformMarkComponent" class="size-7.5" />
+      <span v-else class="text-sm font-750" data-auth-brand-monogram>{{ brandMonogram }}</span>
     </span>
 
     <img

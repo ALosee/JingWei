@@ -35,6 +35,9 @@ const fallback = readonly(
 export const authBrandPresentationKey: InjectionKey<Readonly<Ref<AuthBrandPresentation>>> = Symbol(
   'iam-auth-brand-presentation',
 )
+export const authPlatformMarkComponentKey: InjectionKey<Component> = Symbol(
+  'iam-auth-platform-mark-component',
+)
 export const authPlatformWordmarkComponentKey: InjectionKey<Component> = Symbol(
   'iam-auth-platform-wordmark-component',
 )

@@ -1,4 +1,5 @@
 import type { EffectiveBrand } from '@jingwei/module-branding/shared'
+import { platformDefaultFavicon } from '@jingwei/module-branding/web'
 
 const faviconSelector = 'link[data-jingwei-brand-favicon]'
 
@@ -22,11 +23,13 @@ export function applyDocumentBrand(brand: EffectiveBrand, pageTitle?: string): v
   description.content = brand.loginTagline || brand.systemName
 
   document.querySelector(faviconSelector)?.remove()
-  if (brand.faviconUrl === null) return
   const favicon = document.createElement('link')
   favicon.rel = 'icon'
-  favicon.type = faviconLinkType(brand.faviconContentType)
-  favicon.href = brand.faviconUrl
+  favicon.type =
+    brand.faviconUrl === null
+      ? platformDefaultFavicon.type
+      : faviconLinkType(brand.faviconContentType)
+  favicon.href = brand.faviconUrl ?? platformDefaultFavicon.href
   favicon.dataset.jingweiBrandFavicon = ''
   document.head.append(favicon)
 }

@@ -5,6 +5,7 @@ import { Icon, Segment } from '@jingwei/ui'
 import type { SegmentOptionData } from '@jingwei/ui'
 
 import { resolveHorizontalBrandMode, type BrandConfiguration } from '../../shared/index.js'
+import { platformDefaultFavicon } from '../platform-brand.js'
 import BrandLogoAsset from './brand-logo-asset.vue'
 import DefaultBrandMark from './default-brand-mark.vue'
 import DefaultBrandWordmark from './default-brand-wordmark.vue'
@@ -87,13 +88,12 @@ const horizontalLabel = computed(() => {
         <div
           class="ml-2 flex min-w-0 flex-1 items-center gap-2 rounded-md border border-border/70 bg-background px-2 py-1"
         >
-          <img v-if="faviconUrl" :src="faviconUrl" alt="" class="size-3.5 object-contain" />
-          <span
-            v-else
-            class="size-3.5 grid place-items-center rounded-sm bg-primary/15 text-primary"
-          >
-            <DefaultBrandMark class="size-3" />
-          </span>
+          <img
+            :src="faviconUrl ?? platformDefaultFavicon.href"
+            alt=""
+            class="size-3.5 rounded-sm object-contain"
+            data-brand-preview-favicon
+          />
           <span class="truncate text-xs text-muted-foreground">{{ browserTitle }}</span>
         </div>
       </div>

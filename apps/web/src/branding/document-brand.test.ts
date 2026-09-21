@@ -33,7 +33,7 @@ describe('document brand projection', () => {
     expect(favicons[0]?.getAttribute('href')).toBe('data:image/png;base64,AQ==')
   })
 
-  it('falls back to a system-only title and removes a previous custom favicon', () => {
+  it('falls back to a system-only title and restores the platform favicon', () => {
     applyDocumentBrand(
       { ...defaultEffectiveBrand, faviconUrl: 'data:image/png;base64,AA==' },
       '账号设置',
@@ -41,7 +41,9 @@ describe('document brand projection', () => {
     applyDocumentBrand({ ...defaultEffectiveBrand, titleMode: 'SYSTEM_ONLY' }, '组织管理')
 
     expect(document.title).toBe(defaultEffectiveBrand.systemName)
-    expect(document.querySelector('link[data-jingwei-brand-favicon]')).toBeNull()
+    const favicon = document.querySelector('link[data-jingwei-brand-favicon]')
+    expect(favicon?.getAttribute('href')).toBe('/favicon.svg')
+    expect(favicon?.getAttribute('type')).toBe('image/svg+xml')
   })
 
   it('projects the validated ICO media type onto the favicon link', () => {

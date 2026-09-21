@@ -4,6 +4,7 @@ import { createApp, readonly } from 'vue'
 import { defaultEffectiveBrand, type EffectiveBrand } from '@jingwei/module-branding/shared'
 import {
   activeBrand,
+  DefaultBrandMark,
   DefaultBrandWordmark,
   loadEffectiveBrand,
   setActiveBrand,
@@ -11,6 +12,7 @@ import {
 import { getSessionStatus } from '@jingwei/module-iam/client'
 import {
   authBrandPresentationKey,
+  authPlatformMarkComponentKey,
   authPlatformWordmarkComponentKey,
   authTenantBrandSelectorKey,
 } from '@jingwei/module-iam/public/web'
@@ -35,6 +37,7 @@ export async function startTenantWebApplication(): Promise<void> {
   const initialLocation = window.location.pathname + window.location.search + window.location.hash
   const app = createApp(App)
   app.provide(authBrandPresentationKey, readonly(activeBrand))
+  app.provide(authPlatformMarkComponentKey, DefaultBrandMark)
   app.provide(authPlatformWordmarkComponentKey, DefaultBrandWordmark)
   installGeneratedWebIntegrations(app)
   const pinia = createPinia()

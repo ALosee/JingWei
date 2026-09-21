@@ -5,6 +5,7 @@ export {
 } from '../web/scope-reference-directory.js'
 export {
   authBrandPresentationKey,
+  authPlatformMarkComponentKey,
   authPlatformWordmarkComponentKey,
   authTenantBrandSelectorKey,
   type AuthTenantBrandSelector,

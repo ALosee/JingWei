@@ -1,20 +1,15 @@
 <template>
   <!-- Platform default mark when tenant has not uploaded a square brand asset. -->
-  <svg viewBox="0 0 36 36" fill="none" aria-hidden="true">
-    <circle cx="18" cy="18" r="10.25" stroke="currentColor" stroke-width="1.7" />
+  <svg viewBox="0 0 48 48" fill="none" aria-hidden="true" data-brand-symbol="jingwei-coordinate">
     <path
-      d="M8.25 18h19.5M10.45 13.25h15.1M10.45 22.75h15.1"
+      d="M12 24h24M24 12v24"
       stroke="currentColor"
       stroke-linecap="round"
-      stroke-width="1.45"
-      opacity="0.72"
+      stroke-linejoin="round"
+      stroke-width="2"
+      data-brand-coordinate-axis
     />
-    <path
-      d="M18 7.75c3.15 2.8 4.75 6.2 4.75 10.25S21.15 25.45 18 28.25M18 7.75c-3.15 2.8-4.75 6.2-4.75 10.25s1.6 7.45 4.75 10.25"
-      stroke="currentColor"
-      stroke-linecap="round"
-      stroke-width="1.7"
-    />
-    <circle cx="24.2" cy="12.1" r="2" fill="currentColor" />
+    <circle cx="24" cy="24" r="14" stroke="currentColor" stroke-width="2" />
+    <circle cx="24" cy="24" r="3.5" fill="currentColor" data-brand-coordinate-center />
   </svg>
 </template>
