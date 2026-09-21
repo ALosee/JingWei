@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { Icon } from '@jingwei/ui'
+
 import { useAuthBrandPresentation } from '../auth-brand-presentation.js'
 import LoginBrandIdentity from './login-brand-identity.vue'
 
@@ -39,12 +41,7 @@ const brand = useAuthBrandPresentation()
           class="size-9 grid shrink-0 place-items-center rounded-[0.7rem] bg-white/12 text-[var(--auth-brand-foreground)]"
           aria-hidden="true"
         >
-          <svg
-            viewBox="0 0 24 24"
-            class="size-4.5 fill-none stroke-current [stroke-linecap:round] [stroke-linejoin:round] [stroke-width:1.7]"
-          >
-            <path d="M7 10V8a5 5 0 0 1 10 0v2M6 10h12v10H6z" />
-          </svg>
+          <Icon icon="lucide:lock" class="size-4.5" />
         </span>
         <span>
           <strong class="mb-0.5 block text-sm font-650">安全会话</strong>
@@ -56,13 +53,7 @@ const brand = useAuthBrandPresentation()
           class="size-9 grid shrink-0 place-items-center rounded-[0.7rem] bg-white/12 text-[var(--auth-brand-foreground)]"
           aria-hidden="true"
         >
-          <svg
-            viewBox="0 0 24 24"
-            class="size-4.5 fill-none stroke-current [stroke-linecap:round] [stroke-linejoin:round] [stroke-width:1.7]"
-          >
-            <path d="M12 3 4.5 7v5c0 4.6 3.1 7.4 7.5 9 4.4-1.6 7.5-4.4 7.5-9V7z" />
-            <path d="m9 12 2 2 4-4" />
-          </svg>
+          <Icon icon="lucide:shield-check" class="size-4.5" />
         </span>
         <span>
           <strong class="mb-0.5 block text-sm font-650">租户隔离</strong>
@@ -74,16 +65,7 @@ const brand = useAuthBrandPresentation()
           class="size-9 grid shrink-0 place-items-center rounded-[0.7rem] bg-white/12 text-[var(--auth-brand-foreground)]"
           aria-hidden="true"
         >
-          <svg
-            viewBox="0 0 24 24"
-            class="size-4.5 fill-none stroke-current [stroke-linecap:round] [stroke-linejoin:round] [stroke-width:1.7]"
-          >
-            <circle cx="8" cy="8" r="3" />
-            <circle cx="16.5" cy="9.5" r="2.5" />
-            <path
-              d="M3 19c.7-3.7 2.4-5.5 5-5.5s4.3 1.8 5 5.5M13 18c.5-2.7 1.7-4 3.7-4 2 0 3.3 1.3 3.8 4"
-            />
-          </svg>
+          <Icon icon="lucide:users" class="size-4.5" />
         </span>
         <span>
           <strong class="mb-0.5 block text-sm font-650">实时授权</strong>

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import { ButtonLoading, Input } from '@jingwei/ui'
+import { ButtonLoading, Icon, Input } from '@jingwei/ui'
 
 import { useAuthBrandPresentation, useAuthTenantBrandSelector } from '../auth-brand-presentation.js'
 import { useSignIn } from '../composables/use-sign-in.js'
@@ -67,13 +67,7 @@ function selectTenantBrand(): void {
             @focusout="selectTenantBrand"
           >
             <template #leading>
-              <svg
-                class="size-4.5 shrink-0 fill-none stroke-current text-muted-foreground [stroke-linecap:round] [stroke-linejoin:round] [stroke-width:1.7]"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path d="M4 20V6l8-3 8 3v14M8 9h2m4 0h2m-8 4h2m4 0h2m-8 4h2m4 0h2M2 20h20" />
-              </svg>
+              <Icon icon="lucide:building-2" class="size-4.5 text-muted-foreground" />
             </template>
           </Input>
           <p class="-mt-0.5 m-0 text-[0.725rem] text-muted-foreground">由你的系统管理员提供</p>
@@ -94,14 +88,7 @@ function selectTenantBrand(): void {
             :disabled="submitting"
           >
             <template #leading>
-              <svg
-                class="size-4.5 shrink-0 fill-none stroke-current text-muted-foreground [stroke-linecap:round] [stroke-linejoin:round] [stroke-width:1.7]"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <circle cx="12" cy="8" r="4" />
-                <path d="M4 21c.8-4.7 3.5-7 8-7s7.2 2.3 8 7" />
-              </svg>
+              <Icon icon="lucide:user-round" class="size-4.5 text-muted-foreground" />
             </template>
           </Input>
         </div>
@@ -133,14 +120,7 @@ function selectTenantBrand(): void {
             @blur="capsLockActive = false"
           >
             <template #leading>
-              <svg
-                class="size-4.5 shrink-0 fill-none stroke-current text-muted-foreground [stroke-linecap:round] [stroke-linejoin:round] [stroke-width:1.7]"
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path d="M7 10V8a5 5 0 0 1 10 0v2M5 10h14v11H5z" />
-                <circle cx="12" cy="15" r="1.5" />
-              </svg>
+              <Icon icon="lucide:lock" class="size-4.5 text-muted-foreground" />
             </template>
             <template #trailing>
               <button
@@ -151,25 +131,7 @@ function selectTenantBrand(): void {
                 :disabled="submitting"
                 @click="passwordVisible = !passwordVisible"
               >
-                <svg
-                  v-if="passwordVisible"
-                  viewBox="0 0 24 24"
-                  class="size-4.5 fill-none stroke-current [stroke-linecap:round] [stroke-linejoin:round] [stroke-width:1.7]"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M9.9 5.2A10.5 10.5 0 0 1 12 5c5.5 0 9 7 9 7a16 16 0 0 1-2.1 3.1M6.6 6.6C4.2 8.2 3 12 3 12s3.5 7 9 7a9.8 9.8 0 0 0 3.4-.6"
-                  />
-                </svg>
-                <svg
-                  v-else
-                  viewBox="0 0 24 24"
-                  class="size-4.5 fill-none stroke-current [stroke-linecap:round] [stroke-linejoin:round] [stroke-width:1.7]"
-                  aria-hidden="true"
-                >
-                  <path d="M3 12s3.5-7 9-7 9 7 9 7-3.5 7-9 7-9-7-9-7Z" />
-                  <circle cx="12" cy="12" r="3" />
-                </svg>
+                <Icon :icon="passwordVisible ? 'lucide:eye-off' : 'lucide:eye'" class="size-4.5" />
               </button>
             </template>
           </Input>
@@ -182,14 +144,7 @@ function selectTenantBrand(): void {
           role="alert"
           aria-live="polite"
         >
-          <svg
-            viewBox="0 0 24 24"
-            class="mt-0.5 size-4 shrink-0 fill-none stroke-current [stroke-linecap:round] [stroke-linejoin:round] [stroke-width:1.7]"
-            aria-hidden="true"
-          >
-            <circle cx="12" cy="12" r="9" />
-            <path d="M12 7v6m0 4h.01" />
-          </svg>
+          <Icon icon="lucide:circle-alert" class="mt-0.5 size-4 shrink-0" />
           <span>{{ errorMessage }}</span>
         </div>
 
@@ -208,14 +163,7 @@ function selectTenantBrand(): void {
       <div
         class="mt-6 flex items-center gap-3 rounded-[var(--radius)] bg-muted/65 px-3.5 py-3 text-muted-foreground"
       >
-        <svg
-          viewBox="0 0 24 24"
-          class="size-4.5 shrink-0 fill-none stroke-current text-success [stroke-linecap:round] [stroke-linejoin:round] [stroke-width:1.7]"
-          aria-hidden="true"
-        >
-          <path d="M12 3 4.5 7v5c0 4.6 3.1 7.4 7.5 9 4.4-1.6 7.5-4.4 7.5-9V7z" />
-          <path d="m9 12 2 2 4-4" />
-        </svg>
+        <Icon icon="lucide:shield-check" class="size-4.5 shrink-0 text-success" />
         <p class="m-0 grid gap-0.5 text-[0.73rem]">
           <strong class="text-[0.78rem] text-foreground font-650">安全登录</strong>
           <span>登录凭据不会暴露给页面脚本</span>
