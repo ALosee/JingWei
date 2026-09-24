@@ -7,7 +7,7 @@ import type { SegmentOptionData } from '@jingwei/ui'
 import { useLayoutStore, type BrandPlacement, type LayoutMode } from '../../../../stores/layout.js'
 
 const layout = useLayoutStore()
-const { preferences } = storeToRefs(layout)
+const { preferences, tenantDefaults, userOverrides, hasOverrides } = storeToRefs(layout)
 
 const headerLimits = { min: 48, max: 96, step: 4 }
 const siderLimits = { min: 192, max: 360, step: 8 }
@@ -48,6 +48,11 @@ function setShowTabs(value: boolean): void {
 
 <template>
   <form class="grid gap-6 pt-2" @submit.prevent>
+    <p class="m-0 text-xs text-muted-foreground">
+      当前租户默认使用{{ tenantDefaults.mode === 'left' ? '左侧' : '顶部' }}菜单、{{
+        tenantDefaults.showTabs ? '显示' : '隐藏'
+      }}标签栏。未单独调整的项目会继续跟随租户默认值。
+    </p>
     <section class="grid gap-5">
       <Separator align="center">布局模式</Separator>
       <div class="grid grid-cols-2 gap-x-4 gap-y-3" role="radiogroup" aria-label="布局模式">
@@ -96,7 +101,10 @@ function setShowTabs(value: boolean): void {
     <section class="grid gap-3">
       <Separator align="center">标签栏设置</Separator>
       <div class="flex items-center justify-between gap-4 px-1">
-        <span class="text-sm text-foreground">显示标签栏</span>
+        <span class="text-sm text-foreground">
+          显示标签栏
+          <small v-if="'showTabs' in userOverrides" class="ml-1 text-primary">已自定义</small>
+        </span>
         <Switch
           :model-value="preferences.showTabs"
           :control-props="{ 'aria-label': '显示页面标签' }"
@@ -108,7 +116,10 @@ function setShowTabs(value: boolean): void {
     <section class="grid gap-3">
       <Separator align="center">头部设置</Separator>
       <div class="flex items-center justify-between gap-4 px-1">
-        <span class="text-sm text-foreground">头部高度</span>
+        <span class="text-sm text-foreground">
+          头部高度
+          <small v-if="'headerHeight' in userOverrides" class="ml-1 text-primary">已自定义</small>
+        </span>
         <InputNumber
           :model-value="preferences.headerHeight"
           :min="headerLimits.min"
@@ -127,7 +138,10 @@ function setShowTabs(value: boolean): void {
     <section class="grid gap-3">
       <Separator align="center">侧边栏设置</Separator>
       <div class="flex items-center justify-between gap-4 px-1">
-        <span class="text-sm text-foreground">侧边栏宽度</span>
+        <span class="text-sm text-foreground">
+          侧边栏宽度
+          <small v-if="'siderWidth' in userOverrides" class="ml-1 text-primary">已自定义</small>
+        </span>
         <InputNumber
           :model-value="preferences.siderWidth"
           :min="siderLimits.min"
@@ -142,7 +156,10 @@ function setShowTabs(value: boolean): void {
         />
       </div>
       <div v-if="preferences.mode === 'left'" class="flex items-center justify-between gap-4 px-1">
-        <span class="text-sm text-foreground">品牌位置</span>
+        <span class="text-sm text-foreground">
+          品牌位置
+          <small v-if="'brandPlacement' in userOverrides" class="ml-1 text-primary">已自定义</small>
+        </span>
         <Segment
           :model-value="preferences.brandPlacement"
           :items="brandOptions"
@@ -153,7 +170,15 @@ function setShowTabs(value: boolean): void {
     </section>
 
     <div class="flex justify-start border-t border-border pt-4">
-      <Button type="button" variant="outline" size="sm" @click="layout.reset">重置配置</Button>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        :disabled="!hasOverrides"
+        @click="layout.reset"
+      >
+        恢复租户默认
+      </Button>
     </div>
   </form>
 </template>

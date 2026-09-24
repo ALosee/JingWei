@@ -12,7 +12,9 @@ src/
 ├── styles/                     # sbean 生成的组件 recipe
 ├── theme/                      # 本地主题状态、Provider 配套与首屏恢复
 ├── patterns/                   # Jingwei 自有的跨模块通用组合组件
-│   └── theme-settings-panel/
+│   ├── theme-settings-panel/
+│   ├── theme-palette/          # 受控色阶选择、生成与运行时注册
+│   └── theme-scope/            # 不改变全局状态的局部主题预览边界
 ├── index.ts                    # 唯一公共入口，向业务导出无 S 前缀名称
 └── theme.css                   # 浏览器级全局样式
 ```
@@ -35,10 +37,15 @@ src/
 `Slider`、`Separator`、`Dialog`、`Layout`、`Tabs`、`Tree`、`TreeMenu`、`Menubar`、`Breadcrumb`、`Popover`、
 `PageTabs`、`ConfigProvider` 等简洁名称。不要为了改名去修改生成文件，也不要在业务代码中使用内部 `S*` 名称。
 
-`ThemeSettingsPanel`（上游 ThemeCustomizer 源码移植，保持唯一 headless + 本地 styled 源码）是本地 `patterns`，不由 sbean 管理。它提供完整主题定制：显示模式、调色板、
-配色方案、尺寸/圆角、高级层级与 Custom 逐 token 调色。`palette-picker` / `theme-mode-select` 为
-pattern 内私有实现。设置入口、非模态容器和工作区文案由 Web 壳拥有。新增公开组件时同步更新显式
-export、README 和相应契约测试。
+`ThemeSettingsPanel`（上游 ThemeCustomizer 源码移植）仍作为主题能力参考；`ThemePaletteSelect`、
+`PalettePicker` 和色阶生成/注册函数是无存储副作用的受控能力。Branding 在模块内组合色系选择、
+语义色阶引用、单色自定义和整套色阶微调；不把租户字段塞进共享 UI 组件。租户产品不直接暴露任意 CSS。
+`ThemeScope` 接收受约束主题并生成带唯一 data selector 的局部
+亮/暗 CSS，用于 Branding 草稿预览且不改变应用级主题状态。设置入口、非模态容器和工作区文案由 Web
+壳拥有。新增公开组件时同步更新显式 export、README 和相应契约测试。
+`themePaletteKey` 只计算已发布色板的内容寻址键；`registerThemePalette` 在显式的主题装配步骤注册。
+实时草稿预览使用 `createThemePaletteSlot` 覆盖固定临时键，组件卸载时调用 `dispose` 清理，避免每次
+调色都向主题引擎注册表追加一个永久条目。
 
 ## 新增或更新组件
 
@@ -80,11 +87,11 @@ Header/Tab/Content slots；`LayoutTrigger` 复用同一个上下文。`Tabs`、`
 其 WAI-ARIA、键盘、焦点、受控状态和浮层定位语义，本包只负责公共 API 与 UnoCSS recipe。
 应用只从本包公共入口使用它们。
 
-Web 根节点挂载本地 `ConfigProvider` 并启用 `persist-theme`。Provider 同时装配本地 Toast、
-Dialog 和 Progress provider；`useTheme()` 复用同一个上下文，不另建 Pinia 主题 store。
-`ThemeSettingsPanel` 提供浅色/深色/跟随系统、中性色、品牌色、圆角、尺寸和恢复默认，设置
-保存在当前浏览器；Web 壳决定如何呈现设置入口。`@jingwei/ui/theme-init` 在应用加载前恢复
-明暗模式，避免首屏闪烁。
+Web 根节点挂载本地 `ConfigProvider`。Provider 同时装配本地 Toast、Dialog 和 Progress provider；
+`useTheme()` 复用同一个上下文。租户壳把 Branding 的完整色阶、语义覆盖、圆角和命名方案转换为受控主题，
+只将明暗模式与尺寸作为 tenant+user 范围的个人偏好；平台壳使用固定主题。Web 自有的首屏脚本只恢复
+明暗模式提示以避免闪烁，不恢复旧版用户颜色。`ThemeScope` 仅提供局部预览，不能作为绕过租户品牌
+策略的第二套全局 Provider。
 
 ## 组件完成要求
 

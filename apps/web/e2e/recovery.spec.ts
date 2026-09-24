@@ -148,7 +148,24 @@ test('groups, directories, hidden dynamic pages and safe links remain distinct o
     route.fulfill({
       json: {
         authenticated: true,
+        permissions: [],
         user: { id: id(200), tenantId: id(201), displayName: 'Admin', avatarUrl: null },
+      },
+    }),
+  )
+  await page.route('**/api/v1/iam/account', (route) =>
+    route.fulfill({
+      json: {
+        id: id(200),
+        username: 'admin',
+        displayName: 'Admin',
+        email: null,
+        phone: null,
+        avatarUrl: null,
+        status: 'ACTIVE',
+        lastLoginAt: null,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        passwordChangedAt: '2026-01-01T00:00:00.000Z',
       },
     }),
   )
@@ -156,7 +173,7 @@ test('groups, directories, hidden dynamic pages and safe links remain distinct o
     route.fulfill({ json: response([login, group, directory, manage, account, external]) }),
   )
   await page.goto('/account/123?tab=security')
-  await expect(page.getByRole('heading', { name: '个人账号' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Admin' })).toBeVisible()
   await expect(page).toHaveURL(/\/account\/123\?tab=security$/u)
   const menu = page.getByRole('navigation', { name: '主导航' })
   await expect(menu.getByText('工作区', { exact: true })).toBeVisible()
@@ -204,6 +221,7 @@ test('editor saves a complete typed draft with CSRF', async ({ page, context }) 
     route.fulfill({
       json: {
         authenticated: true,
+        permissions: ['navigation.manage'],
         user: { id: id(200), tenantId: id(201), displayName: 'Admin', avatarUrl: null },
       },
     }),
@@ -279,7 +297,7 @@ test('editor saves a complete typed draft with CSRF', async ({ page, context }) 
   await expect(page.getByRole('button', { name: '保存草稿', exact: true })).toBeDisabled()
   await page.getByRole('button', { name: '基于所选版本创建草稿' }).click()
   await expect(page.getByText('已创建草稿；普通用户仍使用当前发布版本。')).toBeVisible()
-  await page.getByRole('button', { name: '导航管理 MENU · nav.configure · ENABLED' }).click()
+  await page.getByRole('button', { name: '菜单 导航管理' }).click()
   await page.getByRole('textbox', { name: '名称', exact: true }).fill('新的导航名称')
   await page
     .getByRole('textbox', { name: '默认 query（JSON）', exact: true })
@@ -289,7 +307,9 @@ test('editor saves a complete typed draft with CSRF', async ({ page, context }) 
   expect(savedName).toBe('新的导航名称')
   expect(csrf).toBe('test-csrf')
   expect(draft.nodes.find((item) => item.code === manage.code)?.query).toEqual({ section: 'nodes' })
-  await page.getByRole('combobox', { name: '角色', exact: true }).selectOption(id(300))
+  await page.getByRole('tab', { name: '角色授权' }).click()
+  await page.getByRole('tabpanel', { name: '角色授权' }).getByRole('combobox').click()
+  await page.getByRole('option', { name: 'Reader · reader' }).click()
   await expect(page.getByRole('alert')).toContainText('没有功能权限')
-  await expect(page.getByRole('button', { name: '保存角色导航授权' })).toBeDisabled()
+  await expect(page.getByRole('button', { name: '保存角色授权' })).toBeDisabled()
 })

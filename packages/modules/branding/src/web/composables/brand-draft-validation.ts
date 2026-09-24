@@ -13,6 +13,8 @@ const FIELD_LABELS: Record<string, string> = {
   logoAssetId: '横向 Logo',
   markAssetId: '方形标志',
   faviconAssetId: 'Favicon',
+  visualTheme: '品牌视觉',
+  workspaceDefaults: '工作区默认布局',
   expectedEditRevision: '编辑修订',
 }
 

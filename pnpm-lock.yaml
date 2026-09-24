@@ -405,6 +405,12 @@ importers:
       '@jingwei/ui':
         specifier: workspace:*
         version: link:../../platform/ui
+      '@soybeanjs/colord':
+        specifier: 'catalog:'
+        version: 0.7.1
+      '@soybeanjs/theme':
+        specifier: 'catalog:'
+        version: 0.30.0
       hono:
         specifier: 'catalog:'
         version: 4.13.5

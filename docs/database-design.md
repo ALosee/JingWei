@@ -37,6 +37,9 @@ Dictionary 使用 `dictionary_category -> dictionary_type -> dictionary_item` �
 
 Branding 使用 `brand_profile -> brand_version` 发布指针和不可变版本快照；`brand_asset` 保存经用途校验的
 小型 PNG 或横向 Logo SVG。版本显式保存横向品牌显示方式与 Logo 颜色策略，不再从素材空值推断。
-恢复平台默认只清空发布指针，历史版本和素材均保留。详见 [Branding 模块](../packages/modules/branding/README.md)。
+版本使用普通受约束列保存稳定主题选择与工作区默认布局；仅自定义 50–950 色阶和版本化语义覆盖使用
+JSONB，并在 Zod、Repository 与发布用例中按固定白名单验证，绝不保存任意 CSS。
+恢复平台默认只清空发布指针，历史版本和素材均保留。用户覆盖是 Web 端按租户和用户保存的稀疏偏好，
+不属于 Branding 数据表。详见 [Branding 模块](../packages/modules/branding/README.md)。
 
 Migration 位于 Owner package，文件名全局唯一且发布后不可修改。Edition Builder 将启用模块的 migration 作为静态 build artifact；生产运行器不扫描源码目录。停用模块只停止加载代码/API/menu/permission/new migration，历史 schema 默认保留，删除数据必须走独立 decommission 流程。

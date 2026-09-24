@@ -230,15 +230,57 @@ describe.skipIf(databaseUrl === undefined)('real PostgreSQL navigation/API', () 
     expect(pointer.rows[0]?.published_version_id).toBe(legacyVersion)
   })
 
-  it('backfills display settings on immutable published brand versions', async () => {
+  it('backfills presentation settings on immutable published brand versions', async () => {
     const db = runtime.database.view()
-    const version = await sql<{ horizontal_brand_mode: string; logo_color_mode: string }>`
-      SELECT horizontal_brand_mode, logo_color_mode
+    const version = await sql<{
+      horizontal_brand_mode: string
+      logo_color_mode: string
+      theme_primary_palette: string
+      theme_base_palette: string
+      theme_radius: string
+      theme_sidebar_scheme: string
+      theme_feedback_scheme: string
+      theme_chart_scheme: string
+      theme_light_level: number
+      theme_dark_level: number
+      theme_border_opacity: number
+      theme_overrides: unknown
+      theme_custom_base_palette: unknown
+      theme_custom_primary_palette: unknown
+      workspace_layout_mode: string
+      workspace_brand_placement: string
+      workspace_header_height: number
+      workspace_sider_width: number
+      workspace_show_tabs: boolean
+    }>`
+      SELECT horizontal_brand_mode, logo_color_mode, theme_primary_palette, theme_base_palette,
+        theme_radius, theme_sidebar_scheme, theme_feedback_scheme, theme_chart_scheme,
+        theme_light_level, theme_dark_level, theme_border_opacity, theme_overrides,
+        theme_custom_base_palette, theme_custom_primary_palette,
+        workspace_layout_mode, workspace_brand_placement,
+        workspace_header_height, workspace_sider_width, workspace_show_tabs
       FROM branding.brand_version
       WHERE id = ${legacyBrandVersion}`.execute(db)
     expect(version.rows[0]).toEqual({
       horizontal_brand_mode: 'SHORT_NAME',
       logo_color_mode: 'ORIGINAL',
+      theme_primary_palette: 'indigo',
+      theme_base_palette: 'zinc',
+      theme_radius: 'md',
+      theme_sidebar_scheme: 'derived',
+      theme_feedback_scheme: 'classic',
+      theme_chart_scheme: 'vivid',
+      theme_light_level: 0,
+      theme_dark_level: 0,
+      theme_border_opacity: 1,
+      theme_overrides: { light: {}, dark: {} },
+      theme_custom_base_palette: null,
+      theme_custom_primary_palette: null,
+      workspace_layout_mode: 'left',
+      workspace_brand_placement: 'header',
+      workspace_header_height: 56,
+      workspace_sider_width: 220,
+      workspace_show_tabs: true,
     })
     await expect(
       sql`UPDATE branding.brand_version SET short_name = 'Changed'

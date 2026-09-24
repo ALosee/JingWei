@@ -1,15 +1,22 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import { ButtonIcon, Popover, Tabs, ThemeSettingsPanel } from '@jingwei/ui'
+import { ButtonIcon, Popover, Tabs } from '@jingwei/ui'
 
+import AppearanceSettings from './AppearanceSettings.vue'
 import LayoutSettings from './LayoutSettings.vue'
 
-const activeTab = ref<'theme' | 'layout'>('theme')
+const activeTab = ref<'appearance' | 'layout'>('appearance')
 const tabs = [
-  { value: 'theme', label: '主题设置' },
+  { value: 'appearance', label: '外观设置' },
   { value: 'layout', label: '布局设置' },
 ]
+const sectionTabsUi = {
+  list: 'w-full justify-start gap-2 rounded-none border-b border-border bg-transparent p-0',
+  trigger:
+    'flex-none rounded-none border-b-2 border-transparent px-3 py-2.5 text-sm text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none',
+  content: 'mt-0',
+}
 </script>
 
 <template>
@@ -26,12 +33,22 @@ const tabs = [
 
     <header class="mb-5">
       <h2 class="m-0 text-lg text-foreground font-650">工作区设置</h2>
-      <p class="mb-0 mt-1 text-xs text-muted-foreground">外观和布局设置会保存在当前浏览器。</p>
+      <p class="mb-0 mt-1 text-xs text-muted-foreground">
+        个人调整会按当前租户和账号保存在本浏览器。
+      </p>
     </header>
-    <Tabs v-model="activeTab" class="w-full" :items="tabs" fill="full" activation-mode="manual">
+    <Tabs
+      v-model="activeTab"
+      class="w-full"
+      :items="tabs"
+      :ui="sectionTabsUi"
+      :enable-indicator="false"
+      fill="auto"
+      activation-mode="manual"
+    >
       <template #content="{ value }">
-        <div class="min-w-0 p-1">
-          <ThemeSettingsPanel v-if="value === 'theme'" />
+        <div class="min-w-0 px-1 pt-4">
+          <AppearanceSettings v-if="value === 'appearance'" />
           <LayoutSettings v-else />
         </div>
       </template>

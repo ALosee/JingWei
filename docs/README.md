@@ -138,3 +138,6 @@
 - [0016](./adr/0016-own-tenant-branding-in-a-dedicated-module.md)：独立租户品牌所有权、发布模型与壳层组合
 - [0017](./adr/0017-own-tenant-lifecycle-in-platform-tenancy.md)：平台租户生命周期、初始化与会话门禁
 - [0018](./adr/0018-separate-platform-control-plane.md)：按 URL 与独立身份域隔离平台控制面
+- [0019](./adr/0019-layer-tenant-presentation-defaults-and-user-preferences.md)：租户展示默认值与用户稀疏偏好分层
+- [0020](./adr/0020-model-tenant-themes-as-palettes-and-semantic-overrides.md)：租户色阶与语义主题覆盖模型
+- [0021](./adr/0021-avoid-unscoped-appearance-preference-migration.md)：不将旧版全局主题偏好隐式迁入账号作用域

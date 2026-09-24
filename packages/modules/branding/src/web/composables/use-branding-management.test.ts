@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { SaveBrandDraft } from '../../shared/index.js'
+import { defaultBrandConfiguration } from '../../shared/index.js'
 import { validateSaveBrandDraft } from './brand-draft-validation.js'
 
 const validDraft: SaveBrandDraft = {
@@ -15,6 +16,8 @@ const validDraft: SaveBrandDraft = {
   logoAssetId: null,
   markAssetId: null,
   faviconAssetId: null,
+  visualTheme: defaultBrandConfiguration.visualTheme,
+  workspaceDefaults: defaultBrandConfiguration.workspaceDefaults,
 }
 
 describe('validateSaveBrandDraft', () => {

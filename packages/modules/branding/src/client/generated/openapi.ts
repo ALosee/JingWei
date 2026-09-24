@@ -334,6 +334,24 @@ export type components = {
             systemName: string;
             /** @enum {string} */
             titleMode: "SYSTEM_ONLY" | "PAGE_AND_SYSTEM";
+            visualTheme: components["schemas"]["BrandVisualTheme"];
+            workspaceDefaults: components["schemas"]["BrandWorkspaceDefaults"];
+        };
+        BrandThemeColor: {
+            /** @enum {string} */
+            kind: "PALETTE";
+            level: 50 | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900 | 950;
+            /** @enum {string} */
+            palette: "BASE" | "PRIMARY" | "slate" | "mist" | "gray" | "zinc" | "neutral" | "stone" | "taupe" | "olive" | "mauve" | "red" | "orange" | "amber" | "yellow" | "lime" | "green" | "emerald" | "teal" | "cyan" | "sky" | "blue" | "indigo" | "violet" | "purple" | "fuchsia" | "pink" | "rose";
+        } | {
+            /** @enum {string} */
+            kind: "SIMPLE";
+            /** @enum {string} */
+            value: "transparent" | "black" | "white";
+        } | {
+            /** @enum {string} */
+            kind: "LITERAL";
+            value: string;
         };
         BrandVersion: {
             editRevision: number;
@@ -479,6 +497,8 @@ export type components = {
             systemName: string;
             /** @enum {string} */
             titleMode: "SYSTEM_ONLY" | "PAGE_AND_SYSTEM";
+            visualTheme: components["schemas"]["BrandVisualTheme"];
+            workspaceDefaults: components["schemas"]["BrandWorkspaceDefaults"];
         };
         BrandVersionSummary: {
             editRevision: number;
@@ -488,6 +508,224 @@ export type components = {
             revision: number;
             /** @enum {string} */
             status: "DRAFT" | "PUBLISHED";
+        };
+        BrandVisualTheme: {
+            /** @enum {string} */
+            basePalette: "slate" | "mist" | "gray" | "zinc" | "neutral" | "stone" | "taupe" | "olive" | "mauve";
+            borderOpacity: number;
+            /** @enum {string} */
+            chartScheme: "vivid" | "cool" | "warm" | "natural" | "minimal";
+            customBasePalette: {
+                colors: {
+                    50: {
+                        hsl: string;
+                        oklch: string;
+                    };
+                    100: {
+                        hsl: string;
+                        oklch: string;
+                    };
+                    200: {
+                        hsl: string;
+                        oklch: string;
+                    };
+                    300: {
+                        hsl: string;
+                        oklch: string;
+                    };
+                    400: {
+                        hsl: string;
+                        oklch: string;
+                    };
+                    500: {
+                        hsl: string;
+                        oklch: string;
+                    };
+                    600: {
+                        hsl: string;
+                        oklch: string;
+                    };
+                    700: {
+                        hsl: string;
+                        oklch: string;
+                    };
+                    800: {
+                        hsl: string;
+                        oklch: string;
+                    };
+                    900: {
+                        hsl: string;
+                        oklch: string;
+                    };
+                    950: {
+                        hsl: string;
+                        oklch: string;
+                    };
+                };
+                name: string;
+                /** @enum {string} */
+                profile: "OKLCH_PALETTE_V1";
+                seedColor: string;
+            } | null;
+            customPrimaryPalette: {
+                colors: {
+                    50: {
+                        hsl: string;
+                        oklch: string;
+                    };
+                    100: {
+                        hsl: string;
+                        oklch: string;
+                    };
+                    200: {
+                        hsl: string;
+                        oklch: string;
+                    };
+                    300: {
+                        hsl: string;
+                        oklch: string;
+                    };
+                    400: {
+                        hsl: string;
+                        oklch: string;
+                    };
+                    500: {
+                        hsl: string;
+                        oklch: string;
+                    };
+                    600: {
+                        hsl: string;
+                        oklch: string;
+                    };
+                    700: {
+                        hsl: string;
+                        oklch: string;
+                    };
+                    800: {
+                        hsl: string;
+                        oklch: string;
+                    };
+                    900: {
+                        hsl: string;
+                        oklch: string;
+                    };
+                    950: {
+                        hsl: string;
+                        oklch: string;
+                    };
+                };
+                name: string;
+                /** @enum {string} */
+                profile: "OKLCH_PALETTE_V1";
+                seedColor: string;
+            } | null;
+            darkLevel: 0 | 1 | 2 | 3;
+            /** @enum {string} */
+            feedbackScheme: "classic" | "vivid" | "subtle" | "modern" | "professional";
+            lightLevel: 0 | 1 | 2;
+            overrides: {
+                dark: {
+                    accent?: components["schemas"]["BrandThemeColor"];
+                    accentForeground?: components["schemas"]["BrandThemeColor"];
+                    background?: components["schemas"]["BrandThemeColor"];
+                    border?: components["schemas"]["BrandThemeColor"];
+                    carbon?: components["schemas"]["BrandThemeColor"];
+                    carbonForeground?: components["schemas"]["BrandThemeColor"];
+                    card?: components["schemas"]["BrandThemeColor"];
+                    cardForeground?: components["schemas"]["BrandThemeColor"];
+                    chart1?: components["schemas"]["BrandThemeColor"];
+                    chart2?: components["schemas"]["BrandThemeColor"];
+                    chart3?: components["schemas"]["BrandThemeColor"];
+                    chart4?: components["schemas"]["BrandThemeColor"];
+                    chart5?: components["schemas"]["BrandThemeColor"];
+                    destructive?: components["schemas"]["BrandThemeColor"];
+                    destructiveForeground?: components["schemas"]["BrandThemeColor"];
+                    foreground?: components["schemas"]["BrandThemeColor"];
+                    info?: components["schemas"]["BrandThemeColor"];
+                    infoForeground?: components["schemas"]["BrandThemeColor"];
+                    input?: components["schemas"]["BrandThemeColor"];
+                    muted?: components["schemas"]["BrandThemeColor"];
+                    mutedForeground?: components["schemas"]["BrandThemeColor"];
+                    popover?: components["schemas"]["BrandThemeColor"];
+                    popoverForeground?: components["schemas"]["BrandThemeColor"];
+                    primary?: components["schemas"]["BrandThemeColor"];
+                    primaryForeground?: components["schemas"]["BrandThemeColor"];
+                    ring?: components["schemas"]["BrandThemeColor"];
+                    secondary?: components["schemas"]["BrandThemeColor"];
+                    secondaryForeground?: components["schemas"]["BrandThemeColor"];
+                    sidebar?: components["schemas"]["BrandThemeColor"];
+                    sidebarAccent?: components["schemas"]["BrandThemeColor"];
+                    sidebarAccentForeground?: components["schemas"]["BrandThemeColor"];
+                    sidebarBorder?: components["schemas"]["BrandThemeColor"];
+                    sidebarForeground?: components["schemas"]["BrandThemeColor"];
+                    sidebarPrimary?: components["schemas"]["BrandThemeColor"];
+                    sidebarPrimaryForeground?: components["schemas"]["BrandThemeColor"];
+                    sidebarRing?: components["schemas"]["BrandThemeColor"];
+                    success?: components["schemas"]["BrandThemeColor"];
+                    successForeground?: components["schemas"]["BrandThemeColor"];
+                    warning?: components["schemas"]["BrandThemeColor"];
+                    warningForeground?: components["schemas"]["BrandThemeColor"];
+                };
+                light: {
+                    accent?: components["schemas"]["BrandThemeColor"];
+                    accentForeground?: components["schemas"]["BrandThemeColor"];
+                    background?: components["schemas"]["BrandThemeColor"];
+                    border?: components["schemas"]["BrandThemeColor"];
+                    carbon?: components["schemas"]["BrandThemeColor"];
+                    carbonForeground?: components["schemas"]["BrandThemeColor"];
+                    card?: components["schemas"]["BrandThemeColor"];
+                    cardForeground?: components["schemas"]["BrandThemeColor"];
+                    chart1?: components["schemas"]["BrandThemeColor"];
+                    chart2?: components["schemas"]["BrandThemeColor"];
+                    chart3?: components["schemas"]["BrandThemeColor"];
+                    chart4?: components["schemas"]["BrandThemeColor"];
+                    chart5?: components["schemas"]["BrandThemeColor"];
+                    destructive?: components["schemas"]["BrandThemeColor"];
+                    destructiveForeground?: components["schemas"]["BrandThemeColor"];
+                    foreground?: components["schemas"]["BrandThemeColor"];
+                    info?: components["schemas"]["BrandThemeColor"];
+                    infoForeground?: components["schemas"]["BrandThemeColor"];
+                    input?: components["schemas"]["BrandThemeColor"];
+                    muted?: components["schemas"]["BrandThemeColor"];
+                    mutedForeground?: components["schemas"]["BrandThemeColor"];
+                    popover?: components["schemas"]["BrandThemeColor"];
+                    popoverForeground?: components["schemas"]["BrandThemeColor"];
+                    primary?: components["schemas"]["BrandThemeColor"];
+                    primaryForeground?: components["schemas"]["BrandThemeColor"];
+                    ring?: components["schemas"]["BrandThemeColor"];
+                    secondary?: components["schemas"]["BrandThemeColor"];
+                    secondaryForeground?: components["schemas"]["BrandThemeColor"];
+                    sidebar?: components["schemas"]["BrandThemeColor"];
+                    sidebarAccent?: components["schemas"]["BrandThemeColor"];
+                    sidebarAccentForeground?: components["schemas"]["BrandThemeColor"];
+                    sidebarBorder?: components["schemas"]["BrandThemeColor"];
+                    sidebarForeground?: components["schemas"]["BrandThemeColor"];
+                    sidebarPrimary?: components["schemas"]["BrandThemeColor"];
+                    sidebarPrimaryForeground?: components["schemas"]["BrandThemeColor"];
+                    sidebarRing?: components["schemas"]["BrandThemeColor"];
+                    success?: components["schemas"]["BrandThemeColor"];
+                    successForeground?: components["schemas"]["BrandThemeColor"];
+                    warning?: components["schemas"]["BrandThemeColor"];
+                    warningForeground?: components["schemas"]["BrandThemeColor"];
+                };
+            };
+            /** @enum {string} */
+            primaryPalette: "slate" | "mist" | "gray" | "zinc" | "neutral" | "stone" | "taupe" | "olive" | "mauve" | "red" | "orange" | "amber" | "yellow" | "lime" | "green" | "emerald" | "teal" | "cyan" | "sky" | "blue" | "indigo" | "violet" | "purple" | "fuchsia" | "pink" | "rose";
+            /** @enum {string} */
+            radius: "2xs" | "xs" | "sm" | "md" | "lg" | "xl" | "2xl";
+            /** @enum {number} */
+            schemaVersion: 2;
+            /** @enum {string} */
+            sidebarScheme: "derived" | "inverted-dark" | "soft" | "contrast";
+        };
+        BrandWorkspaceDefaults: {
+            /** @enum {string} */
+            brandPlacement: "header" | "sider";
+            headerHeight: number;
+            /** @enum {string} */
+            layoutMode: "left" | "top";
+            showTabs: boolean;
+            siderWidth: number;
         };
         EffectiveBrand: {
             /** @enum {string|null} */
@@ -507,13 +745,15 @@ export type components = {
             markUrl: string | null;
             publishedRevision: number | null;
             /** @enum {number} */
-            schemaVersion: 2;
+            schemaVersion: 4;
             shortName: string;
             /** @enum {string} */
             source: "DEFAULT" | "PUBLISHED";
             systemName: string;
             /** @enum {string} */
             titleMode: "SYSTEM_ONLY" | "PAGE_AND_SYSTEM";
+            visualTheme: components["schemas"]["BrandVisualTheme"];
+            workspaceDefaults: components["schemas"]["BrandWorkspaceDefaults"];
         };
     };
     responses: never;
@@ -1236,6 +1476,15 @@ export interface operations {
             };
             /** @description Content-Type 不受支持 */
             415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 主题色阶或显式颜色对比度无效 */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

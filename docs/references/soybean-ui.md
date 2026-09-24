@@ -44,7 +44,7 @@ Skill 快照与项目固定的 SoybeanUI `0.30.0` 源码模板对齐。当前使
 - sbean 生成文件保持上游目录及 `S*` 内部名，只在 `@jingwei/ui` 公共入口映射无前缀名称；
 - 全局主题由 `packages/platform/ui/sbean.json`、`@soybeanjs/ui-uno` 的 `presetSbean()` 和
   `@soybeanjs/theme` 生成，组件直接使用 Soybean 的语义 token，不建立平行的项目变量层；
-- Jingwei 可通过 Soybean 的主题 seed 与 override API 定制品牌主题；
+- Jingwei 通过 Soybean 的主题 seed 与 override API 将已发布租户品牌映射为运行时主题；
 - 不引入上游 `.agents/skills/soybean-ui-component-development`，因为它约束的是
   SoybeanUI 仓库自身的目录、生成和发布流程。
 
@@ -64,10 +64,11 @@ Skill 快照与项目固定的 SoybeanUI `0.30.0` 源码模板对齐。当前使
 
 ## 运行时主题基础设施
 
-`ConfigProvider`、`useTheme`、Toast/Dialog/Progress Provider 与主题设置面板均由
-`@jingwei/ui` 源码拥有，不依赖上游 styled 包，也不另建 Pinia 主题 store。内部文件保留
-sbean 的 `SConfigProvider` 名，公共入口导出 `ConfigProvider`。Web 壳拥有主题设置入口与
-非模态侧栏容器。`presetSbean()` 负责构建回退主题，运行时配置与持久化由本地 Provider 管理。
+`ConfigProvider`、`useTheme`、Toast/Dialog/Progress Provider、主题设置面板与局部 `ThemeScope`
+均由 `@jingwei/ui` 源码拥有，不依赖上游 styled 包。内部文件保留 sbean 的
+`SConfigProvider` 名，公共入口导出 `ConfigProvider`。`presetSbean()` 负责构建回退主题；租户
+Provider 接收 Branding 发布的颜色与圆角，Web 的 appearance store 只持久化 tenant+user 范围的
+明暗模式和尺寸。`ThemeScope` 用唯一 selector 隔离品牌草稿预览，不修改全局主题上下文。
 
 Playground 只作为实现参考：本地 `/Users/jack/code/soybean-ui/apps/playground` 的 App.vue、
 theme.ts 和 theme-configurator.vue。本地 checkout 为 0.31.0，实际生成模板与依赖仍固定在

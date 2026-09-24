@@ -47,6 +47,23 @@ interface VersionRow {
   logo_asset_id: string | null
   mark_asset_id: string | null
   favicon_asset_id: string | null
+  theme_base_palette: BrandConfiguration['visualTheme']['basePalette']
+  theme_primary_palette: BrandConfiguration['visualTheme']['primaryPalette']
+  theme_custom_base_palette: unknown
+  theme_custom_primary_palette: unknown
+  theme_radius: BrandConfiguration['visualTheme']['radius']
+  theme_sidebar_scheme: BrandConfiguration['visualTheme']['sidebarScheme']
+  theme_feedback_scheme: BrandConfiguration['visualTheme']['feedbackScheme']
+  theme_chart_scheme: BrandConfiguration['visualTheme']['chartScheme']
+  theme_light_level: BrandConfiguration['visualTheme']['lightLevel']
+  theme_dark_level: BrandConfiguration['visualTheme']['darkLevel']
+  theme_border_opacity: number
+  theme_overrides: unknown
+  workspace_layout_mode: BrandConfiguration['workspaceDefaults']['layoutMode']
+  workspace_brand_placement: BrandConfiguration['workspaceDefaults']['brandPlacement']
+  workspace_header_height: number
+  workspace_sider_width: number
+  workspace_show_tabs: boolean
   created_at: Date
   created_by: string
   published_at: Date | null
@@ -177,6 +194,28 @@ export class PostgresBrandingStore implements BrandingStore {
       logoAssetId: row.logo_asset_id,
       markAssetId: row.mark_asset_id,
       faviconAssetId: row.favicon_asset_id,
+      visualTheme: {
+        schemaVersion: 2,
+        basePalette: row.theme_base_palette,
+        primaryPalette: row.theme_primary_palette,
+        customBasePalette: row.theme_custom_base_palette,
+        customPrimaryPalette: row.theme_custom_primary_palette,
+        radius: row.theme_radius,
+        sidebarScheme: row.theme_sidebar_scheme,
+        feedbackScheme: row.theme_feedback_scheme,
+        chartScheme: row.theme_chart_scheme,
+        lightLevel: row.theme_light_level,
+        darkLevel: row.theme_dark_level,
+        borderOpacity: row.theme_border_opacity,
+        overrides: row.theme_overrides,
+      },
+      workspaceDefaults: {
+        layoutMode: row.workspace_layout_mode,
+        brandPlacement: row.workspace_brand_placement,
+        headerHeight: row.workspace_header_height,
+        siderWidth: row.workspace_sider_width,
+        showTabs: row.workspace_show_tabs,
+      },
       logoAsset: row.logo_asset_id === null ? null : (byId.get(row.logo_asset_id) ?? null),
       markAsset: row.mark_asset_id === null ? null : (byId.get(row.mark_asset_id) ?? null),
       faviconAsset: row.favicon_asset_id === null ? null : (byId.get(row.favicon_asset_id) ?? null),
@@ -217,6 +256,23 @@ export class PostgresBrandingStore implements BrandingStore {
         logo_asset_id: version.logoAssetId,
         mark_asset_id: version.markAssetId,
         favicon_asset_id: version.faviconAssetId,
+        theme_base_palette: version.visualTheme.basePalette,
+        theme_primary_palette: version.visualTheme.primaryPalette,
+        theme_custom_base_palette: version.visualTheme.customBasePalette,
+        theme_custom_primary_palette: version.visualTheme.customPrimaryPalette,
+        theme_radius: version.visualTheme.radius,
+        theme_sidebar_scheme: version.visualTheme.sidebarScheme,
+        theme_feedback_scheme: version.visualTheme.feedbackScheme,
+        theme_chart_scheme: version.visualTheme.chartScheme,
+        theme_light_level: version.visualTheme.lightLevel,
+        theme_dark_level: version.visualTheme.darkLevel,
+        theme_border_opacity: version.visualTheme.borderOpacity,
+        theme_overrides: version.visualTheme.overrides,
+        workspace_layout_mode: version.workspaceDefaults.layoutMode,
+        workspace_brand_placement: version.workspaceDefaults.brandPlacement,
+        workspace_header_height: version.workspaceDefaults.headerHeight,
+        workspace_sider_width: version.workspaceDefaults.siderWidth,
+        workspace_show_tabs: version.workspaceDefaults.showTabs,
         created_at: new Date(),
         created_by: context.userId,
         published_at: null,
@@ -244,6 +300,23 @@ export class PostgresBrandingStore implements BrandingStore {
         logo_asset_id: configuration.logoAssetId,
         mark_asset_id: configuration.markAssetId,
         favicon_asset_id: configuration.faviconAssetId,
+        theme_base_palette: configuration.visualTheme.basePalette,
+        theme_primary_palette: configuration.visualTheme.primaryPalette,
+        theme_custom_base_palette: configuration.visualTheme.customBasePalette,
+        theme_custom_primary_palette: configuration.visualTheme.customPrimaryPalette,
+        theme_radius: configuration.visualTheme.radius,
+        theme_sidebar_scheme: configuration.visualTheme.sidebarScheme,
+        theme_feedback_scheme: configuration.visualTheme.feedbackScheme,
+        theme_chart_scheme: configuration.visualTheme.chartScheme,
+        theme_light_level: configuration.visualTheme.lightLevel,
+        theme_dark_level: configuration.visualTheme.darkLevel,
+        theme_border_opacity: configuration.visualTheme.borderOpacity,
+        theme_overrides: configuration.visualTheme.overrides,
+        workspace_layout_mode: configuration.workspaceDefaults.layoutMode,
+        workspace_brand_placement: configuration.workspaceDefaults.brandPlacement,
+        workspace_header_height: configuration.workspaceDefaults.headerHeight,
+        workspace_sider_width: configuration.workspaceDefaults.siderWidth,
+        workspace_show_tabs: configuration.workspaceDefaults.showTabs,
         edit_revision: expectedEditRevision + 1,
       })
       .where('tenant_id', '=', context.tenantId)

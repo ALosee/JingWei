@@ -388,7 +388,11 @@ codes 只能是当前发布版本中 PERMISSION 叶节点的 code；DIRECTORY/GR
 
 Branding 公开读取当前租户已发布品牌，管理接口则使用独立的查看、编辑和发布权限。草稿与线上投影
 完全隔离；发布指针和审计同事务更新。匿名 bootstrap 通过 `tenantCode` 或
-`BOOTSTRAP_TENANT_CODE` 解析租户，已有会话时始终以 Session tenant 为准。
+`BOOTSTRAP_TENANT_CODE` 解析租户，已有会话时始终以 Session tenant 为准。品牌版本同时包含受约束的
+视觉主题和工作区默认布局。主题包含内置/自定义 50–950 色阶、命名方案以及浅色/深色的固定语义
+角色稀疏覆盖；颜色值仅允许受约束的色阶引用、简单颜色或 HSL/OKLCH。用户的明暗、尺寸及稀疏布局
+覆盖不属于 HTTP 契约。发布时色阶顺序或显式前景/表面对比度不合格返回
+`BRANDING_THEME_INVALID`（422）。
 
 | Method | Path                                      | Access           | 用途                     |
 | ------ | ----------------------------------------- | ---------------- | ------------------------ |
@@ -427,7 +431,7 @@ ICO 同时支持标准 PNG 与 BMP/DIB 帧；横向 Logo 和方形标志也允�
 和裁剪路径组成的 SVG 子集，任何未知/活动内容都会整份拒绝且不入库。格式判断均以实际字节为准，不依赖
 multipart MIME。主要稳定错误码为 `BRANDING_VERSION_NOT_FOUND`、
 `BRANDING_VERSION_IMMUTABLE`、`BRANDING_EDIT_CONFLICT`、`BRANDING_PUBLISH_CONFLICT`、
-`BRANDING_ASSET_NOT_FOUND` 和 `BRANDING_ASSET_INVALID`。
+`BRANDING_ASSET_NOT_FOUND`、`BRANDING_ASSET_INVALID` 和 `BRANDING_THEME_INVALID`。
 
 ## 8. Dictionary 接口
 

@@ -129,8 +129,38 @@ export {
 export type { TextareaEmits, TextareaProps, TextareaSlots } from './components/textarea/index.js'
 export { SConfigProvider as ConfigProvider, useTheme } from './components/config-provider/index.js'
 export type { ConfigProviderProps, ThemeContext } from './components/config-provider/index.js'
-export { ThemeCustomizer, ThemeSettingsPanel } from './patterns/theme-settings-panel/index.js'
+export {
+  PalettePicker,
+  ThemeCustomizer,
+  ThemeSettingsPanel,
+} from './patterns/theme-settings-panel/index.js'
 export type {
+  PaletteChangePayload,
+  PalettePickerEmits,
+  PalettePickerProps,
+  PaletteSelectValue,
   ThemeCustomizerProps,
   ThemeCustomizerSection,
 } from './patterns/theme-settings-panel/index.js'
+export { ThemePaletteSelect } from './patterns/theme-palette/index.js'
+export {
+  createThemePaletteSlot,
+  generateThemePaletteColors,
+  getThemePaletteColors,
+  normalizeThemePaletteColor,
+  registerThemePalette,
+  themePaletteKey,
+  themePaletteLevels,
+} from './patterns/theme-palette/index.js'
+export type {
+  RuntimeThemePalette,
+  ThemePaletteColors,
+  ThemePaletteSlot,
+  ThemePaletteSelectItem,
+  ThemePaletteSelectProps,
+} from './patterns/theme-palette/index.js'
+export { ThemeScope } from './patterns/theme-scope/theme-scope.js'
+export type {
+  ColorTokens as ThemeColorTokens,
+  ColorValue as ThemeColorValue,
+} from '@soybeanjs/theme'

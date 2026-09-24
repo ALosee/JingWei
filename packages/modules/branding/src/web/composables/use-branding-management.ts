@@ -109,6 +109,8 @@ export function useBrandingManagement() {
       logoAssetId: current.logoAssetId,
       markAssetId: current.markAssetId,
       faviconAssetId: current.faviconAssetId,
+      visualTheme: current.visualTheme,
+      workspaceDefaults: current.workspaceDefaults,
     }
     const validated = validateSaveBrandDraft(input)
     if (!validated.ok) {

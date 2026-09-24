@@ -160,6 +160,7 @@ export const brandingApiRoutes = {
       404: error('版本不存在'),
       409: error('发布冲突'),
       415: error('Content-Type 不受支持'),
+      422: error('主题色阶或显式颜色对比度无效'),
       500: error('服务器内部错误'),
     },
   }),

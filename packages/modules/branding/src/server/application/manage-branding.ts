@@ -1,6 +1,7 @@
 import { ApplicationError, newEntityId, type AuthContext } from '@jingwei/kernel'
 import type { IamAccess } from '@jingwei/module-iam/server/public'
 
+import { validateBrandTheme } from '../../shared/brand-theme-validation.js'
 import {
   defaultBrandConfiguration,
   type BrandAdmin,
@@ -32,6 +33,8 @@ function configurationOf(version: BrandVersion): BrandConfiguration {
     logoAssetId: version.logoAssetId,
     markAssetId: version.markAssetId,
     faviconAssetId: version.faviconAssetId,
+    visualTheme: version.visualTheme,
+    workspaceDefaults: version.workspaceDefaults,
   }
 }
 
@@ -121,6 +124,8 @@ export class ManageBranding {
         logoAssetId: input.logoAssetId,
         markAssetId: input.markAssetId,
         faviconAssetId: input.faviconAssetId,
+        visualTheme: input.visualTheme,
+        workspaceDefaults: input.workspaceDefaults,
       }
       if (!(await transaction.store.assetsExist(context.tenantId, references(configuration))))
         fail('BRANDING_ASSET_NOT_FOUND', '品牌素材不存在或用途不匹配', 422)
@@ -161,6 +166,9 @@ export class ManageBranding {
       } else {
         if (version.status !== 'DRAFT')
           fail('BRANDING_VERSION_IMMUTABLE', '当前版本不是可发布草稿', 409)
+        const themeIssues = validateBrandTheme(version.visualTheme)
+        if (themeIssues.length > 0)
+          fail('BRANDING_THEME_INVALID', `主题无法发布：${themeIssues.join('；')}`, 422)
         if (!(await transaction.store.markPublished(context, id, input.expectedEditRevision)))
           fail('BRANDING_EDIT_CONFLICT', '品牌版本已被修改，请重新加载', 409)
       }

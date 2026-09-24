@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref, watch } from 'vue'
 
-import { Icon, Segment } from '@jingwei/ui'
+import { createThemePaletteSlot, Icon, Segment, ThemeScope } from '@jingwei/ui'
 import type { SegmentOptionData } from '@jingwei/ui'
 
 import { resolveHorizontalBrandMode, type BrandConfiguration } from '../../shared/index.js'
+import { brandThemeOptions, brandThemePalette } from '../brand-theme.js'
 import { platformDefaultFavicon } from '../platform-brand.js'
 import BrandLogoAsset from './brand-logo-asset.vue'
 import DefaultBrandMark from './default-brand-mark.vue'
@@ -19,11 +20,17 @@ const props = defineProps<{
 }>()
 
 type PreviewSurface = 'workspace' | 'login'
+type PreviewMode = 'light' | 'dark'
 
 const surface = ref<PreviewSurface>('workspace')
+const previewMode = ref<PreviewMode>('light')
 const surfaceItems: SegmentOptionData<PreviewSurface>[] = [
   { value: 'workspace', label: '工作区' },
   { value: 'login', label: '登录页' },
+]
+const modeItems: SegmentOptionData<PreviewMode>[] = [
+  { value: 'light', label: '浅色' },
+  { value: 'dark', label: '深色' },
 ]
 
 const browserTitle = computed(() =>
@@ -31,6 +38,31 @@ const browserTitle = computed(() =>
     ? props.preview.systemName
     : `工作区 · ${props.preview.systemName}`,
 )
+const paletteSlots = {
+  base: createThemePaletteSlot('base'),
+  primary: createThemePaletteSlot('primary'),
+}
+watch(
+  () => props.preview.visualTheme,
+  (theme) => {
+    for (const target of ['base', 'primary'] as const) {
+      const palette = brandThemePalette(theme, target)
+      if (palette !== null) paletteSlots[target].update(palette)
+    }
+  },
+  { deep: true, immediate: true, flush: 'sync' },
+)
+onUnmounted(() => {
+  paletteSlots.base.dispose()
+  paletteSlots.primary.dispose()
+})
+const previewTheme = computed(() => {
+  const theme = props.preview.visualTheme
+  return brandThemeOptions(theme, undefined, {
+    ...(theme.customBasePalette === null ? {} : { base: paletteSlots.base.key }),
+    ...(theme.customPrimaryPalette === null ? {} : { primary: paletteSlots.primary.key }),
+  })
+})
 const horizontalMode = computed(() =>
   resolveHorizontalBrandMode(props.preview.horizontalBrandMode, props.logoUrl),
 )
@@ -76,9 +108,16 @@ const horizontalLabel = computed(() => {
       </span>
     </header>
 
-    <Segment v-model="surface" :items="surfaceItems" size="sm" fill="full" class="w-full" />
+    <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+      <Segment v-model="surface" :items="surfaceItems" size="sm" fill="full" class="w-full" />
+      <Segment v-model="previewMode" :items="modeItems" size="sm" />
+    </div>
 
-    <div class="overflow-hidden rounded-xl border border-border bg-background shadow-sm">
+    <ThemeScope
+      :theme="previewTheme"
+      :mode="previewMode"
+      class="overflow-hidden rounded-xl border border-border bg-background shadow-sm"
+    >
       <div class="flex items-center gap-2 border-b border-border bg-muted/70 px-3 py-2">
         <div class="flex gap-1.5" aria-hidden="true">
           <span class="size-2.5 rounded-full bg-destructive/50" />
@@ -197,7 +236,7 @@ const horizontalLabel = computed(() => {
           </div>
         </div>
       </div>
-    </div>
+    </ThemeScope>
 
     <ul class="m-0 grid gap-1 p-0 list-none text-xs text-muted-foreground">
       <li class="flex items-center gap-1.5">
@@ -207,6 +246,12 @@ const horizontalLabel = computed(() => {
       <li class="flex items-center gap-1.5">
         <Icon icon="lucide:panel-left" class="size-3.5" />
         横向品牌位：{{ horizontalLabel }}
+      </li>
+      <li class="flex items-center gap-1.5">
+        <Icon icon="lucide:panels-top-left" class="size-3.5" />
+        默认布局：{{
+          preview.workspaceDefaults.layoutMode === 'left' ? '左侧菜单' : '顶部菜单'
+        }}，{{ preview.workspaceDefaults.showTabs ? '显示标签栏' : '隐藏标签栏' }}
       </li>
     </ul>
   </section>

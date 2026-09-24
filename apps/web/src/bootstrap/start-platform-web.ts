@@ -3,7 +3,7 @@ import { createApp } from 'vue'
 
 import { initializePlatformSession } from '@jingwei/control-plane/web'
 
-import App from '../App.vue'
+import PlatformApp from '../PlatformApp.vue'
 import { createPlatformRouter } from '../router/platform-router.js'
 
 /** Composition root for the platform control plane. */
@@ -11,7 +11,7 @@ export async function startPlatformWebApplication(): Promise<void> {
   const initialLocation = window.location.pathname + window.location.search + window.location.hash
   const authenticated = await initializePlatformSession()
 
-  const app = createApp(App)
+  const app = createApp(PlatformApp)
   const router = createPlatformRouter()
   app.use(createPinia())
   app.use(router)

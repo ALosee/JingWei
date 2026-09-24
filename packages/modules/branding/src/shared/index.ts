@@ -1,5 +1,36 @@
 import { z } from 'zod'
 
+import { brandVisualThemeSchema } from './theme.js'
+
+export {
+  brandBasePalettes,
+  brandChartSchemes,
+  brandCustomPaletteSchema,
+  brandFeedbackSchemes,
+  brandPaletteLevels,
+  brandPrimaryPalettes,
+  brandRadiusOptions,
+  brandSemanticOverridesSchema,
+  brandSemanticTokenKeys,
+  brandSidebarSchemes,
+  brandThemeColorSchema,
+  brandThemeModes,
+  brandVisualThemeSchema,
+  serializeBrandThemeColor,
+  type BrandBasePalette,
+  type BrandChartScheme,
+  type BrandCustomPalette,
+  type BrandFeedbackScheme,
+  type BrandPaletteLevel,
+  type BrandPrimaryPalette,
+  type BrandRadius,
+  type BrandSemanticOverrides,
+  type BrandSemanticTokenKey,
+  type BrandSidebarScheme,
+  type BrandThemeColor,
+  type BrandVisualTheme,
+} from './theme.js'
+
 export {
   brandLogoSvgElements,
   brandLogoSvgLocalReference,
@@ -37,6 +68,19 @@ export const brandMarkContentTypes = ['image/png', 'image/svg+xml'] as const
 export const brandFaviconContentTypes = ['image/png', 'image/x-icon'] as const
 export const horizontalBrandModes = ['PLATFORM_WORDMARK', 'SHORT_NAME', 'CUSTOM_LOGO'] as const
 export const logoColorModes = ['ORIGINAL', 'FOLLOW_THEME'] as const
+export const workspaceLayoutModes = ['left', 'top'] as const
+export const workspaceBrandPlacements = ['header', 'sider'] as const
+
+export const workspaceDefaultsSchema = z
+  .object({
+    layoutMode: z.enum(workspaceLayoutModes),
+    brandPlacement: z.enum(workspaceBrandPlacements),
+    headerHeight: z.number().int().min(48).max(96),
+    siderWidth: z.number().int().min(192).max(360),
+    showTabs: z.boolean(),
+  })
+  .strict()
+  .meta({ id: 'BrandWorkspaceDefaults' })
 
 const brandConfigurationShape = {
   systemName: z.string().trim().min(1).max(80),
@@ -49,6 +93,8 @@ const brandConfigurationShape = {
   logoAssetId: z.uuid().nullable(),
   markAssetId: z.uuid().nullable(),
   faviconAssetId: z.uuid().nullable(),
+  visualTheme: brandVisualThemeSchema,
+  workspaceDefaults: workspaceDefaultsSchema,
 } as const
 
 function requireCustomLogo(
@@ -237,7 +283,7 @@ export const restoreDefaultBrandSchema = z
 
 export const effectiveBrandSchema = z
   .object({
-    schemaVersion: z.literal(2),
+    schemaVersion: z.literal(4),
     source: z.enum(['DEFAULT', 'PUBLISHED']),
     publishedRevision: z.number().int().positive().nullable(),
     systemName: z.string(),
@@ -253,6 +299,8 @@ export const effectiveBrandSchema = z
     markContentType: z.enum(brandMarkContentTypes).nullable(),
     faviconUrl: z.string().nullable(),
     faviconContentType: z.enum(brandFaviconContentTypes).nullable(),
+    visualTheme: brandVisualThemeSchema,
+    workspaceDefaults: workspaceDefaultsSchema,
   })
   .strict()
   .superRefine((value, context) => {
@@ -284,10 +332,32 @@ export const defaultBrandConfiguration: BrandConfiguration = Object.freeze({
   logoAssetId: null,
   markAssetId: null,
   faviconAssetId: null,
+  visualTheme: Object.freeze({
+    schemaVersion: 2,
+    basePalette: 'zinc',
+    primaryPalette: 'indigo',
+    customBasePalette: null,
+    customPrimaryPalette: null,
+    radius: 'md',
+    sidebarScheme: 'derived',
+    feedbackScheme: 'classic',
+    chartScheme: 'vivid',
+    lightLevel: 0,
+    darkLevel: 0,
+    borderOpacity: 1,
+    overrides: Object.freeze({ light: Object.freeze({}), dark: Object.freeze({}) }),
+  }),
+  workspaceDefaults: Object.freeze({
+    layoutMode: 'left',
+    brandPlacement: 'header',
+    headerHeight: 56,
+    siderWidth: 220,
+    showTabs: true,
+  }),
 })
 
 export const defaultEffectiveBrand: EffectiveBrand = Object.freeze({
-  schemaVersion: 2,
+  schemaVersion: 4,
   source: 'DEFAULT',
   publishedRevision: null,
   systemName: defaultBrandConfiguration.systemName,
@@ -303,6 +373,8 @@ export const defaultEffectiveBrand: EffectiveBrand = Object.freeze({
   markContentType: null,
   faviconUrl: null,
   faviconContentType: null,
+  visualTheme: defaultBrandConfiguration.visualTheme,
+  workspaceDefaults: defaultBrandConfiguration.workspaceDefaults,
 })
 
 export function brandAssetUrl(id: string): string {
@@ -321,6 +393,9 @@ export type BrandAssetContentType = (typeof brandAssetContentTypes)[number]
 export type BrandAssetValidationProfile = (typeof brandAssetValidationProfiles)[number]
 export type HorizontalBrandMode = (typeof horizontalBrandModes)[number]
 export type LogoColorMode = (typeof logoColorModes)[number]
+export type WorkspaceLayoutMode = (typeof workspaceLayoutModes)[number]
+export type WorkspaceBrandPlacement = (typeof workspaceBrandPlacements)[number]
+export type BrandWorkspaceDefaults = z.infer<typeof workspaceDefaultsSchema>
 export type BrandAsset = z.infer<typeof brandAssetSchema>
 export type BrandLogoAsset = z.infer<typeof brandLogoAssetSchema>
 export type BrandMarkAsset = z.infer<typeof brandMarkAssetSchema>

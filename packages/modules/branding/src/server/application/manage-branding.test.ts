@@ -280,6 +280,16 @@ function changedConfiguration(expectedEditRevision: number) {
     systemName: '客户协同平台',
     shortName: '协同',
     loginTitle: '欢迎使用客户协同平台',
+    visualTheme: {
+      ...defaultBrandConfiguration.visualTheme,
+      primaryPalette: 'rose' as const,
+      radius: 'lg' as const,
+    },
+    workspaceDefaults: {
+      ...defaultBrandConfiguration.workspaceDefaults,
+      layoutMode: 'top' as const,
+      showTabs: false,
+    },
   }
 }
 
@@ -302,6 +312,8 @@ describe('brand configuration lifecycle', () => {
       source: 'PUBLISHED',
       publishedRevision: 1,
       systemName: '客户协同平台',
+      visualTheme: { primaryPalette: 'rose', radius: 'lg' },
+      workspaceDefaults: { layoutMode: 'top', showTabs: false },
     })
     expect(published.status).toBe('PUBLISHED')
     expect(actions).toEqual(['draft_created', 'draft_saved', 'published'])
@@ -320,6 +332,33 @@ describe('brand configuration lifecycle', () => {
         expectedPublishedVersionId: null,
       }),
     ).rejects.toMatchObject({ code: 'BRANDING_EDIT_CONFLICT' })
+    await expect(store.published(auth.tenantId)).resolves.toBeNull()
+  })
+
+  it('keeps an unsafe explicit theme pair in draft but refuses to publish it', async () => {
+    const { manage, store } = fixture()
+    const auth = context()
+    const draft = await manage.createDraft(auth, { kind: 'PLATFORM_DEFAULT' })
+    const saved = await manage.save(auth, draft.id, {
+      ...changedConfiguration(0),
+      visualTheme: {
+        ...defaultBrandConfiguration.visualTheme,
+        overrides: {
+          light: {
+            card: { kind: 'SIMPLE', value: 'black' },
+            cardForeground: { kind: 'SIMPLE', value: 'black' },
+          },
+          dark: {},
+        },
+      },
+    })
+
+    await expect(
+      manage.publish(auth, saved.id, {
+        expectedEditRevision: saved.editRevision,
+        expectedPublishedVersionId: null,
+      }),
+    ).rejects.toMatchObject({ code: 'BRANDING_THEME_INVALID', status: 422 })
     await expect(store.published(auth.tenantId)).resolves.toBeNull()
   })
 

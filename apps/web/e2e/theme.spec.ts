@@ -1,7 +1,17 @@
 import { expect, test } from '@playwright/test'
 
+import {
+  defaultBrandConfiguration,
+  defaultEffectiveBrand,
+  type BrandAdmin,
+  type BrandVersion,
+  type EffectiveBrand,
+} from '@jingwei/module-branding/shared'
 import type { NavigationNode, NavigationResponse } from '@jingwei/module-navigation/shared'
 import { THEME_STORAGE_KEY as storageKey } from '@jingwei/ui/theme-init'
+import { generateThemePaletteColors } from '@jingwei/ui/theme-palette'
+
+import { appearancePreferenceStorageKey } from '../src/stores/appearance.js'
 
 const id = (value: number) => '00000000-0000-7000-8000-' + String(value).padStart(12, '0')
 const login: NavigationNode = {
@@ -35,6 +45,16 @@ const account: NavigationNode = {
   icon: 'user',
   params: { id: 'me' },
 }
+const branding: NavigationNode = {
+  ...account,
+  id: id(3),
+  code: 'branding.manage',
+  name: '品牌定制',
+  routeKey: 'branding.manage',
+  path: '/branding/manage',
+  accessMode: 'PERMISSION',
+  params: {},
+}
 const response = (nodes: NavigationNode[]): NavigationResponse => ({
   schemaVersion: 2,
   versionId: id(100),
@@ -42,6 +62,12 @@ const response = (nodes: NavigationNode[]): NavigationResponse => ({
   authEntryCode: login.code,
   homeCode: account.code,
   nodes,
+})
+const publishedBrand = (overrides: Partial<EffectiveBrand> = {}): EffectiveBrand => ({
+  ...defaultEffectiveBrand,
+  source: 'PUBLISHED',
+  publishedRevision: 1,
+  ...overrides,
 })
 
 test.beforeEach(async ({ page }) => {
@@ -62,21 +88,40 @@ test.beforeEach(async ({ page }) => {
       },
     }),
   )
+  await page.route('**/api/v1/iam/account', (route) =>
+    route.fulfill({
+      json: {
+        id: id(200),
+        username: 'admin',
+        displayName: '管理员',
+        email: null,
+        phone: null,
+        avatarUrl: null,
+        status: 'ACTIVE',
+        lastLoginAt: null,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        passwordChangedAt: '2026-01-01T00:00:00.000Z',
+      },
+    }),
+  )
   await page.route('**/api/v1/navigation/me', (route) =>
     route.fulfill({ json: response([login, account]) }),
   )
+  await page.route('**/api/v1/branding/bootstrap*', (route) =>
+    route.fulfill({ json: defaultEffectiveBrand }),
+  )
 })
 
-test('theme settings use a non-modal popover and persist across reloads', async ({ page }) => {
+test('appearance settings use a non-modal popover and persist across reloads', async ({ page }) => {
   await page.goto('/account/me')
   await page.getByRole('button', { name: '工作区设置', exact: true }).click()
   const panel = page.getByRole('dialog', { name: '工作区设置' })
   await expect(panel).toBeVisible()
   await expect(page.locator('[data-soybean-dialog-overlay]')).toHaveCount(0)
-  await page.getByRole('combobox').first().click()
-  await page.getByRole('option', { name: '深色', exact: true }).click()
+  await expect(panel.getByRole('tab', { name: '外观设置' })).toHaveCSS('border-bottom-width', '2px')
+  await expect(panel.getByRole('tab', { name: '浅色' })).toHaveCSS('border-bottom-width', '0px')
+  await page.getByRole('tab', { name: '深色', exact: true }).click()
   await expect(page.locator('html')).toHaveClass(/dark/)
-  // ThemeCustomizer 内的 Select 浮层可能仍持有 dismiss 焦点，先点到面板外再 Escape
   await page.mouse.click(8, 8)
   await page.keyboard.press('Escape')
   await expect(panel).not.toBeVisible()
@@ -85,35 +130,268 @@ test('theme settings use a non-modal popover and persist across reloads', async 
   await expect(page.locator('#__SoybeanUI_theme')).toHaveCount(1)
 })
 
-test('restores palette, radius and global size and follows system changes', async ({ page }) => {
-  await page.goto('/account/me')
-  const defaultPrimary = await page
-    .locator('html')
-    .evaluate((el) => getComputedStyle(el).getPropertyValue('--primary'))
+test('tenant theme ignores unscoped legacy colors, size and mode', async ({ page }) => {
+  let brand = publishedBrand({
+    visualTheme: {
+      ...defaultEffectiveBrand.visualTheme,
+      basePalette: 'stone',
+      primaryPalette: 'rose',
+      radius: 'xl',
+      sidebarScheme: 'contrast',
+    },
+  })
+  await page.unroute('**/api/v1/branding/bootstrap*')
+  await page.route('**/api/v1/branding/bootstrap*', (route) => route.fulfill({ json: brand }))
   await page.emulateMedia({ colorScheme: 'dark' })
   await page.addInitScript(
     ({ key }) => {
       localStorage.setItem(
         key,
-        JSON.stringify({ base: 'stone', primary: 'rose', radius: 'xl', size: 'lg', mode: 'auto' }),
+        JSON.stringify({ base: 'gray', primary: 'blue', radius: '2xs', size: 'lg', mode: 'auto' }),
       )
     },
     { key: storageKey },
   )
   await page.goto('/account/me')
-  await expect(page.locator('html')).toHaveClass(/dark/)
-  await expect(page.locator('html')).toHaveCSS('font-size', '18px')
-  await expect(page.getByRole('button', { name: '工作区设置', exact: true })).toHaveCSS(
-    'border-radius',
-    '13.75px',
-  )
-  const restoredPrimary = await page
+  await expect(page.locator('html')).not.toHaveClass(/dark/)
+  await expect(page.locator('html')).toHaveCSS('font-size', '16px')
+  await expect
+    .poll(() =>
+      page
+        .locator('html')
+        .evaluate((el) => getComputedStyle(el).getPropertyValue('--radius').trim()),
+    )
+    .toBe('0.875rem')
+  const tenantPrimary = await page
     .locator('html')
     .evaluate((el) => getComputedStyle(el).getPropertyValue('--primary'))
-  expect(restoredPrimary).not.toBe(defaultPrimary)
+  brand = publishedBrand()
+  await page.reload()
+  const defaultPrimary = await page
+    .locator('html')
+    .evaluate((el) => getComputedStyle(el).getPropertyValue('--primary'))
+  expect(tenantPrimary).not.toBe(defaultPrimary)
   await page.emulateMedia({ colorScheme: 'light' })
   await expect(page.locator('html')).not.toHaveClass(/dark/)
   await expect(page.locator('html')).toHaveCSS('color-scheme', 'light')
+})
+
+test('published tenant ramps drive independent light and dark page and card surfaces', async ({
+  page,
+}) => {
+  const colors = generateThemePaletteColors('#75839a')
+  const brand = publishedBrand({
+    visualTheme: {
+      ...defaultEffectiveBrand.visualTheme,
+      customBasePalette: {
+        profile: 'OKLCH_PALETTE_V1',
+        name: '租户中性色',
+        seedColor: '#75839a',
+        colors,
+      },
+      overrides: {
+        light: {
+          background: { kind: 'PALETTE', palette: 'BASE', level: 100 },
+          card: { kind: 'PALETTE', palette: 'BASE', level: 50 },
+        },
+        dark: {
+          background: { kind: 'PALETTE', palette: 'BASE', level: 950 },
+          card: { kind: 'PALETTE', palette: 'BASE', level: 900 },
+        },
+      },
+    },
+  })
+  await page.unroute('**/api/v1/branding/bootstrap*')
+  await page.route('**/api/v1/branding/bootstrap*', (route) => route.fulfill({ json: brand }))
+  await page.goto('/account/me')
+
+  const colorVariable = (name: string) =>
+    page
+      .locator('html')
+      .evaluate((element, key) => getComputedStyle(element).getPropertyValue(key).trim(), name)
+  const channels = (hsl: string) => hsl.slice(4, -1)
+  await expect.poll(() => colorVariable('--background')).toBe(channels(colors[100].hsl))
+  await expect.poll(() => colorVariable('--card')).toBe(channels(colors[50].hsl))
+
+  await page.getByRole('button', { name: '工作区设置', exact: true }).click()
+  await page.getByRole('tab', { name: '深色', exact: true }).click()
+  await expect(page.locator('html')).toHaveClass(/dark/)
+  await expect.poll(() => colorVariable('--background')).toBe(channels(colors[950].hsl))
+  await expect.poll(() => colorVariable('--card')).toBe(channels(colors[900].hsl))
+})
+
+test('brand editor separates neutral and primary shades from complete ramp tuning', async ({
+  page,
+}) => {
+  const version: BrandVersion = {
+    ...defaultBrandConfiguration,
+    id: id(401),
+    revision: 1,
+    editRevision: 0,
+    status: 'DRAFT',
+    publishedAt: null,
+    logoAsset: null,
+    markAsset: null,
+    faviconAsset: null,
+  }
+  const admin: BrandAdmin = {
+    publishedVersionId: null,
+    versions: [
+      {
+        id: version.id,
+        revision: version.revision,
+        editRevision: version.editRevision,
+        status: version.status,
+        publishedAt: null,
+      },
+    ],
+  }
+  await page.unroute('**/api/v1/iam/session')
+  await page.route('**/api/v1/iam/session', (route) =>
+    route.fulfill({
+      json: {
+        authenticated: true,
+        permissions: ['branding.view', 'branding.manage', 'branding.publish'],
+        user: { id: id(200), tenantId: id(201), displayName: '管理员', avatarUrl: null },
+      },
+    }),
+  )
+  await page.unroute('**/api/v1/navigation/me')
+  await page.route('**/api/v1/navigation/me', (route) =>
+    route.fulfill({ json: response([login, account, branding]) }),
+  )
+  await page.route('**/api/v1/branding/admin', (route) => route.fulfill({ json: admin }))
+  await page.route('**/api/v1/branding/versions/*', (route) => route.fulfill({ json: version }))
+
+  await page.goto('/branding/manage')
+  await page.getByRole('combobox', { name: '配置版本' }).click()
+  await page.getByRole('option', { name: 'V1 · 草稿' }).click()
+  const neutral = page.locator('[data-brand-palette-card="base"]')
+  const primary = page.locator('[data-brand-palette-card="primary"]')
+  const sections = page.getByRole('navigation', { name: '品牌配置分区' })
+  await expect(page.getByRole('heading', { name: '品牌标识' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '主题工作室' })).toBeHidden()
+  await sections.getByRole('button', { name: '视觉主题' }).click()
+  await expect(sections.getByRole('button', { name: '视觉主题' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+  await expect(neutral.getByRole('heading', { name: '基础中性色' })).toBeVisible()
+  await expect(primary).toHaveCount(0)
+  await page.getByRole('tab', { name: '品牌主色' }).click()
+  await expect(primary.getByRole('heading', { name: '品牌主色' })).toBeVisible()
+  await primary.getByRole('button', { name: '将主色设为 700 色阶' }).click()
+  await expect(primary.getByRole('button', { name: '将主色设为 700 色阶' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+  await page.getByRole('tab', { name: '深色应用色' }).click()
+  await primary.getByRole('button', { name: '将主色设为 400 色阶' }).click()
+  await expect(primary.getByRole('button', { name: '将主色设为 400 色阶' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+  await page.getByRole('tab', { name: '浅色应用色' }).click()
+  await expect(primary.getByRole('button', { name: '将主色设为 700 色阶' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+  await page.getByRole('tab', { name: '界面风格' }).click()
+  await expect(page.getByText('组件圆角')).toBeVisible()
+  await page.getByRole('tab', { name: '基础中性色' }).click()
+  await expect(neutral.getByRole('button', { name: '逐级编辑色阶' })).toBeVisible()
+  await neutral.getByRole('button', { name: '逐级编辑色阶' }).click()
+  const rampDialog = page.getByRole('dialog', { name: '微调基础中性色阶' })
+  await expect(rampDialog).toBeVisible()
+  await expect(neutral.getByText('已微调色阶')).toHaveCount(0)
+  await rampDialog.getByRole('button', { name: '编辑 700 色阶' }).click()
+  await expect(rampDialog.getByRole('button', { name: '编辑 700 色阶' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+  await expect(page.getByRole('tab', { name: 'HEX' })).toBeVisible()
+  const pickerPopup = page.locator('[data-soybean-popover-popup]').filter({
+    has: page.getByRole('tab', { name: 'HEX' }),
+  })
+  await expect
+    .poll(() =>
+      pickerPopup.evaluate((element) => {
+        const box = element.getBoundingClientRect()
+        const top = document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2)
+        return top !== null && element.contains(top)
+      }),
+    )
+    .toBe(true)
+  const colorArea = pickerPopup.locator('[data-soybean-color-area-area]')
+  await expect(colorArea).toBeVisible()
+  const colorAreaBox = await colorArea.boundingBox()
+  if (!colorAreaBox) throw new Error('Color area has no visible bounds')
+  expect(colorAreaBox.width).toBeGreaterThan(150)
+  expect(colorAreaBox.height).toBeGreaterThan(100)
+  const previousColor = await rampDialog.locator('[data-ramp-color-picker] button').textContent()
+  await colorArea.click({ position: { x: 150, y: 35 } })
+  await expect(neutral.getByText('已微调色阶')).toBeVisible()
+  await expect(rampDialog.locator('[data-ramp-color-picker] button')).not.toHaveText(
+    previousColor ?? '',
+  )
+  await page.keyboard.press('Escape')
+  await rampDialog.getByRole('button', { name: '编辑 700 色阶' }).click()
+  await expect(page.getByRole('tab', { name: 'HEX' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(rampDialog.locator('[data-ramp-color-picker] button')).toHaveCount(1)
+  await expect(rampDialog.locator('[data-ramp-color-picker] button')).toContainText('#')
+  await rampDialog.locator('[data-ramp-color-picker] button').click()
+  await expect(page.getByRole('tab', { name: 'HEX' })).toBeVisible()
+  await page.keyboard.press('Escape')
+  await expect(rampDialog).toBeVisible()
+  await page.setViewportSize({ width: 390, height: 844 })
+  await expect(rampDialog).toHaveCSS('width', '358px')
+  const bounds = await rampDialog.boundingBox()
+  if (!bounds) throw new Error('Ramp dialog has no visible bounds')
+  expect(bounds.x).toBeGreaterThanOrEqual(0)
+  expect(bounds.x + bounds.width).toBeLessThanOrEqual(390)
+  await rampDialog.getByRole('button', { name: '编辑 500 色阶' }).click()
+  const mobilePicker = page.locator('[data-soybean-popover-popup]').filter({
+    has: page.getByRole('tab', { name: 'HEX' }),
+  })
+  const mobilePickerBounds = await mobilePicker.boundingBox()
+  if (!mobilePickerBounds) throw new Error('Mobile color picker has no visible bounds')
+  expect(mobilePickerBounds.x).toBeGreaterThanOrEqual(0)
+  expect(mobilePickerBounds.x + mobilePickerBounds.width).toBeLessThanOrEqual(390)
+  await expect(mobilePicker.locator('[data-soybean-color-area-area]')).toBeVisible()
+  await expect(primary.getByText('已微调色阶')).toHaveCount(0)
+  await page.keyboard.press('Escape')
+  await rampDialog.getByRole('button', { name: '完成' }).click()
+  await page.getByRole('tab', { name: '高级语义色' }).click()
+  const semanticGroup = page.locator('details').filter({
+    has: page.getByText('表面与文字', { exact: true }),
+  })
+  await expect(semanticGroup).not.toHaveAttribute('open', '')
+  await semanticGroup.locator('summary').click()
+  await expect(semanticGroup).toHaveAttribute('open', '')
+  await page.setViewportSize({ width: 768, height: 844 })
+  await sections.getByRole('button', { name: '工作区布局' }).click()
+  await expect(page.getByRole('heading', { name: '工作区默认布局' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '主题工作室' })).toBeHidden()
+  await sections.getByRole('button', { name: '视觉主题' }).click()
+  await expect(semanticGroup).toHaveAttribute('open', '')
+  await sections.getByRole('button', { name: '工作区布局' }).click()
+  await page.getByRole('button', { name: '展开实时预览' }).click()
+  await expect(page.getByRole('heading', { name: '实时预览' })).toBeVisible()
+  const previewBounds = await page.getByRole('heading', { name: '实时预览' }).boundingBox()
+  if (!previewBounds) throw new Error('Responsive preview has no visible bounds')
+  expect(previewBounds.x + previewBounds.width).toBeLessThanOrEqual(768)
+  await page.getByRole('button', { name: '收起实时预览' }).click()
+  await sections.getByRole('button', { name: '名称与文案' }).click()
+  await page.locator('#brand-system-name').fill('')
+  await sections.getByRole('button', { name: '工作区布局' }).click()
+  await page.getByRole('button', { name: '保存草稿' }).click()
+  await expect(sections.getByRole('button', { name: /名称与文案/ })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+  await expect(page.locator('#brand-system-name')).toBeVisible()
+  await expect(page.getByText('请修正当前分区的校验错误：')).toBeVisible()
 })
 
 test('login brand canvas follows the active primary palette', async ({ page }) => {
@@ -137,8 +415,11 @@ test('login brand canvas follows the active primary palette', async ({ page }) =
     .not.toBe(defaultBackground)
 })
 
-test('invalid persisted theme falls back to a usable settings panel', async ({ page }) => {
-  await page.addInitScript(({ key }) => localStorage.setItem(key, '{broken'), { key: storageKey })
+test('invalid scoped appearance preference falls back to a usable settings panel', async ({
+  page,
+}) => {
+  const key = appearancePreferenceStorageKey(id(201), id(200))
+  await page.addInitScript((storageKey) => localStorage.setItem(storageKey, '{broken'), key)
   await page.goto('/account/me')
   await page.getByRole('button', { name: '工作区设置', exact: true }).click()
   await expect(page.getByRole('dialog', { name: '工作区设置' })).toBeVisible()
@@ -149,10 +430,9 @@ test('mobile settings stay within viewport and reset persisted preferences', asy
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/account/me')
   await page.getByRole('button', { name: '工作区设置', exact: true }).click()
-  await page.getByRole('combobox').first().click()
-  await page.getByRole('option', { name: '深色', exact: true }).click()
+  await page.getByRole('tab', { name: '深色', exact: true }).click()
   await expect(page.locator('html')).toHaveClass(/dark/)
-  const resetButton = page.getByRole('button', { name: '重置', exact: true })
+  const resetButton = page.getByRole('button', { name: '恢复外观默认值', exact: true })
   await resetButton.scrollIntoViewIfNeeded()
   await resetButton.click()
   await expect(page.locator('html')).not.toHaveClass(/dark/)
@@ -171,7 +451,7 @@ test('layout mode, dimensions and tab visibility persist', async ({ page }) => {
   await page.goto('/account/me')
   await expect(page.getByRole('navigation', { name: '主导航' })).toBeVisible()
   await expect(page.getByRole('navigation', { name: '页面标签' })).toBeVisible()
-  await expect(page.getByText('管理员', { exact: true })).toBeVisible()
+  await expect(page.getByRole('heading', { name: '管理员' })).toBeVisible()
   const layoutRoot = page.locator('[data-soybean-layout-root]')
   await page.getByRole('button', { name: '切换侧边栏' }).click()
   await expect(layoutRoot).toHaveAttribute('data-state', 'collapsed')
@@ -203,6 +483,51 @@ test('layout mode, dimensions and tab visibility persist', async ({ page }) => {
   await expect(page.getByRole('navigation', { name: '页面标签' })).toHaveCount(0)
 })
 
+test('user layout overrides stay sparse and continue following tenant defaults', async ({
+  page,
+}) => {
+  let brand = publishedBrand({
+    workspaceDefaults: {
+      layoutMode: 'top',
+      brandPlacement: 'header',
+      headerHeight: 72,
+      siderWidth: 264,
+      showTabs: false,
+    },
+  })
+  await page.unroute('**/api/v1/branding/bootstrap*')
+  await page.route('**/api/v1/branding/bootstrap*', (route) => route.fulfill({ json: brand }))
+
+  await page.goto('/account/me')
+  await expect(page.getByRole('navigation', { name: '顶部导航' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: '页面标签' })).toHaveCount(0)
+  await expect(page.locator('[data-soybean-layout-header]')).toHaveCSS('height', '72px')
+
+  await page.getByRole('button', { name: '工作区设置', exact: true }).click()
+  await page.getByRole('tab', { name: '布局设置' }).click()
+  await page.getByRole('radio', { name: '左侧菜单模式' }).click()
+  await expect(page.getByRole('navigation', { name: '主导航' })).toBeVisible()
+
+  brand = publishedBrand({
+    workspaceDefaults: {
+      layoutMode: 'top',
+      brandPlacement: 'header',
+      headerHeight: 84,
+      siderWidth: 304,
+      showTabs: true,
+    },
+  })
+  await page.reload()
+
+  await expect(page.getByRole('navigation', { name: '主导航' })).toBeVisible()
+  await expect(page.getByRole('navigation', { name: '页面标签' })).toBeVisible()
+  await expect(page.locator('[data-soybean-layout-header]')).toHaveCSS('height', '84px')
+  await expect(page.locator('[data-soybean-layout-sidebar] > div:nth-child(2)')).toHaveCSS(
+    'width',
+    '304px',
+  )
+})
+
 test('custom brand mark keeps its original transparent presentation', async ({ page }) => {
   await page.route('**/api/v1/iam/account', (route) =>
     route.fulfill({
@@ -221,10 +546,7 @@ test('custom brand mark keeps its original transparent presentation', async ({ p
   )
   await page.route('**/api/v1/branding/bootstrap*', (route) =>
     route.fulfill({
-      json: {
-        schemaVersion: 2,
-        source: 'PUBLISHED',
-        publishedRevision: 1,
+      json: publishedBrand({
         systemName: '智能审核平台',
         shortName: '审核平台',
         loginTitle: '智能审核平台',
@@ -239,7 +561,7 @@ test('custom brand mark keeps its original transparent presentation', async ({ p
         markContentType: 'image/png',
         faviconUrl: null,
         faviconContentType: null,
-      },
+      }),
     }),
   )
 

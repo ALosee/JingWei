@@ -12,7 +12,8 @@
       "default": "./src/index.ts"
     },
     "./theme.css": "./src/theme.css",
-    "./theme-init": "./src/theme/init.ts"
+    "./theme-init": "./src/theme/init.ts",
+    "./theme-palette": "./src/patterns/theme-palette/theme-palette.ts"
   },
   "scripts": {
     "typecheck": "vue-tsc --noEmit -p tsconfig.json"

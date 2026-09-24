@@ -1,7 +1,8 @@
 # `@jingwei/module-branding`
 
-Branding 是租户品牌配置的 Owner Module。它让不同客户独立配置系统名称、登录页文案、工作区
-Logo/方形标志和浏览器 favicon，同时保持发布历史、权限、审计和匿名启动读取的一致边界。
+Branding 是租户品牌与展示默认配置的 Owner Module。它让不同客户独立配置系统名称、登录页文案、
+工作区 Logo/方形标志、浏览器 favicon、视觉主题和工作区默认布局，同时保持发布历史、权限、审计和
+匿名启动读取的一致边界。
 
 ## 职责与非职责
 
@@ -10,12 +11,18 @@ Logo/方形标志和浏览器 favicon，同时保持发布历史、权限、审�
 - 租户品牌草稿、不可变发布版本、显式回滚、恢复平台默认和乐观并发；
 - 有界 PNG、严格白名单 Logo/Mark SVG 与 Favicon ICO 的内容、尺寸和用途校验；
 - 匿名生效品牌投影，以及管理端的版本与素材 API；
+- 品牌主色/基础中性色的内置或自定义 50–950 色阶、组件圆角和侧栏配色；
+- 浅色/深色的表面、文字、交互、侧栏、状态和图表语义色稀疏覆盖；
+- 菜单模式、品牌位置、头部高度、侧栏宽度和页签可见性的租户默认值；
 - `branding.view`、`branding.manage`、`branding.publish` 授权和关键写操作审计；
 - 品牌管理页面及前端生效品牌状态。
 
-本模块不负责 Navigation 路径/菜单、IAM 登录规则、浏览器本地主题布局、任意 CSS/HTML、客户专属
-代码分支或通用键值设置。Web 壳负责把品牌投影组合到页面标题、favicon 和全局 chrome；IAM 仅拥有
-登录页需要的窄展示端口。边界决策见 [ADR 0016](../../../docs/adr/0016-own-tenant-branding-in-a-dedicated-module.md)。
+本模块不负责 Navigation 路径/菜单、IAM 登录规则、用户个人明暗模式/界面尺寸/布局覆盖、任意
+CSS/HTML/选择器、客户专属代码分支或通用键值设置。Web 壳负责把品牌投影组合到页面标题、favicon、主题和
+全局 chrome，并将用户稀疏覆盖叠加在租户工作区默认值上；IAM 仅拥有登录页需要的窄展示端口。边界
+决策见 [ADR 0016](../../../docs/adr/0016-own-tenant-branding-in-a-dedicated-module.md) 和
+[ADR 0019](../../../docs/adr/0019-layer-tenant-presentation-defaults-and-user-preferences.md) 与
+[ADR 0020](../../../docs/adr/0020-model-tenant-themes-as-palettes-and-semantic-overrides.md)。
 
 ## Manifest
 
@@ -25,7 +32,10 @@ Manifest 只描述稳定 metadata，不读取数据库或安装运行时。
 
 ## 数据所有权
 
-迁移入口为 `migrations/20260917090000_branding_foundation.ts`，拥有 PostgreSQL `branding` schema：
+初始迁移为 `migrations/20260917090000_branding_foundation.ts`，展示默认字段由
+`migrations/20260922100000_branding_tenant_presentation.ts` 与
+`migrations/20260922110000_branding_semantic_theme.ts` 演进；模块拥有 PostgreSQL
+`branding` schema：
 
 - `brand_profile`：每个租户唯一根和当前发布指针；
 - `brand_version`：草稿与不可变发布快照，按租户递增 revision；
@@ -38,6 +48,7 @@ Manifest 只描述稳定 metadata，不读取数据库或安装运行时。
 ## 代码结构
 
 - `server/domain/brand-image.ts`：PNG 结构、CRC、SVG 安全配置和用途尺寸规则；
+- `shared/brand-theme-validation.ts`：浏览器提示与发布共用的色阶顺序、生效对比度纯校验；
 - `server/application`：品牌查询、草稿/发布事务、权限和存储端口；
 - `server/infrastructure/branding-store.pg.ts`：Kysely 存储与审计事务适配器；
 - `server/api`：Zod OpenAPI 契约和 thin Hono route；
@@ -74,6 +85,20 @@ Integration Event；匿名 HTTP 投影是 Web/其他客户端的稳定消费边�
 - 横向品牌显示显式选择平台内置字标、系统简称或自定义 Logo；发布版本不再根据素材是否存在隐式推断；
 - 自定义 Logo 可保持原色，也可用同一素材作为 CSS mask 生成单色剪影并跟随亮色/暗色主题；
 - 自定义方形标志按素材原有透明度和颜色展示，不继承平台默认标志的底板、圆角或阴影；
+- 视觉主题与工作区默认布局属于同一个版本快照，随草稿发布、历史回滚和审计原子切换；
+- 已发布主题的自定义色板由租户壳显式注册，主题选项计算保持纯函数；草稿预览复用临时色板键，
+  不随每次逐级调色无限增加运行时注册项；
+- 生效投影提供受约束的完整色阶、命名方案与语义角色覆盖；颜色只能是色阶引用或受验证的
+  HSL/OKLCH 值，不接受任意 CSS、变量、URL、选择器或脚本；用户明暗模式和界面尺寸不写入品牌版本；
+- 管理页按品牌标识、名称与文案、视觉主题、工作区布局切换编辑分区，保存/发布操作保持可见；视觉主题再按中性色、主色、界面风格和高级语义色分区，窄屏预览可按需展开；
+- 编辑器将选预设色系、为具体语义角色选 50–950 深浅、给单一角色输入自定义颜色、逐级编辑色阶
+  分成独立操作。整套色阶在独立编辑窗中逐级调整，打开编辑窗不修改草稿；首次改色时精确复制当前预设。
+  选择色阶不重建色板，改变生成基准色也须显式确认重建；
+  已发布的 V2 色板和角色引用继续按原契约读取，无需另建版本或迁移；
+- 主题引擎会从浅色语义覆盖推导深色颜色；即使没有显式深色覆盖，深色实际效果也可能变化。
+  色阶卡片显示对应深色结果与前景对比度，并可直接切换到深色设置；发布仍校验实际生效的组合，
+  不因深色未显式覆盖而跳过低对比度问题；
+- 工作区用户覆盖由 Web 以租户和用户为命名空间稀疏保存，未覆盖字段持续跟随当前发布版本；
 - 草稿变化不影响线上品牌，发布后新页面加载使用新投影；
 - 已发布版本由数据库触发器保护，不允许修改或删除；回退通过将线上指针切到历史已发布版本完成；
 - 恢复平台默认会清空当前发布指针并保留全部已发布历史，不依赖删除版本；
@@ -91,8 +116,8 @@ Integration Event；匿名 HTTP 投影是 Web/其他客户端的稳定消费边�
 
 ## 当前实现状态
 
-草稿、保存、发布、回滚、恢复默认、PNG/Logo/Mark SVG/ICO 上传、公开投影、管理页、登录页、工作区品牌和
-浏览器 metadata 均已实现。当前不包含即时推送、按语言拆分品牌文案、WebP、自定义邮件/文档模板
-或对象存储迁移。
+草稿、保存、发布、回滚、恢复默认、PNG/Logo/Mark SVG/ICO 上传、公开投影、管理页、登录页、工作区品牌、
+租户视觉主题/布局默认值和浏览器 metadata 均已实现。当前不包含即时推送、用户偏好跨设备同步、字段
+锁定、按组织或角色设置布局、按语言拆分品牌文案、WebP、自定义邮件/文档模板或对象存储迁移。
 
 修改后至少运行模块类型检查和相关 Vitest；提交前必须在仓库根目录运行 `pnpm check`。

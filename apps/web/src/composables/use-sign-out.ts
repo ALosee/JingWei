@@ -8,6 +8,8 @@ import {
 } from '@jingwei/module-iam/web'
 import { toast } from '@jingwei/ui'
 
+import { useAppearanceStore } from '../stores/appearance.js'
+import { useLayoutStore } from '../stores/layout.js'
 import { useShellStore } from '../stores/shell.js'
 
 interface SignOutDependencies {
@@ -23,6 +25,8 @@ export function useSignOut(
   },
 ) {
   const shell = useShellStore()
+  const appearance = useAppearanceStore()
+  const layout = useLayoutStore()
   const signingOut = ref(false)
 
   async function signOut(): Promise<void> {
@@ -32,6 +36,8 @@ export function useSignOut(
       await dependencies.logout()
       shell.currentUser = null
       shell.navigation = null
+      appearance.setUserScope(null, null)
+      layout.setUserScope(null, null)
       setIamSessionUser(null)
       clearIamSessionPermissions()
       dependencies.leaveWorkspace()

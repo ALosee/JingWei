@@ -14,7 +14,7 @@ export class ResolveBranding {
     const version = await this.store.published(tenantId)
     if (version === null) return defaultEffectiveBrand
     return {
-      schemaVersion: 2,
+      schemaVersion: 4,
       source: 'PUBLISHED',
       publishedRevision: version.revision,
       systemName: version.systemName,
@@ -30,6 +30,8 @@ export class ResolveBranding {
       markContentType: version.markAsset?.contentType ?? null,
       faviconUrl: assetUrl(version.faviconAsset),
       faviconContentType: version.faviconAsset?.contentType ?? null,
+      visualTheme: version.visualTheme,
+      workspaceDefaults: version.workspaceDefaults,
     }
   }
 

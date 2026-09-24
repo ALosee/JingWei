@@ -3,7 +3,7 @@ import ElegantRouter from 'elegant-router/vite'
 import UnoCSS from 'unocss/vite'
 import { defineConfig } from 'vite'
 
-import { createThemeInitScript } from '@jingwei/ui/theme-init'
+import { createAppearanceModeInitScript } from './src/appearance/mode-init.js'
 
 export default defineConfig({
   // Keep every app on the repository-level environment contract.
@@ -15,7 +15,9 @@ export default defineConfig({
     {
       name: 'jingwei-theme-init',
       transformIndexHtml() {
-        return [{ tag: 'script', children: createThemeInitScript(), injectTo: 'head-prepend' }]
+        return [
+          { tag: 'script', children: createAppearanceModeInitScript(), injectTo: 'head-prepend' },
+        ]
       },
     },
   ],

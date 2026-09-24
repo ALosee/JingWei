@@ -10,6 +10,11 @@ import type {
   TreeRootEmits,
   TreeRootProps,
 } from '@soybeanjs/headless/tree'
+import type { PaletteColorLevel } from '@soybeanjs/theme'
+import type {
+  ColorTokens as ThemeColorTokens,
+  ColorValue as ThemeColorValue,
+} from '@soybeanjs/theme'
 import type { DefineComponent } from 'vue'
 
 import type {
@@ -87,6 +92,21 @@ import type { ToastProviderProps } from './components/toast/types'
 import type { TreeMenuEmits, TreeMenuProps, TreeMenuSlots } from './components/tree-menu/types'
 import type { TreeSlots } from './components/tree/types'
 import type {
+  RuntimeThemePalette,
+  ThemePaletteColors,
+  ThemePaletteSlot,
+} from './patterns/theme-palette/theme-palette'
+import type {
+  ThemePaletteSelectItem,
+  ThemePaletteSelectProps,
+} from './patterns/theme-palette/types'
+import type {
+  PaletteChangePayload,
+  PalettePickerEmits,
+  PalettePickerProps,
+  PaletteSelectValue,
+} from './patterns/theme-settings-panel/palette-picker-types'
+import type {
   ThemeCustomizerProps,
   ThemeCustomizerSection,
 } from './patterns/theme-settings-panel/types'
@@ -115,6 +135,7 @@ export declare const Layout: UiComponent<LayoutProps>
 export declare const LayoutTrigger: UiComponent<LayoutTriggerProps>
 export declare const Menubar: UiComponent<MenubarProps<string>>
 export declare const PageTabs: UiComponent<PageTabsProps<PageTabsOptionData>>
+export declare const PalettePicker: UiComponent<PalettePickerProps>
 export declare const Popover: UiComponent<PopoverProps>
 export declare const Progress: UiComponent<ProgressProps>
 export declare const ProgressCircle: UiComponent<ProgressCircleProps>
@@ -125,6 +146,11 @@ export declare const Separator: UiComponent<SeparatorProps>
 export declare const Slider: UiComponent<SliderProps>
 export declare const ThemeCustomizer: UiComponent
 export declare const ThemeSettingsPanel: UiComponent<ThemeCustomizerProps>
+export declare const ThemePaletteSelect: UiComponent<ThemePaletteSelectProps>
+export declare const ThemeScope: UiComponent<{
+  theme: ConfigProviderProps['theme']
+  mode?: 'light' | 'dark'
+}>
 export declare const Tooltip: UiComponent
 export declare const ToastProvider: UiComponent<HeadlessToastProviderProps & ToastProviderProps>
 export declare const Tabs: UiComponent<TabsProps<TabsOptionData>>
@@ -140,10 +166,40 @@ export { progress } from '@soybeanjs/headless/progress'
 export { toast } from '@soybeanjs/headless/toast'
 
 export declare function useTheme(): ThemeContext | null
+export declare function generateThemePaletteColors(seedColor: string): ThemePaletteColors
+export declare function getThemePaletteColors(
+  key: string,
+  target: 'base' | 'primary',
+): Partial<ThemePaletteColors>
+export declare function normalizeThemePaletteColor(input: string): {
+  hsl: string
+  oklch: string
+}
+export declare function registerThemePalette(
+  palette: RuntimeThemePalette,
+  target: 'base' | 'primary',
+): string
+export declare function themePaletteKey(
+  palette: RuntimeThemePalette,
+  target: 'base' | 'primary',
+): string
+export declare function createThemePaletteSlot(target: 'base' | 'primary'): ThemePaletteSlot
+export declare const themePaletteLevels: readonly PaletteColorLevel[]
 
 export type {
   ThemeCustomizerProps,
   ThemeCustomizerSection,
+  PaletteChangePayload,
+  PalettePickerEmits,
+  PalettePickerProps,
+  PaletteSelectValue,
+  RuntimeThemePalette,
+  ThemePaletteColors,
+  ThemePaletteSlot,
+  ThemePaletteSelectItem,
+  ThemePaletteSelectProps,
+  ThemeColorTokens,
+  ThemeColorValue,
   ButtonEmits,
   ButtonGroupProps,
   ButtonIconProps,
