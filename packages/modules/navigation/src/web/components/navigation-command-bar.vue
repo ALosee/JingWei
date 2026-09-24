@@ -133,13 +133,13 @@ function onOverflowSelect(item: MenuOptionData<OverflowAction>): void {
 
 <template>
   <header
-    class="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-border px-4 pb-3 pt-1"
+    class="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-border px-4 pb-2"
   >
     <Select
       :model-value="version?.id ?? ''"
       :items="versionItems"
       :disabled="busy || versionItems.length === 0"
-      class="w-36 shrink-0"
+      class="w-36 shrink-0 focus-within:ring-0!"
       aria-label="查看版本"
       @update:model-value="onSelectVersion"
     />

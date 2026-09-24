@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import { Icon, Segment, Select } from '@jingwei/ui'
+import { Segment, Select } from '@jingwei/ui'
 import type { SegmentOptionData, SelectSingleOptionData } from '@jingwei/ui'
 
 import { validateBrandTheme } from '../../shared/brand-theme-validation.js'
@@ -119,27 +119,16 @@ function selectNumber(
 </script>
 
 <template>
-  <section class="grid gap-4 rounded-lg border border-border bg-card p-5">
+  <section class="grid gap-4">
     <header>
-      <div>
-        <h2 class="m-0 flex items-center gap-2 text-base text-foreground font-650">
-          <Icon icon="lucide:swatch-book" class="size-4 text-muted-foreground" />
-          主题工作室
-        </h2>
-        <p class="mb-0 mt-1 text-sm text-muted-foreground">
-          租户统一发布色阶和语义角色；用户仍可选择浅色或深色显示偏好。
-        </p>
-      </div>
+      <h2 class="m-0 text-sm font-semibold text-foreground">主题工作室</h2>
+      <p class="mb-0 mt-1 text-xs text-muted-foreground">
+        租户统一发布色阶和语义角色；用户仍可选择浅色或深色显示偏好
+      </p>
     </header>
 
     <div class="overflow-x-auto rounded-lg bg-muted/40 p-1">
-      <Segment
-        v-model="section"
-        :items="sectionItems"
-        size="sm"
-        fill="full"
-        class="min-w-max w-full"
-      />
+      <Segment v-model="section" :items="sectionItems" fill="full" class="min-w-max w-full" />
     </div>
 
     <div

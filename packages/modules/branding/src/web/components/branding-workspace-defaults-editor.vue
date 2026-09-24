@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Icon, InputNumber, Segment, Switch } from '@jingwei/ui'
+import { InputNumber, Segment, Switch } from '@jingwei/ui'
 import type { SegmentOptionData } from '@jingwei/ui'
 
 import type {
@@ -54,14 +54,11 @@ function setShowTabs(value: boolean): void {
 </script>
 
 <template>
-  <section class="grid gap-4 rounded-lg border border-border bg-card p-5">
+  <section class="grid gap-4">
     <header>
-      <h2 class="m-0 flex items-center gap-2 text-base text-foreground font-650">
-        <Icon icon="lucide:panels-top-left" class="size-4 text-muted-foreground" />
-        工作区默认布局
-      </h2>
-      <p class="mb-0 mt-1 text-sm text-muted-foreground">
-        未做个人调整的用户采用这些默认值；用户仍可在工作区设置中覆盖。
+      <h2 class="m-0 text-sm font-semibold text-foreground">工作区默认布局</h2>
+      <p class="mb-0 mt-1 text-xs text-muted-foreground">
+        未做个人调整的用户采用这些默认值；用户仍可在工作区设置中覆盖
       </p>
     </header>
 

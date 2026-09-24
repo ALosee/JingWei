@@ -66,11 +66,6 @@ const previewTheme = computed(() => {
 const horizontalMode = computed(() =>
   resolveHorizontalBrandMode(props.preview.horizontalBrandMode, props.logoUrl),
 )
-const stateLabel = computed(() => {
-  if (props.state === 'DRAFT') return '草稿编辑中'
-  if (props.state === 'PLATFORM_DEFAULT') return '平台内置默认'
-  return '只读快照'
-})
 const stateHint = computed(() => {
   if (props.state === 'SNAPSHOT') return '历史快照，非当前线上'
   if (props.state === 'PLATFORM_DEFAULT') return '平台内置，未发布租户品牌'
@@ -86,26 +81,9 @@ const horizontalLabel = computed(() => {
 
 <template>
   <section class="grid content-start gap-3">
-    <header class="flex flex-wrap items-end justify-between gap-2">
-      <div class="min-w-0">
-        <h2 class="m-0 flex items-center gap-2 text-base text-foreground font-650">
-          <Icon icon="lucide:eye" class="size-4 text-muted-foreground" />
-          实时预览
-        </h2>
-        <p class="mb-0 mt-1 text-xs text-muted-foreground">{{ stateHint }}</p>
-      </div>
-      <span
-        class="rounded-full px-2 py-0.5 text-xs"
-        :class="
-          state === 'DRAFT'
-            ? 'bg-primary/12 text-primary'
-            : state === 'SNAPSHOT'
-              ? 'bg-warning/12 text-warning'
-              : 'bg-muted text-muted-foreground'
-        "
-      >
-        {{ stateLabel }}
-      </span>
+    <header class="flex flex-wrap items-baseline justify-between gap-2">
+      <h2 class="m-0 text-sm font-semibold text-foreground">实时预览</h2>
+      <p class="m-0 text-xs text-muted-foreground">{{ stateHint }}</p>
     </header>
 
     <div class="grid grid-cols-[minmax(0,1fr)_auto] gap-2">

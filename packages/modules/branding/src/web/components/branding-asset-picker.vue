@@ -133,17 +133,12 @@ function onLogoColorModeChange(value: unknown): void {
 </script>
 
 <template>
-  <section class="grid gap-4 rounded-lg border border-border bg-card p-5">
-    <header class="flex flex-wrap items-start justify-between gap-3">
-      <div class="min-w-0">
-        <h2 class="m-0 flex items-center gap-2 text-base text-foreground font-650">
-          <Icon icon="lucide:badge" class="size-4 text-muted-foreground" />
-          品牌标识
-        </h2>
-        <p class="mb-0 mt-1 text-sm text-muted-foreground">
-          控制侧栏与登录页的横向品牌位；素材上传后需保存草稿并发布。
-        </p>
-      </div>
+  <section class="grid gap-4">
+    <header>
+      <h2 class="m-0 text-sm font-semibold text-foreground">品牌标识</h2>
+      <p class="mb-0 mt-1 text-xs text-muted-foreground">
+        控制侧栏与登录页的横向品牌位；素材上传后需保存草稿并发布
+      </p>
     </header>
 
     <div class="grid gap-3">
