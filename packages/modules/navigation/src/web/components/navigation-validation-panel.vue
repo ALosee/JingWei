@@ -28,7 +28,7 @@ const emit = defineEmits<{
     </header>
 
     <p v-if="issues.length === 0" class="m-0 text-sm text-muted-foreground">
-      点击顶栏「校验」检查已保存版本与当前 Edition 的兼容性。
+      在顶栏点击「校验」检查当前版本。
     </p>
 
     <ul v-else class="m-0 grid gap-2 list-none p-0">
@@ -40,15 +40,9 @@ const emit = defineEmits<{
         <p class="m-0 text-sm text-foreground">{{ issue.message }}</p>
         <div class="mt-1 flex flex-wrap items-center gap-2">
           <code class="text-[0.7rem] text-muted-foreground">{{ issue.code }}</code>
-          <Button
-            v-if="issue.nodeId"
-            size="sm"
-            variant="ghost"
-            class="h-6 px-2 text-xs"
-            @click="emit('locate', issue.nodeId)"
-          >
+          <Button v-if="issue.nodeId" variant="ghost" @click="emit('locate', issue.nodeId)">
             <Icon icon="lucide:locate-fixed" class="me-1 size-3" />
-            定位节点
+            定位
           </Button>
         </div>
       </li>

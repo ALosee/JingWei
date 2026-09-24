@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
-import { Icon, Tabs, toast } from '@jingwei/ui'
+import { Tabs, toast } from '@jingwei/ui'
 
 import type { NavigationNode, NavigationNodeType } from '../../shared/index.js'
+import NavigationCommandBar from '../components/navigation-command-bar.vue'
 import NavigationNodeForm from '../components/navigation-node-form.vue'
 import NavigationPreviewPanel from '../components/navigation-preview-panel.vue'
 import NavigationRoleGrantsPanel from '../components/navigation-role-grants-panel.vue'
 import NavigationStructureTree from '../components/navigation-structure-tree.vue'
 import NavigationValidationPanel from '../components/navigation-validation-panel.vue'
-import NavigationVersionBar from '../components/navigation-version-bar.vue'
 import { useNavigationManagement } from '../composables/use-navigation-management.js'
 
 const { catalog, feedback, editor, versions, roles } = useNavigationManagement()
@@ -39,8 +39,7 @@ const {
   collapseAll,
   revealNode,
 } = editor
-const { admin, published, issues, selectVersion, newDraft, save, validate, publish, deleteDraft } =
-  versions
+const { admin, issues, selectVersion, newDraft, save, validate, publish, deleteDraft } = versions
 const {
   roleId,
   loadedRoleId,
@@ -197,23 +196,18 @@ function onChangeRoute(routeKey: string | null): void {
 </script>
 
 <template>
-  <div class="grid gap-4">
-    <p
+  <div class="flex h-full min-h-0 flex-col overflow-hidden">
+    <p v-if="error" role="alert" class="sr-only">{{ error }}</p>
+    <p v-if="message" role="status" class="sr-only">{{ message }}</p>
+    <div
       v-if="error"
       role="alert"
-      class="m-0 whitespace-pre-wrap rounded-md border border-destructive/25 bg-destructive/8 px-3 py-2 text-sm text-destructive"
+      class="shrink-0 border-b border-destructive/20 bg-destructive/8 px-4 py-2 text-sm text-destructive"
     >
       {{ error }}
-    </p>
-    <p
-      v-if="message"
-      role="status"
-      class="m-0 rounded-md border border-primary/20 bg-primary/8 px-3 py-2 text-sm text-foreground"
-    >
-      {{ message }}
-    </p>
+    </div>
 
-    <NavigationVersionBar
+    <NavigationCommandBar
       :admin="admin"
       :version="version"
       :busy="busy"
@@ -232,9 +226,10 @@ function onChangeRoute(routeKey: string | null): void {
     />
 
     <div
-      class="grid gap-4 xl:grid-cols-[minmax(16rem,1.1fr)_minmax(18rem,1.4fr)_minmax(16rem,1fr)]"
+      class="grid min-h-0 flex-1 grid-cols-1 overflow-hidden xl:grid-cols-[minmax(15rem,0.95fr)_minmax(20rem,1.35fr)_minmax(16rem,1fr)]"
     >
       <NavigationStructureTree
+        class="min-h-0 overflow-hidden border-b border-border xl:border-b-0 xl:border-e xl:border-border"
         :rows="rows"
         :selected-id="selectedId"
         :highlight-id="highlightId"
@@ -253,6 +248,7 @@ function onChangeRoute(routeKey: string | null): void {
       />
 
       <NavigationNodeForm
+        class="min-h-0 overflow-y-auto border-b border-border px-4 py-3 xl:border-b-0 xl:border-e xl:border-border"
         :selected="selected"
         :read-only="readOnly"
         :params-text="paramsText"
@@ -269,10 +265,10 @@ function onChangeRoute(routeKey: string | null): void {
         @mark-dirty="onMarkDirty"
       />
 
-      <section class="flex min-h-0 flex-col gap-3 rounded-lg border border-border bg-card/40 p-3">
-        <Tabs v-model="sideTab" :items="sideTabs" size="sm" fill="full">
+      <section class="flex min-h-0 flex-col overflow-hidden px-3 py-2">
+        <Tabs v-model="sideTab" :items="sideTabs" fill="full">
           <template #content="{ value }">
-            <div class="min-w-0 pt-2">
+            <div class="min-h-0 min-w-0 overflow-y-auto pt-3">
               <NavigationPreviewPanel
                 v-if="value === 'preview'"
                 :nodes="version?.nodes ?? []"
@@ -300,11 +296,6 @@ function onChangeRoute(routeKey: string | null): void {
             </div>
           </template>
         </Tabs>
-
-        <p v-if="published" class="m-0 flex items-center gap-1 text-xs text-muted-foreground">
-          <Icon icon="lucide:radio" class="size-3.5" />
-          当前线上为 V{{ published.revision }}，普通用户不会看到未发布草稿的改动。
-        </p>
       </section>
     </div>
   </div>

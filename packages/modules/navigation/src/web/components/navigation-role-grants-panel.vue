@@ -62,10 +62,7 @@ function toggleCode(code: string, checked: boolean): void {
   <section class="flex flex-col gap-3">
     <header>
       <h2 class="m-0 text-sm font-semibold text-foreground">角色导航授权</h2>
-      <p class="mb-0 mt-1 text-xs text-muted-foreground">
-        只控制导航可见性。目录/分组自动保留；业务 API 权限仍独立鉴权。授权基于当前发布版本的稳定
-        code。
-      </p>
+      <p class="mb-0 mt-1 text-xs text-muted-foreground">只控制导航可见性，不影响业务 API 权限。</p>
     </header>
 
     <div class="grid content-start gap-3">
@@ -132,7 +129,6 @@ function toggleCode(code: string, checked: boolean): void {
       <ButtonLoading
         :loading="busy"
         :disabled="!roleId || loadedRoleId !== roleId"
-        size="sm"
         class="w-full"
         @click="emit('save')"
       >

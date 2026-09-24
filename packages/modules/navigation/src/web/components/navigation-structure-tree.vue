@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Button, ButtonIcon, DropdownMenu, Icon, Input } from '@jingwei/ui'
+import { ButtonIcon, DropdownMenu, Icon, Input } from '@jingwei/ui'
 import type { MenuOptionData } from '@jingwei/ui'
 
 import {
@@ -103,90 +103,73 @@ function rowLabel(row: NavigationTreeRow): string {
 </script>
 
 <template>
-  <section class="flex min-h-0 flex-col gap-3">
-    <header class="flex flex-wrap items-center gap-2">
+  <section class="flex h-full min-h-0 flex-col">
+    <header class="flex h-12 shrink-0 items-center gap-1 px-3">
       <h2 class="m-0 flex-1 text-sm font-semibold text-foreground">结构树</h2>
-      <Button
-        v-if="!readOnly"
-        size="sm"
-        variant="outline"
+      <ButtonIcon
+        icon="lucide:chevrons-down"
+        variant="ghost"
+        aria-label="全部展开"
         :disabled="busy"
-        @click="emit('addChild', 'MENU')"
-      >
-        <Icon icon="lucide:plus" class="me-1 size-3.5" />
-        新增
-      </Button>
+        @click="emit('expandAll')"
+      />
+      <ButtonIcon
+        icon="lucide:chevrons-up"
+        variant="ghost"
+        aria-label="全部折叠"
+        :disabled="busy"
+        @click="emit('collapseAll')"
+      />
+      <ButtonIcon
+        icon="lucide:arrow-up"
+        variant="ghost"
+        aria-label="上移"
+        :disabled="readOnly || busy || !selectedId"
+        @click="emit('move', -1)"
+      />
+      <ButtonIcon
+        icon="lucide:arrow-down"
+        variant="ghost"
+        aria-label="下移"
+        :disabled="readOnly || busy || !selectedId"
+        @click="emit('move', 1)"
+      />
       <DropdownMenu
+        v-if="!readOnly"
         :items="menuItems"
         placement="bottom-end"
         :modal="false"
-        :disabled="readOnly || busy"
+        :disabled="busy"
         class="min-w-36"
         @select="onMenuSelect"
       >
         <template #trigger>
           <ButtonIcon
-            icon="lucide:more-horizontal"
-            size="sm"
-            variant="ghost"
-            aria-label="节点操作"
-            :disabled="readOnly || busy"
+            icon="lucide:plus"
+            variant="soft"
+            color="primary"
+            aria-label="新建节点"
+            :disabled="busy"
           />
         </template>
       </DropdownMenu>
     </header>
 
-    <div class="flex gap-2">
+    <div class="shrink-0 px-3 pb-2">
       <Input
         :model-value="search"
         placeholder="搜索名称 / code / routeKey"
-        class="min-w-0 flex-1"
+        class="w-full"
+        clearable
         @update:model-value="onSearchUpdate"
       />
-      <Button
-        v-if="search"
-        size="sm"
-        variant="ghost"
-        class="shrink-0"
-        aria-label="清除搜索"
-        @click="emit('updateSearch', '')"
-      >
-        清除
-      </Button>
     </div>
 
-    <div class="flex items-center gap-1">
-      <Button size="sm" variant="ghost" class="h-7 px-2 text-xs" @click="emit('expandAll')">
-        全部展开
-      </Button>
-      <Button size="sm" variant="ghost" class="h-7 px-2 text-xs" @click="emit('collapseAll')">
-        全部折叠
-      </Button>
-      <div class="ms-auto flex items-center gap-0.5">
-        <ButtonIcon
-          icon="lucide:arrow-up"
-          size="sm"
-          variant="ghost"
-          aria-label="上移"
-          :disabled="readOnly || busy || !selectedId"
-          @click="emit('move', -1)"
-        />
-        <ButtonIcon
-          icon="lucide:arrow-down"
-          size="sm"
-          variant="ghost"
-          aria-label="下移"
-          :disabled="readOnly || busy || !selectedId"
-          @click="emit('move', 1)"
-        />
-      </div>
-    </div>
-
-    <div class="min-h-12rem max-h-[min(28rem,50vh)] overflow-auto rounded-md border border-border">
-      <p v-if="rows.length === 0" class="m-0 px-3 py-6 text-center text-sm text-muted-foreground">
-        {{ search ? '没有匹配的节点' : '暂无节点，点击「新增」创建。' }}
+    <div class="min-h-0 flex-1 overflow-auto px-1.5 pb-2">
+      <p v-if="rows.length === 0" class="m-0 px-3 py-8 text-center text-sm text-muted-foreground">
+        {{ search ? '没有匹配的节点' : '暂无节点，点右上角 + 创建。' }}
       </p>
-      <ul v-else class="m-0 list-none p-1">
+      <ul v-else class="m-0 list-none p-0">
         <li v-for="row in rows" :key="row.node.id">
           <div
             class="group flex items-center gap-1 rounded-md pe-1"
@@ -226,7 +209,7 @@ function rowLabel(row: NavigationTreeRow): string {
                   {{ row.node.name }}
                 </span>
                 <span class="block truncate text-[0.7rem] text-muted-foreground">
-                  {{ typeLabel[row.node.type] }} · {{ row.node.code
+                  {{ typeLabel[row.node.type]
                   }}<template v-if="row.node.accessMode">
                     · {{ accessLabel[row.node.accessMode] ?? row.node.accessMode }}</template
                   >

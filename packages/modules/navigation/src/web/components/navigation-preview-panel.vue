@@ -35,7 +35,7 @@ const perspectiveItems: SegmentOptionData<PreviewPerspective>[] = [
 const NONE = '__none__'
 
 const roleItems = computed<SelectSingleOptionData<string>[]>(() => [
-  { value: NONE, label: '选择角色（使用已保存授权）' },
+  { value: NONE, label: '选择角色' },
   ...props.roles.map((role) => ({ value: role.id, label: `${role.name} · ${role.code}` })),
 ])
 
@@ -76,25 +76,23 @@ const byParent = computed(() => {
 const roots = computed(() => byParent.value.get(null) ?? [])
 
 function hint(): string {
-  if (perspective.value === 'public') return '匿名 bootstrap 只会投影 PUBLIC 节点及必要容器。'
-  if (perspective.value === 'authenticated')
-    return '登录用户可见 PUBLIC + AUTHENTICATED；PERMISSION 节点仍按角色授权过滤。'
-  if (roleId.value === '' || roleId.value === NONE)
-    return '选择角色后，使用已保存的 code grant 模拟侧栏。'
-  if (loading.value) return '正在加载该角色的导航授权…'
-  if (!codesReady.value) return '未能加载该角色授权，请重试。'
-  return '仅展示该角色获授 code 的 PERMISSION 节点，以及 PUBLIC/AUTHENTICATED 节点。'
+  if (perspective.value === 'public') return '仅 PUBLIC 节点及必要容器'
+  if (perspective.value === 'authenticated') return 'PUBLIC + AUTHENTICATED；PERMISSION 按角色过滤'
+  if (roleId.value === '' || roleId.value === NONE) return '选择角色，按已保存授权模拟'
+  if (loading.value) return '加载角色授权中…'
+  if (!codesReady.value) return '未能加载该角色授权'
+  return '该角色获授的 PERMISSION 节点 + PUBLIC/AUTHENTICATED'
 }
 </script>
 
 <template>
   <section class="flex flex-col gap-3">
-    <header>
+    <header class="flex items-baseline justify-between gap-2">
       <h2 class="m-0 text-sm font-semibold text-foreground">侧栏预览</h2>
-      <p class="mb-0 mt-1 text-xs text-muted-foreground">{{ hint() }}</p>
+      <p class="m-0 truncate text-xs text-muted-foreground">{{ hint() }}</p>
     </header>
 
-    <Segment v-model="perspective" :items="perspectiveItems" size="sm" class="w-full" />
+    <Segment v-model="perspective" :items="perspectiveItems" class="w-full" />
 
     <Select
       v-if="perspective === 'role'"
@@ -104,12 +102,12 @@ function hint(): string {
       @update:model-value="onRoleIdChange"
     />
 
-    <div class="max-h-72 overflow-auto rounded-md border border-border bg-background/50 p-2">
+    <div class="rounded-md border border-border bg-background/40 p-2">
       <p
         v-if="sidebarNodes.length === 0"
         class="m-0 px-2 py-4 text-center text-sm text-muted-foreground"
       >
-        该视角下侧栏为空。
+        该视角下侧栏为空
       </p>
       <ul v-else class="m-0 list-none p-0">
         <NavigationPreviewTreeItem
@@ -125,14 +123,12 @@ function hint(): string {
     </div>
 
     <div v-if="hiddenPages.length > 0" class="text-xs text-muted-foreground">
-      <p class="m-0 mb-1 font-medium">投影中的隐藏 PAGE（不进侧栏）</p>
+      <p class="m-0 mb-1">隐藏 PAGE</p>
       <div class="flex flex-wrap gap-1">
         <Button
           v-for="page in hiddenPages"
           :key="page.id"
-          size="sm"
           variant="ghost"
-          class="h-6 px-2 text-[0.7rem]"
           @click="emit('reveal', page.id)"
         >
           {{ page.name }}

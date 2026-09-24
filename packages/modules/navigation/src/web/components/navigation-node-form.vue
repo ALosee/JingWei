@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
-import { Icon, Input, InputNumber, Select, Separator } from '@jingwei/ui'
+import { Icon, Input, InputNumber, Select } from '@jingwei/ui'
 import type { SelectSingleOptionData } from '@jingwei/ui'
 
 import {
@@ -39,6 +39,8 @@ const emit = defineEmits<{
   updateQueryText: [value: string]
   markDirty: []
 }>()
+
+const advancedOpen = ref(false)
 
 const typeItems: SelectSingleOptionData<string>[] = navigationNodeTypes.map((value) => ({
   value,
@@ -85,26 +87,32 @@ const layoutItems = computed<SelectSingleOptionData<string>[]>(() =>
 )
 
 const externalTargetItems: SelectSingleOptionData<string>[] = [
-  { value: 'BLANK', label: '新窗口 BLANK' },
-  { value: 'SELF', label: '当前窗口 SELF' },
+  { value: 'BLANK', label: '新窗口' },
+  { value: 'SELF', label: '当前窗口' },
 ]
+
+const hasAdvanced = computed(() => {
+  const node = props.selected
+  if (node === undefined) return false
+  return isInternal(node) || node.type === 'EXTERNAL_LINK' || node.icon != null
+})
 
 function typeLabelOf(value: NavigationNodeType): string {
   const map: Record<NavigationNodeType, string> = {
-    DIRECTORY: 'DIRECTORY · 目录',
-    GROUP: 'GROUP · 分组',
-    MENU: 'MENU · 菜单',
-    PAGE: 'PAGE · 页面（侧栏隐藏）',
-    EXTERNAL_LINK: 'EXTERNAL_LINK · 外链',
+    DIRECTORY: '目录',
+    GROUP: '分组',
+    MENU: '菜单',
+    PAGE: '页面',
+    EXTERNAL_LINK: '外链',
   }
   return map[value]
 }
 
 function accessLabelOf(value: string): string {
   const map: Record<string, string> = {
-    PUBLIC: 'PUBLIC · 公开',
-    AUTHENTICATED: 'AUTHENTICATED · 需登录',
-    PERMISSION: 'PERMISSION · 按角色授权',
+    PUBLIC: '公开',
+    AUTHENTICATED: '需登录',
+    PERMISSION: '按角色授权',
   }
   return map[value] ?? value
 }
@@ -181,55 +189,40 @@ function onQueryInput(event: Event): void {
   emit('updateQueryText', (event.target as HTMLTextAreaElement).value)
 }
 
-function defaultIconForType(type: NavigationNodeType): string {
-  return resolveNavigationIcon(null, type)
-}
-
 const iconPreview = computed(() => {
   const node = props.selected
   if (node === undefined) return null
   const raw = (node.icon ?? '').trim()
   if (raw === '') {
     return {
-      icon: defaultIconForType(node.type),
+      icon: resolveNavigationIcon(null, node.type),
       usingDefault: true,
-      label: '类型默认图标',
+      label: '类型默认',
     }
   }
   if (!isIconifyName(raw)) {
-    return {
-      icon: null,
-      usingDefault: false,
-      label: '',
-    }
+    return { icon: null, usingDefault: false, label: '' }
   }
-  return {
-    icon: raw,
-    usingDefault: false,
-    label: raw,
-  }
+  return { icon: raw, usingDefault: false, label: raw }
 })
 </script>
 
 <template>
   <section class="flex min-h-0 flex-col gap-4">
-    <header>
+    <header class="flex items-baseline justify-between gap-2">
       <h2 class="m-0 text-sm font-semibold text-foreground">节点属性</h2>
-      <p v-if="selected" class="mb-0 mt-1 truncate text-xs text-muted-foreground">
-        {{ selected.code }}
-      </p>
-      <p v-else class="mb-0 mt-1 text-xs text-muted-foreground">在左侧选择一个节点开始编辑。</p>
+      <p v-if="selected" class="m-0 truncate text-xs text-muted-foreground">{{ selected.code }}</p>
     </header>
 
-    <p
+    <div
       v-if="!selected"
-      class="m-0 rounded-md border border-dashed border-border px-3 py-8 text-center text-sm text-muted-foreground"
+      class="grid min-h-16 place-items-center rounded-md border border-dashed border-border px-3 py-10 text-sm text-muted-foreground"
     >
-      选择一个节点编辑。
-    </p>
+      在左侧选择一个节点开始编辑
+    </div>
 
     <div v-else class="grid min-h-0 gap-4">
-      <div class="grid gap-4 sm:grid-cols-2">
+      <div class="grid gap-3">
         <label class="grid gap-1.5">
           <span class="text-xs text-muted-foreground">名称</span>
           <Input :model-value="selected.name" :disabled="readOnly" @update:model-value="onName" />
@@ -241,26 +234,63 @@ const iconPreview = computed(() => {
             修改 code 等于新建授权资源，角色需重新分配。
           </span>
         </label>
-        <label class="grid gap-1.5">
-          <span class="text-xs text-muted-foreground">类型</span>
-          <Select
-            :model-value="selected.type"
-            :items="typeItems"
-            :disabled="readOnly"
-            class="w-full"
-            @update:model-value="onType"
-          />
-        </label>
-        <label class="grid gap-1.5">
-          <span class="text-xs text-muted-foreground">状态</span>
-          <Select
-            :model-value="selected.status"
-            :items="statusItems"
-            :disabled="readOnly"
-            class="w-full"
-            @update:model-value="onStatus"
-          />
-        </label>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <label class="grid gap-1.5">
+            <span class="text-xs text-muted-foreground">类型</span>
+            <Select
+              :model-value="selected.type"
+              :items="typeItems"
+              :disabled="readOnly"
+              class="w-full"
+              @update:model-value="onType"
+            />
+          </label>
+          <label class="grid gap-1.5">
+            <span class="text-xs text-muted-foreground">状态</span>
+            <Select
+              :model-value="selected.status"
+              :items="statusItems"
+              :disabled="readOnly"
+              class="w-full"
+              @update:model-value="onStatus"
+            />
+          </label>
+        </div>
+        <template v-if="!isContainer(selected)">
+          <label class="grid gap-1.5">
+            <span class="text-xs text-muted-foreground">访问模式</span>
+            <Select
+              :model-value="selected.accessMode ?? 'PERMISSION'"
+              :items="accessItems"
+              :disabled="readOnly"
+              class="w-full"
+              @update:model-value="onAccess"
+            />
+          </label>
+          <label v-if="isInternal(selected)" class="grid gap-1.5">
+            <span class="text-xs text-muted-foreground">目标页面</span>
+            <Select
+              :model-value="selected.routeKey ?? NONE"
+              :items="routeItems"
+              :disabled="readOnly"
+              class="w-full"
+              @update:model-value="onRoute"
+            />
+          </label>
+          <label v-else-if="selected.type === 'EXTERNAL_LINK'" class="grid gap-1.5">
+            <span class="text-xs text-muted-foreground">HTTPS 外链</span>
+            <Input
+              :model-value="selected.href ?? ''"
+              :disabled="readOnly"
+              type="url"
+              placeholder="https://…"
+              @update:model-value="onHref"
+            />
+          </label>
+        </template>
+      </div>
+
+      <div class="grid gap-3 border-t border-border pt-3 sm:grid-cols-2">
         <label class="grid gap-1.5">
           <span class="text-xs text-muted-foreground">父节点</span>
           <Select
@@ -283,130 +313,93 @@ const iconPreview = computed(() => {
             @update:model-value="onSortOrder"
           />
         </label>
-        <label class="grid gap-1.5 sm:col-span-2">
-          <span class="text-xs text-muted-foreground">图标 key</span>
-          <div class="flex min-w-0 items-stretch gap-2">
-            <Input
-              :model-value="selected.icon ?? ''"
-              :disabled="readOnly"
-              class="min-w-0 flex-1"
-              placeholder="lucide:settings"
-              @update:model-value="onIcon"
-            />
-            <div
-              v-if="iconPreview"
-              class="flex w-40 shrink-0 items-center gap-2 rounded-md border border-border bg-muted/40 px-2.5"
-              :title="iconPreview.label || undefined"
-            >
-              <span
-                class="grid size-7 shrink-0 place-items-center rounded-md bg-background text-foreground shadow-xs"
-              >
-                <Icon v-if="iconPreview.icon" :icon="iconPreview.icon" class="size-4" />
-              </span>
-              <span class="min-w-0 truncate text-[0.7rem] text-muted-foreground">
-                {{ iconPreview.usingDefault ? '默认' : iconPreview.label }}
-              </span>
-            </div>
-          </div>
-          <span class="text-[0.7rem] text-muted-foreground">
-            仅支持完整 iconify 名，例如 lucide:settings；留空按类型默认。无效名称不会渲染图标。
-          </span>
-        </label>
       </div>
 
-      <template v-if="!isContainer(selected)">
-        <Separator>访问</Separator>
-        <label class="grid gap-1.5">
-          <span class="text-xs text-muted-foreground">访问模式</span>
-          <Select
-            :model-value="selected.accessMode ?? 'PERMISSION'"
-            :items="accessItems"
-            :disabled="readOnly"
-            class="w-full"
-            @update:model-value="onAccess"
+      <div v-if="hasAdvanced" class="border-t border-border pt-2">
+        <button
+          type="button"
+          class="flex w-full items-center gap-1.5 border-none bg-transparent py-1.5 text-left text-xs font-medium text-muted-foreground cursor-pointer hover:text-foreground"
+          :aria-expanded="advancedOpen"
+          @click="advancedOpen = !advancedOpen"
+        >
+          <Icon
+            :icon="advancedOpen ? 'lucide:chevron-down' : 'lucide:chevron-right'"
+            class="size-3.5"
           />
-        </label>
-      </template>
+          高级
+        </button>
 
-      <template v-if="isInternal(selected)">
-        <Separator>内部页面</Separator>
-        <div class="grid gap-4 sm:grid-cols-2">
+        <div v-if="advancedOpen" class="grid gap-3 pt-1">
           <label class="grid gap-1.5">
-            <span class="text-xs text-muted-foreground">routeKey</span>
-            <Select
-              :model-value="selected.routeKey ?? NONE"
-              :items="routeItems"
-              :disabled="readOnly"
-              class="w-full"
-              @update:model-value="onRoute"
-            />
+            <span class="text-xs text-muted-foreground">图标 key</span>
+            <div class="flex min-w-0 items-stretch gap-2">
+              <Input
+                :model-value="selected.icon ?? ''"
+                :disabled="readOnly"
+                class="min-w-0 flex-1"
+                placeholder="lucide:settings"
+                @update:model-value="onIcon"
+              />
+              <div
+                v-if="iconPreview"
+                class="flex w-28 shrink-0 items-center gap-2 rounded-md border border-border bg-muted/40 px-2"
+                :title="iconPreview.label || undefined"
+              >
+                <Icon v-if="iconPreview.icon" :icon="iconPreview.icon" class="size-4 shrink-0" />
+                <span class="min-w-0 truncate text-[0.7rem] text-muted-foreground">
+                  {{ iconPreview.usingDefault ? '默认' : iconPreview.label }}
+                </span>
+              </div>
+            </div>
           </label>
-          <label class="grid gap-1.5">
-            <span class="text-xs text-muted-foreground">布局</span>
-            <Select
-              :model-value="selected.layout ?? 'base'"
-              :items="layoutItems"
-              :disabled="readOnly"
-              class="w-full"
-              @update:model-value="onLayout"
-            />
-          </label>
-          <label class="grid gap-1.5 sm:col-span-2">
-            <span class="text-xs text-muted-foreground">路径模式</span>
-            <Input
-              :model-value="selected.path ?? ''"
-              :disabled="readOnly"
-              placeholder="/example/:id"
-              @update:model-value="onPath"
-            />
-          </label>
-        </div>
-        <div class="grid gap-4">
-          <label class="grid gap-1.5">
-            <span class="flex items-center gap-1 text-xs text-muted-foreground">
-              默认 params（JSON）
-              <Icon icon="lucide:braces" class="size-3.5" />
-            </span>
-            <textarea
-              :value="paramsText"
-              :disabled="readOnly"
-              rows="4"
-              spellcheck="false"
-              class="w-full resize-y rounded-md border border-input bg-background px-3 py-2 font-mono text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:opacity-50"
-              @input="onParamsInput"
-            />
-          </label>
-          <label class="grid gap-1.5">
-            <span class="flex items-center gap-1 text-xs text-muted-foreground">
-              默认 query（JSON）
-              <Icon icon="lucide:braces" class="size-3.5" />
-            </span>
-            <textarea
-              :value="queryText"
-              :disabled="readOnly"
-              rows="4"
-              spellcheck="false"
-              class="w-full resize-y rounded-md border border-input bg-background px-3 py-2 font-mono text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:opacity-50"
-              @input="onQueryInput"
-            />
-          </label>
-        </div>
-      </template>
 
-      <template v-if="selected.type === 'EXTERNAL_LINK'">
-        <Separator>外链</Separator>
-        <div class="grid gap-4 sm:grid-cols-2">
-          <label class="grid gap-1.5 sm:col-span-2">
-            <span class="text-xs text-muted-foreground">HTTPS 外链</span>
-            <Input
-              :model-value="selected.href ?? ''"
-              :disabled="readOnly"
-              type="url"
-              placeholder="https://…"
-              @update:model-value="onHref"
-            />
-          </label>
-          <label class="grid gap-1.5">
+          <template v-if="isInternal(selected)">
+            <div class="grid gap-3 sm:grid-cols-2">
+              <label class="grid gap-1.5">
+                <span class="text-xs text-muted-foreground">布局</span>
+                <Select
+                  :model-value="selected.layout ?? 'base'"
+                  :items="layoutItems"
+                  :disabled="readOnly"
+                  class="w-full"
+                  @update:model-value="onLayout"
+                />
+              </label>
+              <label class="grid gap-1.5">
+                <span class="text-xs text-muted-foreground">路径模式</span>
+                <Input
+                  :model-value="selected.path ?? ''"
+                  :disabled="readOnly"
+                  placeholder="/example/:id"
+                  @update:model-value="onPath"
+                />
+              </label>
+            </div>
+            <label class="grid gap-1.5">
+              <span class="text-xs text-muted-foreground">默认 params（JSON）</span>
+              <textarea
+                :value="paramsText"
+                :disabled="readOnly"
+                rows="3"
+                spellcheck="false"
+                class="w-full resize-y rounded-md border border-input bg-background px-3 py-2 font-mono text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:opacity-50"
+                @input="onParamsInput"
+              />
+            </label>
+            <label class="grid gap-1.5">
+              <span class="text-xs text-muted-foreground">默认 query（JSON）</span>
+              <textarea
+                :value="queryText"
+                :disabled="readOnly"
+                rows="3"
+                spellcheck="false"
+                class="w-full resize-y rounded-md border border-input bg-background px-3 py-2 font-mono text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:opacity-50"
+                @input="onQueryInput"
+              />
+            </label>
+          </template>
+
+          <label v-if="selected.type === 'EXTERNAL_LINK'" class="grid gap-1.5">
             <span class="text-xs text-muted-foreground">打开方式</span>
             <Select
               :model-value="selected.externalTarget ?? 'BLANK'"
@@ -417,7 +410,7 @@ const iconPreview = computed(() => {
             />
           </label>
         </div>
-      </template>
+      </div>
     </div>
   </section>
 </template>
