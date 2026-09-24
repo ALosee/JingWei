@@ -12,6 +12,7 @@ export class ReadPermissionCatalog {
       .map((permission) => ({
         code: permission.code,
         moduleId: permission.moduleId,
+        moduleName: this.registry.moduleName(permission.moduleId) ?? permission.moduleId,
         name: permission.name,
         allowedScopeTypes: [...(permission.dataScope?.allowedTypes ?? ['ALL'])],
         dataScopeProvider: permission.dataScope?.provider ?? null,

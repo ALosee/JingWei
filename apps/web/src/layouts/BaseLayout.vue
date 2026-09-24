@@ -28,7 +28,7 @@ const reserveHeaderBrandSpace = computed(
 )
 const compactHeaderBrand = computed(() => isMobile.value)
 const layoutUi = {
-  root: 'h-dvh min-h-0 overflow-hidden bg-background',
+  root: 'h-dvh min-h-0 overflow-hidden bg-background data-[mobile=true]:[--sl-main-gap:0px]',
   sidebarWrapper: 'border-sidebar-border',
   sidebar: 'text-sidebar-foreground',
   rail: 'hidden',

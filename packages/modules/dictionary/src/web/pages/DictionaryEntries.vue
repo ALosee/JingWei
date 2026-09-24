@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import { toast } from '@jingwei/ui'
+import { ManagementWorkspace, dialog, toast } from '@jingwei/ui'
 
 import type {
   CreateDictionaryCategory,
@@ -27,6 +27,21 @@ type CreationState =
 
 const creation = ref<CreationState | null>(null)
 const editingItemId = ref('')
+const mobileDetailOpen = ref(false)
+const detailDirty = ref(false)
+
+function afterDiscard(action: () => void) {
+  if (!detailDirty.value) {
+    action()
+    return
+  }
+  dialog.warning('放弃未保存的更改？', {
+    description: '当前字典资料的修改尚未保存。',
+    confirmText: '放弃更改',
+    cancelText: '继续编辑',
+    onConfirm: action,
+  })
+}
 
 const selectedCategoryTypes = computed(() =>
   catalog.types.value.filter((type) => type.categoryId === catalog.selectedCategoryId.value),
@@ -36,28 +51,44 @@ const editingItem = computed(() =>
 )
 
 function beginCreateCategory() {
-  editingItemId.value = ''
-  creation.value = { kind: 'category', categoryId: '' }
+  if (feedback.busy.value) return
+  afterDiscard(() => {
+    editingItemId.value = ''
+    creation.value = { kind: 'category', categoryId: '' }
+    mobileDetailOpen.value = true
+  })
 }
 
 function beginCreateType(categoryId: string) {
-  editingItemId.value = ''
-  creation.value = { kind: 'type', categoryId }
+  if (feedback.busy.value) return
+  afterDiscard(() => {
+    editingItemId.value = ''
+    creation.value = { kind: 'type', categoryId }
+    mobileDetailOpen.value = true
+  })
 }
 
 function beginCreateItem() {
-  if (items.detail.value === null) return
-  editingItemId.value = ''
-  creation.value = { kind: 'item', categoryId: '' }
+  if (items.detail.value === null || feedback.busy.value) return
+  afterDiscard(() => {
+    editingItemId.value = ''
+    creation.value = { kind: 'item', categoryId: '' }
+    mobileDetailOpen.value = true
+  })
 }
 
 function beginEditItem(itemId: string) {
-  creation.value = null
-  editingItemId.value = itemId
+  if (feedback.busy.value) return
+  afterDiscard(() => {
+    creation.value = null
+    editingItemId.value = itemId
+    mobileDetailOpen.value = true
+  })
 }
 
 function cancelCreate() {
   creation.value = null
+  mobileDetailOpen.value = false
 }
 
 function cancelEditItem() {
@@ -65,15 +96,41 @@ function cancelEditItem() {
 }
 
 function selectCategory(id: string) {
-  creation.value = null
-  editingItemId.value = ''
-  catalog.selectCategory(id)
+  if (feedback.busy.value) return
+  if (
+    catalog.selectedKind.value === 'category' &&
+    catalog.selectedCategoryId.value === id &&
+    creation.value === null &&
+    editingItemId.value === ''
+  ) {
+    mobileDetailOpen.value = true
+    return
+  }
+  afterDiscard(() => {
+    creation.value = null
+    editingItemId.value = ''
+    catalog.selectCategory(id)
+    mobileDetailOpen.value = true
+  })
 }
 
 function selectType(id: string) {
-  creation.value = null
-  editingItemId.value = ''
-  catalog.selectType(id)
+  if (feedback.busy.value) return
+  if (
+    catalog.selectedKind.value === 'type' &&
+    catalog.selectedTypeId.value === id &&
+    creation.value === null &&
+    editingItemId.value === ''
+  ) {
+    mobileDetailOpen.value = true
+    return
+  }
+  afterDiscard(() => {
+    creation.value = null
+    editingItemId.value = ''
+    catalog.selectType(id)
+    mobileDetailOpen.value = true
+  })
 }
 
 async function onCreateCategory(input: CreateDictionaryCategory) {
@@ -116,21 +173,27 @@ async function onUpdateItem(id: string, input: UpdateDictionaryItem) {
   if (editingItemId.value === id) editingItemId.value = ''
   toast.success('字典条目已更新')
 }
+
+function onToggleItem(id: string, input: UpdateDictionaryItem) {
+  void onUpdateItem(id, input)
+}
 </script>
 
 <template>
-  <div class="flex h-full min-h-0 flex-col gap-3">
-    <p
-      v-if="feedback.error.value"
-      role="alert"
-      class="m-0 shrink-0 whitespace-pre-wrap rounded-md border border-destructive/25 bg-destructive/8 px-3 py-2 text-sm text-destructive"
-    >
-      {{ feedback.error.value }}
-    </p>
-
-    <div
-      class="grid min-h-0 flex-1 items-stretch gap-3 xl:grid-cols-[minmax(19rem,23rem)_minmax(0,1fr)]"
-    >
+  <ManagementWorkspace
+    title="数据字典"
+    :mobile-detail-open="mobileDetailOpen"
+    @back="mobileDetailOpen = false"
+  >
+    <template v-if="feedback.error.value" #notice>
+      <p
+        role="alert"
+        class="m-0 shrink-0 whitespace-pre-wrap rounded-md border border-destructive/25 bg-destructive/8 px-3 py-2 text-sm text-destructive"
+      >
+        {{ feedback.error.value }}
+      </p>
+    </template>
+    <template #list>
       <DictionaryCatalog
         :groups="catalog.groups.value"
         :selected-kind="catalog.selectedKind.value"
@@ -144,10 +207,12 @@ async function onUpdateItem(id: string, input: UpdateDictionaryItem) {
         @update-search="(value) => (catalog.search.value = value)"
         @select-category="selectCategory"
         @select-type="selectType"
-        @begin-create-category="beginCreateCategory"
         @begin-create-type="beginCreateType"
+        @create-category="beginCreateCategory"
         @delete-category="onDeleteCategory"
       />
+    </template>
+    <template #detail>
       <DictionaryCreateForm
         v-if="creation !== null"
         :key="`${creation.kind}:${creation.categoryId}`"
@@ -160,6 +225,7 @@ async function onUpdateItem(id: string, input: UpdateDictionaryItem) {
         @create-category="onCreateCategory"
         @create-type="onCreateType"
         @create-item="onCreateItem"
+        @dirty-change="(value) => (detailDirty = value)"
       />
       <DictionaryItemEditForm
         v-else-if="items.detail.value !== null && editingItem !== undefined"
@@ -169,6 +235,7 @@ async function onUpdateItem(id: string, input: UpdateDictionaryItem) {
         :busy="feedback.busy.value"
         @cancel="cancelEditItem"
         @update-item="onUpdateItem"
+        @dirty-change="(value) => (detailDirty = value)"
       />
       <DictionaryCategoryDetail
         v-else-if="
@@ -181,6 +248,7 @@ async function onUpdateItem(id: string, input: UpdateDictionaryItem) {
         @begin-create-type="beginCreateType"
         @select-type="selectType"
         @update-category="onUpdateCategory"
+        @dirty-change="(value) => (detailDirty = value)"
       />
       <DictionaryDetail
         v-else
@@ -194,8 +262,9 @@ async function onUpdateItem(id: string, input: UpdateDictionaryItem) {
         @begin-create-item="beginCreateItem"
         @begin-edit-item="beginEditItem"
         @update-type="onUpdateType"
-        @update-item="onUpdateItem"
+        @update-item="onToggleItem"
+        @dirty-change="(value) => (detailDirty = value)"
       />
-    </div>
-  </div>
+    </template>
+  </ManagementWorkspace>
 </template>

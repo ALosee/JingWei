@@ -43,6 +43,12 @@ export class ModuleRegistry {
     return this.#edition.modules.some(({ manifest }) => manifest.id === moduleId)
   }
 
+  moduleName(moduleId: string): string | null {
+    return (
+      this.#edition.modules.find(({ manifest }) => manifest.id === moduleId)?.manifest.name ?? null
+    )
+  }
+
   hasCapability(capabilityId: string): boolean {
     return this.#edition.modules.some(({ enabledCapabilities }) =>
       enabledCapabilities.has(capabilityId),

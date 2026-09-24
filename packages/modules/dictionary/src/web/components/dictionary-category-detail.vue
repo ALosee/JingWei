@@ -20,6 +20,7 @@ const emit = defineEmits<{
   beginCreateType: [categoryId: string]
   selectType: [id: string]
   updateCategory: [id: string, input: UpdateDictionaryCategory]
+  dirtyChange: [dirty: boolean]
 }>()
 
 const draft = reactive({ name: '', sortOrder: 0 })
@@ -33,6 +34,9 @@ const canSave = computed(() => {
   if (draft.name.trim() === '') return false
   return draft.name.trim() !== props.category.name || draft.sortOrder !== props.category.sortOrder
 })
+const dirty = computed(
+  () => draft.name !== props.category.name || draft.sortOrder !== props.category.sortOrder,
+)
 
 function save() {
   if (!canSave.value) return
@@ -59,38 +63,32 @@ watch(
   },
   { immediate: true },
 )
+watch(dirty, (value) => emit('dirtyChange', value), { immediate: true })
 </script>
 
 <template>
-  <section class="flex min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card/40">
-    <header class="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
+  <section class="flex min-h-0 flex-1 flex-col overflow-hidden">
+    <header class="flex min-h-16 flex-wrap items-center gap-3 border-b border-border px-5 py-2">
       <div class="min-w-0 flex-1">
         <h2 class="m-0 truncate text-base font-semibold text-foreground">{{ category.name }}</h2>
         <p class="m-0 mt-1 truncate font-mono text-xs text-muted-foreground">
-          {{ category.code }} · revision {{ category.revision }} · {{ types.length }} 个类型
+          {{ category.code }} · {{ types.length }} 个类型
         </p>
       </div>
       <template v-if="canManage">
-        <Button
-          size="sm"
-          variant="soft"
-          :disabled="busy"
-          @click="emit('beginCreateType', category.id)"
-        >
+        <Button variant="soft" :disabled="busy" @click="emit('beginCreateType', category.id)">
           <Icon icon="lucide:plus" class="me-1 size-3.5" />
           新建类型
         </Button>
-        <ButtonLoading size="sm" :loading="busy" :disabled="!canSave" @click="save">
-          保存资料
-        </ButtonLoading>
+        <ButtonLoading :loading="busy" :disabled="!canSave" @click="save"> 保存资料 </ButtonLoading>
       </template>
     </header>
 
-    <div class="min-h-0 flex-1 space-y-4 overflow-auto p-4">
+    <div class="min-h-0 flex-1 space-y-4 overflow-auto px-5 py-4">
       <div class="grid items-start gap-4 md:grid-cols-2">
         <label class="grid gap-1.5 text-sm">
           <span class="text-muted-foreground">分类编码</span>
-          <Input :model-value="category.code" disabled />
+          <code class="py-1.5 text-sm text-foreground select-text">{{ category.code }}</code>
           <span class="min-h-[1.25rem] text-xs text-muted-foreground">创建后不可修改</span>
         </label>
         <label class="grid gap-1.5 text-sm">
@@ -121,21 +119,11 @@ watch(
               选择类型后可继续维护其状态和字典条目。
             </p>
           </div>
-          <Button
-            v-if="canManage"
-            size="sm"
-            variant="outline"
-            :disabled="busy"
-            @click="emit('beginCreateType', category.id)"
-          >
-            <Icon icon="lucide:plus" class="me-1 size-3.5" />
-            新建类型
-          </Button>
         </div>
 
         <div
           v-if="sortedTypes.length === 0"
-          class="grid min-h-36 place-items-center rounded-md border border-dashed border-border px-4 text-center"
+          class="grid min-h-36 place-items-center border-y border-border px-4 text-center"
         >
           <div>
             <Icon icon="lucide:list-plus" class="mx-auto mb-2 size-8 text-muted-foreground/50" />
@@ -143,7 +131,7 @@ watch(
           </div>
         </div>
 
-        <ul v-else class="m-0 list-none divide-y divide-border rounded-md border border-border p-0">
+        <ul v-else class="m-0 list-none divide-y divide-border border-y border-border p-0">
           <li v-for="type in sortedTypes" :key="type.id">
             <button
               type="button"
@@ -154,7 +142,7 @@ watch(
               <span class="min-w-0 flex-1">
                 <span class="block truncate text-sm font-medium">{{ type.name }}</span>
                 <span class="block truncate font-mono text-xs text-muted-foreground">
-                  {{ type.code }} · revision {{ type.revision }}
+                  {{ type.code }}
                 </span>
               </span>
               <span

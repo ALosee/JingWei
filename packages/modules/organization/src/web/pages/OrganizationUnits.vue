@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { toast } from '@jingwei/ui'
+import { ref } from 'vue'
+
+import { ManagementWorkspace, dialog, toast } from '@jingwei/ui'
 
 import type {
   CreateOrganizationUnit,
@@ -38,6 +40,55 @@ const {
   removeUnit,
 } = management
 
+const mobileDetailOpen = ref(false)
+const detailDirty = ref(false)
+
+function afterDiscard(action: () => void) {
+  if (!detailDirty.value) {
+    action()
+    return
+  }
+  dialog.warning('放弃未保存的更改？', {
+    description: '当前组织资料的修改尚未保存。',
+    confirmText: '放弃更改',
+    cancelText: '继续编辑',
+    onConfirm: action,
+  })
+}
+
+function onSelect(id: string) {
+  if (busy.value) return
+  if (selectedId.value === id && !creating.value) {
+    mobileDetailOpen.value = true
+    return
+  }
+  afterDiscard(() => {
+    select(id)
+    mobileDetailOpen.value = true
+  })
+}
+
+function onCreateRoot() {
+  if (busy.value) return
+  afterDiscard(() => {
+    beginCreateRoot()
+    mobileDetailOpen.value = true
+  })
+}
+
+function onCreateChild(id: string) {
+  if (busy.value) return
+  afterDiscard(() => {
+    beginCreateChild(id)
+    mobileDetailOpen.value = true
+  })
+}
+
+function onCancelCreate() {
+  cancelCreate()
+  mobileDetailOpen.value = false
+}
+
 async function onCreate(input: CreateOrganizationUnit) {
   await createUnit(input)
   if (error.value === '') toast.success('组织已创建')
@@ -53,26 +104,38 @@ async function onUpdate(input: UpdateOrganizationUnit) {
 function onRemove() {
   const unit: OrganizationUnit | undefined = selected.value
   if (unit === undefined) return
-  void (async () => {
-    await removeUnit(unit.id)
-    if (error.value === '') toast.success('组织已删除')
-  })()
+  dialog.warning('删除组织', {
+    description: `确认删除「${unit.name}」？有下级、岗位或成员时将无法删除。`,
+    confirmText: '删除',
+    cancelText: '取消',
+    onConfirm: () => {
+      void (async () => {
+        await removeUnit(unit.id)
+        if (error.value === '') {
+          mobileDetailOpen.value = false
+          toast.success('组织已删除')
+        }
+      })()
+    },
+  })
 }
 </script>
 
 <template>
-  <div class="flex h-full min-h-0 flex-col gap-3">
-    <p
-      v-if="error"
-      role="alert"
-      class="m-0 shrink-0 whitespace-pre-wrap rounded-md border border-destructive/25 bg-destructive/8 px-3 py-2 text-sm text-destructive"
-    >
-      {{ error }}
-    </p>
-
-    <div
-      class="grid min-h-0 flex-1 items-stretch gap-3 xl:grid-cols-[minmax(17rem,20rem)_minmax(0,1fr)]"
-    >
+  <ManagementWorkspace
+    title="组织架构"
+    :mobile-detail-open="mobileDetailOpen"
+    @back="mobileDetailOpen = false"
+  >
+    <template v-if="error" #notice>
+      <p
+        role="alert"
+        class="m-0 shrink-0 whitespace-pre-wrap rounded-md border border-destructive/25 bg-destructive/8 px-3 py-2 text-sm text-destructive"
+      >
+        {{ error }}
+      </p>
+    </template>
+    <template #list>
       <OrganizationStructureTree
         :tree="tree"
         :selected-id="selectedId"
@@ -83,12 +146,14 @@ function onRemove() {
         :unit-count="units.length"
         @update-search="(value) => (search = value)"
         @update-expanded-ids="setExpanded"
-        @select="select"
+        @select="onSelect"
         @expand-all="expandAll"
         @collapse-all="collapseAll"
-        @add-root="beginCreateRoot"
-        @add-child="beginCreateChild"
+        @create-root="onCreateRoot"
+        @add-child="onCreateChild"
       />
+    </template>
+    <template #detail>
       <OrganizationUnitForm
         :selected="selected"
         :creating="creating"
@@ -100,9 +165,10 @@ function onRemove() {
         :parent-path="parentPath"
         @create="onCreate"
         @update="onUpdate"
-        @cancel-create="cancelCreate"
+        @cancel-create="onCancelCreate"
         @remove="onRemove"
+        @dirty-change="(value) => (detailDirty = value)"
       />
-    </div>
-  </div>
+    </template>
+  </ManagementWorkspace>
 </template>

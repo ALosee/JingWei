@@ -148,7 +148,7 @@ watch(
           {{ members.length }} 名成员 · 每人最多一个主组织
         </p>
       </div>
-      <Button v-if="canManage" size="sm" variant="outline" :disabled="busy" @click="openAdd">
+      <Button v-if="canManage" variant="outline" :disabled="busy" @click="openAdd">
         <Icon icon="lucide:user-plus" class="me-1 size-3.5" />
         加入成员
       </Button>
@@ -156,17 +156,13 @@ watch(
 
     <div
       v-if="members.length === 0"
-      class="rounded-md border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground"
+      class="border-y border-border px-4 py-8 text-center text-sm text-muted-foreground"
     >
       暂无成员，点击「加入成员」添加
     </div>
 
-    <ul v-else class="m-0 flex flex-col gap-1.5 list-none p-0">
-      <li
-        v-for="member in members"
-        :key="member.userId"
-        class="flex items-center gap-2 rounded-md border border-border bg-background/40 px-3 py-2"
-      >
+    <ul v-else class="m-0 list-none divide-y divide-border border-y border-border p-0">
+      <li v-for="member in members" :key="member.userId" class="flex items-center gap-2 px-1 py-3">
         <div
           class="grid size-8 shrink-0 place-items-center rounded-full bg-primary/10 text-xs font-medium text-primary"
         >
@@ -216,7 +212,6 @@ watch(
           </label>
           <ButtonIcon
             icon="lucide:briefcase"
-            size="sm"
             variant="ghost"
             aria-label="管理岗位"
             :disabled="busy"
@@ -224,7 +219,6 @@ watch(
           />
           <ButtonIcon
             icon="lucide:user-minus"
-            size="sm"
             variant="ghost"
             aria-label="移出组织"
             :disabled="busy"
@@ -271,8 +265,8 @@ watch(
           </div>
         </div>
         <div class="flex justify-end gap-2 pt-1">
-          <Button type="button" size="sm" variant="outline" @click="addOpen = false">取消</Button>
-          <Button type="submit" size="sm" :disabled="!canSubmitAdd">加入</Button>
+          <Button type="button" variant="outline" @click="addOpen = false">取消</Button>
+          <Button type="submit" :disabled="!canSubmitAdd">加入</Button>
         </div>
       </form>
     </Dialog>
@@ -314,10 +308,8 @@ watch(
           </label>
         </div>
         <div class="flex justify-end gap-2 pt-1">
-          <Button type="button" size="sm" variant="outline" @click="editPositionsOpen = false">
-            取消
-          </Button>
-          <Button type="submit" size="sm">保存</Button>
+          <Button type="button" variant="outline" @click="editPositionsOpen = false"> 取消 </Button>
+          <Button type="submit">保存</Button>
         </div>
       </form>
     </Dialog>

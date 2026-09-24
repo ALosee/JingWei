@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
-import { Button, Icon, Input, InputNumber, Select, Separator, Tabs, toast } from '@jingwei/ui'
+import { Button, Icon, Input, InputNumber, Select, Tabs, toast } from '@jingwei/ui'
 import type { SelectSingleOptionData } from '@jingwei/ui'
 
 import {
   organizationTypes,
   organizationTypeLabel,
-  organizationUnitIcon,
   type CreateOrganizationPosition,
   type CreateOrganizationUnit,
   type OrganizationType,
@@ -37,6 +36,7 @@ const emit = defineEmits<{
   update: [input: UpdateOrganizationUnit]
   cancelCreate: []
   remove: []
+  dirtyChange: [dirty: boolean]
 }>()
 
 const NONE = '__none__'
@@ -135,6 +135,29 @@ const type = ref<OrganizationType>('DEPARTMENT')
 const status = ref<OrganizationUnitStatus>('ENABLED')
 const sortOrder = ref(0)
 const parentId = ref<string>(NONE)
+const canSubmit = computed(() => code.value.trim() !== '' && name.value.trim() !== '')
+const dirty = computed(() => {
+  if (props.creating)
+    return (
+      code.value !== '' ||
+      name.value !== '' ||
+      type.value !== 'DEPARTMENT' ||
+      status.value !== 'ENABLED' ||
+      sortOrder.value !== 0 ||
+      parentId.value !== (props.draftParentId ?? NONE)
+    )
+  const unit = props.selected
+  return (
+    unit !== undefined &&
+    (code.value !== unit.code ||
+      name.value !== unit.name ||
+      type.value !== unit.type ||
+      status.value !== unit.status ||
+      sortOrder.value !== unit.sortOrder ||
+      parentId.value !== (unit.parentId ?? NONE))
+  )
+})
+watch(dirty, (value) => emit('dirtyChange', value), { immediate: true })
 
 function syncFromSelected() {
   if (props.creating) return
@@ -159,7 +182,14 @@ function syncFromDraft() {
 }
 
 watch(() => props.selected?.id, syncFromSelected, { immediate: true })
-watch(() => props.creating, syncFromDraft, { immediate: true })
+watch(
+  () => props.creating,
+  (creating) => {
+    if (creating) syncFromDraft()
+    else syncFromSelected()
+  },
+  { immediate: true },
+)
 watch(
   () => props.draftParentId,
   () => {
@@ -202,9 +232,6 @@ function submit() {
   else emit('update', payload())
 }
 
-const headerIcon = computed(() =>
-  props.creating ? 'lucide:folder-plus' : organizationUnitIcon(props.selected?.type ?? 'OTHER'),
-)
 const headerTitle = computed(() =>
   props.creating ? '新建组织' : (props.selected?.name ?? '组织详情'),
 )
@@ -218,17 +245,14 @@ const headerSubtitle = computed(() => {
 </script>
 
 <template>
-  <section class="flex min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card/40">
-    <header class="flex items-center gap-3 border-b border-border px-4 py-3">
-      <div
-        class="grid size-9 shrink-0 place-items-center rounded-md bg-primary/10 text-primary"
-        aria-hidden="true"
-      >
-        <Icon :icon="headerIcon" class="size-4" />
-      </div>
+  <section class="flex min-h-0 flex-1 flex-col overflow-hidden">
+    <header
+      v-if="creating || selected"
+      class="flex min-h-16 shrink-0 items-center gap-3 border-b border-border px-5 py-2"
+    >
       <div class="min-w-0 flex-1">
         <div class="flex min-w-0 items-center gap-2">
-          <h2 class="m-0 truncate text-sm font-semibold text-foreground">{{ headerTitle }}</h2>
+          <h2 class="m-0 truncate text-base font-semibold text-foreground">{{ headerTitle }}</h2>
           <span
             v-if="!creating && selected"
             class="shrink-0 rounded-full px-2 py-0.5 text-[0.7rem] font-medium"
@@ -257,22 +281,24 @@ const headerSubtitle = computed(() => {
           </template>
         </p>
       </div>
-      <Button
-        v-if="!creating && canManage && selected"
-        color="destructive"
-        variant="outline"
-        size="sm"
-        class="shrink-0"
-        :disabled="busy || selectedHasChildren"
-        :title="selectedHasChildren ? '存在下级组织时不能删除，请改为禁用' : ''"
-        @click="emit('remove')"
-      >
-        <Icon icon="lucide:trash-2" class="me-1 size-3.5" />
-        删除
-      </Button>
+      <template v-if="creating">
+        <Button variant="ghost" :disabled="busy" @click="emit('cancelCreate')">取消</Button>
+        <Button :disabled="!canManage || busy || !canSubmit" @click="submit">创建组织</Button>
+      </template>
+      <template v-else-if="selected && canManage && detailTab === 'info'">
+        <Button
+          color="destructive"
+          variant="ghost"
+          :disabled="busy || selectedHasChildren"
+          :title="selectedHasChildren ? '存在下级组织时不能删除，请改为禁用' : ''"
+          @click="emit('remove')"
+          >删除</Button
+        >
+        <Button :disabled="busy || !canSubmit || !dirty" @click="submit">保存资料</Button>
+      </template>
     </header>
 
-    <div class="min-h-0 flex-1 overflow-auto px-4 py-4">
+    <div class="min-h-0 flex-1 overflow-auto px-5 py-4">
       <div
         v-if="!creating && !selected"
         class="grid h-full min-h-16 place-items-center text-center"
@@ -352,28 +378,10 @@ const headerSubtitle = computed(() => {
               />
             </label>
           </div>
-
-          <Separator />
-
-          <div class="flex flex-wrap items-center gap-2">
-            <Button type="submit" size="sm" :disabled="!canManage || busy">
-              <Icon icon="lucide:plus" class="me-1 size-3.5" />
-              创建组织
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              :disabled="busy"
-              @click="emit('cancelCreate')"
-            >
-              取消
-            </Button>
-          </div>
         </form>
       </div>
 
-      <Tabs v-else v-model="detailTab" :items="detailTabs" size="sm" fill="full">
+      <Tabs v-else v-model="detailTab" :items="detailTabs" fill="auto">
         <template #content="{ value }">
           <div class="min-w-0 pt-3">
             <form v-if="value === 'info'" class="grid gap-4" @submit.prevent="submit">
@@ -441,17 +449,9 @@ const headerSubtitle = computed(() => {
                 </label>
               </div>
 
-              <Separator />
-
-              <div class="flex flex-wrap items-center gap-2">
-                <Button type="submit" size="sm" :disabled="!canManage || busy">
-                  <Icon icon="lucide:save" class="me-1 size-3.5" />
-                  保存更改
-                </Button>
-                <p class="m-0 text-xs text-muted-foreground">
-                  有子节点、成员或岗位时不可删除，请改为停用
-                </p>
-              </div>
+              <p class="m-0 text-xs text-muted-foreground">
+                有子节点、成员或岗位时不可删除，请改为停用。
+              </p>
             </form>
 
             <div v-else-if="value === 'positions'" class="grid gap-3">

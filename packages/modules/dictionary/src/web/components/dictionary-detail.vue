@@ -48,6 +48,7 @@ const emit = defineEmits<{
   beginEditItem: [itemId: string]
   updateType: [id: string, input: UpdateDictionaryType]
   updateItem: [id: string, input: UpdateDictionaryItem]
+  dirtyChange: [dirty: boolean]
 }>()
 
 const statusItems: SelectSingleOptionData<string>[] = [
@@ -76,6 +77,15 @@ const canSave = computed(() => {
     draft.categoryId !== type.categoryId ||
     draft.name.trim() !== type.name ||
     draft.status !== type.status
+  )
+})
+const dirty = computed(() => {
+  const type = props.detail?.type
+  return (
+    type !== undefined &&
+    (draft.categoryId !== type.categoryId ||
+      draft.name !== type.name ||
+      draft.status !== type.status)
   )
 })
 
@@ -121,11 +131,12 @@ watch(
   },
   { immediate: true },
 )
+watch(dirty, (value) => emit('dirtyChange', value), { immediate: true })
 </script>
 
 <template>
   <section
-    class="flex min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card/40"
+    class="flex min-h-0 flex-1 flex-col overflow-hidden"
     :aria-busy="loading === true || undefined"
     :class="loading === true ? 'opacity-60 transition-opacity' : undefined"
   >
@@ -140,7 +151,7 @@ watch(
     </div>
 
     <template v-else>
-      <header class="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
+      <header class="flex min-h-16 flex-wrap items-center gap-3 border-b border-border px-5 py-2">
         <div class="min-w-0 flex-1">
           <div class="flex flex-wrap items-center gap-2">
             <h2 class="m-0 truncate text-base font-semibold text-foreground">
@@ -158,16 +169,16 @@ watch(
             </span>
           </div>
           <p class="m-0 mt-1 truncate font-mono text-xs text-muted-foreground">
-            {{ displayType.code }} · revision {{ displayType.revision }} ·
+            {{ displayType.code }} ·
             {{ showingCurrentType && detail !== null ? detail.items.length : '…' }} 个条目
           </p>
         </div>
         <template v-if="canManage && showingCurrentType">
-          <Button size="sm" variant="soft" :disabled="busy" @click="emit('beginCreateItem')">
+          <Button variant="soft" :disabled="busy" @click="emit('beginCreateItem')">
             <Icon icon="lucide:plus" class="me-1 size-3.5" />
             新建条目
           </Button>
-          <ButtonLoading size="sm" :loading="busy" :disabled="!canSave" @click="saveType">
+          <ButtonLoading :loading="busy" :disabled="!canSave" @click="saveType">
             保存资料
           </ButtonLoading>
         </template>
@@ -187,11 +198,11 @@ watch(
         </div>
       </div>
 
-      <div v-else-if="detail !== null" class="min-h-0 flex-1 space-y-4 overflow-auto p-4">
+      <div v-else-if="detail !== null" class="min-h-0 flex-1 space-y-4 overflow-auto px-5 py-4">
         <div class="grid items-start gap-4 md:grid-cols-2">
           <label class="grid gap-1.5 text-sm">
             <span class="text-muted-foreground">稳定编码</span>
-            <Input :model-value="detail.type.code" disabled />
+            <code class="py-1.5 text-sm text-foreground select-text">{{ detail.type.code }}</code>
             <span class="min-h-[1.25rem] text-xs text-muted-foreground">创建后不可修改</span>
           </label>
           <label class="grid gap-1.5 text-sm">
@@ -229,21 +240,11 @@ watch(
                 停用条目不再用于新选择，但仍保留编码和当前文字以解析历史数据。
               </p>
             </div>
-            <Button
-              v-if="canManage"
-              size="sm"
-              variant="outline"
-              :disabled="busy"
-              @click="emit('beginCreateItem')"
-            >
-              <Icon icon="lucide:plus" class="me-1 size-3.5" />
-              新建条目
-            </Button>
           </div>
 
           <div
             v-if="detail.items.length === 0"
-            class="grid min-h-36 place-items-center rounded-md border border-dashed border-border text-center"
+            class="grid min-h-36 place-items-center border-y border-border text-center"
           >
             <div>
               <Icon icon="lucide:list-plus" class="mx-auto mb-2 size-8 text-muted-foreground/50" />
@@ -251,7 +252,7 @@ watch(
             </div>
           </div>
 
-          <div v-else class="overflow-hidden rounded-md border border-border">
+          <div v-else class="overflow-hidden border-y border-border">
             <div
               class="grid grid-cols-[minmax(8rem,0.8fr)_minmax(10rem,1fr)_6rem_5rem] gap-3 border-b border-border bg-muted/35 px-3 py-2 text-xs font-medium text-muted-foreground"
             >
@@ -285,7 +286,6 @@ watch(
               <div v-if="canManage" class="flex justify-end gap-0.5">
                 <ButtonIcon
                   :icon="item.status === 'ENABLED' ? 'lucide:pause' : 'lucide:play'"
-                  size="sm"
                   variant="ghost"
                   :aria-label="item.status === 'ENABLED' ? '停用条目' : '启用条目'"
                   :disabled="busy"
@@ -293,7 +293,6 @@ watch(
                 />
                 <ButtonIcon
                   icon="lucide:pencil"
-                  size="sm"
                   variant="ghost"
                   aria-label="编辑条目"
                   :disabled="busy"

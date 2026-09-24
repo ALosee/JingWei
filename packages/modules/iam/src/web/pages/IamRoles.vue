@@ -1,24 +1,26 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import {
   Button,
   ButtonLoading,
-  Icon,
   Input,
+  ManagementListToolbar,
+  ManagementWorkspace,
   Select,
-  Separator,
-  Switch,
+  Tabs,
   dialog,
   toast,
 } from '@jingwei/ui'
 import type { SelectSingleOptionData } from '@jingwei/ui'
 
-import type { CreateIamRole, PermissionCatalogItem, RoleDataScopeType } from '../../shared/index.js'
+import type { CreateIamRole, RoleDataScopeType } from '../../shared/index.js'
+import RolePermissionEditor from '../components/role-permission-editor.vue'
 import { useIamRoleManagement } from '../composables/use-iam-role-management.js'
 
 const management = useIamRoleManagement()
 const {
+  roles,
   filteredRoles,
   catalog,
   selected,
@@ -49,36 +51,82 @@ const {
   savePermissions,
 } = management
 
+const mobileDetailOpen = ref(false)
+const detailTab = ref<'profile' | 'permissions'>('profile')
+const profileDirty = computed(() => {
+  const role = selected.value
+  return (
+    role !== undefined &&
+    (draftName.value !== role.name ||
+      draftDescription.value !== (role.description ?? '') ||
+      draftStatus.value !== role.status)
+  )
+})
+const detailTabs = computed(() => [
+  { value: 'profile', label: `基本资料${profileDirty.value ? ' · 未保存' : ''}` },
+  ...(!creating.value
+    ? [
+        {
+          value: 'permissions',
+          label: `功能权限${permissionsDirty.value ? ' · 未保存' : ''}`,
+        },
+      ]
+    : []),
+])
+
 const statusOptions: SelectSingleOptionData[] = [
   { value: 'ACTIVE', label: '启用' },
   { value: 'DISABLED', label: '停用' },
 ]
 
-const scopeLabels: Readonly<Record<RoleDataScopeType, string>> = {
-  ALL: '全部',
-  ORGANIZATION: '本组织',
-  ORGANIZATION_AND_DESCENDANTS: '本组织及下级',
-  SELF: '仅本人',
-  CUSTOM: '自定义组织',
-}
-
-function scopeOptionsFor(permission: PermissionCatalogItem): SelectSingleOptionData[] {
-  return permission.allowedScopeTypes.map((value) => ({ value, label: scopeLabels[value] }))
-}
-
-const catalogByModule = computed(() => {
-  const groups = new Map<string, typeof catalog.value>()
-  for (const item of catalog.value) {
-    const bucket = groups.get(item.moduleId)
-    if (bucket === undefined) groups.set(item.moduleId, [item])
-    else bucket.push(item)
-  }
-  return [...groups.entries()].map(([moduleId, permissions]) => ({ moduleId, permissions }))
-})
-
 const canSaveRole = computed(
   () => draftName.value.trim().length > 0 && (!creating.value || draftCode.value.trim().length > 0),
 )
+const hasUnsavedChanges = computed(() => {
+  if (creating.value)
+    return draftCode.value !== '' || draftName.value !== '' || draftDescription.value !== ''
+  return permissionsDirty.value || profileDirty.value
+})
+
+function afterDiscard(action: () => void) {
+  if (!hasUnsavedChanges.value) {
+    action()
+    return
+  }
+  dialog.warning('放弃未保存的更改？', {
+    description: '当前角色资料或功能权限的修改尚未保存。',
+    confirmText: '放弃更改',
+    cancelText: '继续编辑',
+    onConfirm: action,
+  })
+}
+
+function onSelect(id: string) {
+  if (busy.value) return
+  if (selectedId.value === id && !creating.value) {
+    mobileDetailOpen.value = true
+    return
+  }
+  afterDiscard(() => {
+    select(id)
+    detailTab.value = 'profile'
+    mobileDetailOpen.value = true
+  })
+}
+
+function onBeginCreate() {
+  if (busy.value) return
+  afterDiscard(() => {
+    beginCreate()
+    detailTab.value = 'profile'
+    mobileDetailOpen.value = true
+  })
+}
+
+function onCancelCreate() {
+  cancelCreate()
+  mobileDetailOpen.value = false
+}
 
 function onTogglePermission(code: string, enabled: boolean) {
   const current = selectedPermissions.value.get(code)
@@ -88,10 +136,6 @@ function onTogglePermission(code: string, enabled: boolean) {
 function onScopeChange(code: string, scope: RoleDataScopeType) {
   if (!selectedPermissions.value.has(code)) return
   setPermissionScope(code, scope)
-}
-
-function isOrgSelected(code: string, orgUnitId: string): boolean {
-  return selectedPermissions.value.get(code)?.organizationIds.includes(orgUnitId) ?? false
 }
 
 async function onCreate() {
@@ -129,46 +173,47 @@ async function onSavePermissions() {
   await savePermissions()
   if (error.value === '') toast.success('角色权限已更新')
 }
-
-function orgIndent(depth: number): string {
-  return depth === 0 ? '' : '　'.repeat(depth)
-}
 </script>
 
 <template>
-  <div class="flex h-full min-h-0 flex-col gap-3">
-    <p
-      v-if="error"
-      role="alert"
-      class="m-0 shrink-0 whitespace-pre-wrap rounded-md border border-destructive/25 bg-destructive/8 px-3 py-2 text-sm text-destructive"
-    >
-      {{ error }}
-    </p>
-
-    <div
-      class="grid min-h-0 flex-1 items-stretch gap-3 xl:grid-cols-[minmax(16rem,18rem)_minmax(0,1fr)]"
-    >
-      <section
-        class="flex min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card"
+  <ManagementWorkspace
+    title="角色管理"
+    :mobile-detail-open="mobileDetailOpen"
+    @back="mobileDetailOpen = false"
+  >
+    <template v-if="error" #notice>
+      <p
+        role="alert"
+        class="m-0 shrink-0 whitespace-pre-wrap rounded-md border border-destructive/25 bg-destructive/8 px-3 py-2 text-sm text-destructive"
       >
-        <header class="flex items-center gap-2 border-b border-border px-3 py-2">
-          <Input v-model="search" placeholder="搜索编码或名称" class="min-w-0 flex-1" />
-          <Button v-if="canManage" variant="soft" size="sm" @click="beginCreate">
-            <Icon icon="lucide:plus" class="size-4" />
-            新建
-          </Button>
-        </header>
-        <ul class="m-0 min-h-0 flex-1 list-none overflow-y-auto p-1">
+        {{ error }}
+      </p>
+    </template>
+    <template #list>
+      <section class="flex h-full min-h-0 flex-col">
+        <ManagementListToolbar
+          v-model="search"
+          title="角色列表"
+          :summary="`${roles.length} 个角色`"
+          search-label="搜索角色"
+          search-placeholder="搜索角色名称或编码"
+          create-label="新建角色"
+          :can-create="canManage"
+          :busy="busy"
+          @create="onBeginCreate"
+        />
+        <ul class="m-0 min-h-0 flex-1 list-none overflow-y-auto p-2">
           <li v-for="role in filteredRoles" :key="role.id">
             <button
               type="button"
-              class="flex w-full items-start gap-2 rounded-md px-2.5 py-2 text-left transition-colors"
+              :disabled="busy"
+              class="flex w-full items-start gap-2 rounded-md px-3 py-2.5 text-left transition-colors focus-visible:outline-2 focus-visible:outline-primary"
               :class="
                 role.id === selectedId && !creating
                   ? 'bg-primary/10 text-primary'
                   : 'hover:bg-muted/60'
               "
-              @click="select(role.id)"
+              @click="onSelect(role.id)"
             >
               <span class="min-w-0 flex-1">
                 <span class="block truncate text-sm font-medium">{{ role.name }}</span>
@@ -181,203 +226,134 @@ function orgIndent(depth: number): string {
                     ? 'bg-success/12 text-success'
                     : 'bg-muted text-muted-foreground'
                 "
+                >{{ role.status === 'ACTIVE' ? '启用' : '停用' }}</span
               >
-                {{ role.status === 'ACTIVE' ? '启用' : '停用' }}
-              </span>
             </button>
           </li>
           <li
             v-if="filteredRoles.length === 0"
-            class="px-3 py-6 text-center text-sm text-muted-foreground"
+            class="px-3 py-8 text-center text-sm text-muted-foreground"
           >
-            暂无角色
+            {{ search ? '没有匹配的角色' : '暂无角色' }}
           </li>
         </ul>
       </section>
-
-      <section
-        v-if="creating || selected !== undefined"
-        class="flex min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card"
-      >
-        <header class="flex flex-wrap items-center gap-2 border-b border-border px-4 py-3">
+    </template>
+    <template #detail>
+      <section v-if="creating || selected" class="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <header
+          class="flex min-h-16 shrink-0 flex-wrap items-center gap-3 border-b border-border px-5 py-2"
+        >
           <div class="min-w-0 flex-1">
-            <h2 class="m-0 truncate text-base font-semibold">
-              {{ creating ? '新建角色' : selected?.name }}
-            </h2>
-            <p v-if="!creating && selected" class="m-0 truncate text-xs text-muted-foreground">
-              {{ selected.code }}
-              <span v-if="selected.isSystem"> · 系统角色</span>
-              · 已分配 {{ selected.assignmentCount }} 人
+            <div class="flex items-center gap-2">
+              <h2 class="m-0 truncate text-base font-semibold">
+                {{ creating ? '新建角色' : selected?.name }}
+              </h2>
+              <span
+                v-if="selected && !creating"
+                class="shrink-0 rounded px-1.5 py-0.5 text-[11px]"
+                :class="
+                  selected.status === 'ACTIVE'
+                    ? 'bg-success/12 text-success'
+                    : 'bg-muted text-muted-foreground'
+                "
+              >
+                {{ selected.status === 'ACTIVE' ? '启用' : '停用' }}
+              </span>
+            </div>
+            <p class="m-0 mt-0.5 truncate text-xs text-muted-foreground">
+              {{
+                creating
+                  ? '创建后即可配置功能权限'
+                  : `${selected?.code}${selected?.isSystem ? ' · 系统角色' : ''} · 已分配 ${selected?.assignmentCount} 人`
+              }}
             </p>
           </div>
           <template v-if="canManage">
             <template v-if="creating">
-              <Button variant="ghost" size="sm" @click="cancelCreate">取消</Button>
-              <ButtonLoading size="sm" :loading="busy" :disabled="!canSaveRole" @click="onCreate">
-                创建
-              </ButtonLoading>
+              <Button variant="ghost" @click="onCancelCreate">取消</Button>
+              <ButtonLoading :loading="busy" :disabled="!canSaveRole" @click="onCreate"
+                >创建角色</ButtonLoading
+              >
             </template>
-            <template v-else>
+            <template v-else-if="detailTab === 'profile'">
               <Button
                 v-if="!selected?.isSystem && (selected?.assignmentCount ?? 0) === 0"
-                variant="soft"
-                size="sm"
-                class="text-destructive"
+                color="destructive"
+                variant="ghost"
                 @click="onRemove"
+                >删除</Button
               >
-                删除
-              </Button>
-              <ButtonLoading size="sm" :loading="busy" :disabled="!canSaveRole" @click="onSave">
-                保存资料
-              </ButtonLoading>
+              <ButtonLoading
+                :loading="busy"
+                :disabled="!canSaveRole || !profileDirty"
+                @click="onSave"
+                >保存资料</ButtonLoading
+              >
             </template>
+            <ButtonLoading
+              v-else
+              :loading="busy"
+              :disabled="!permissionsDirty || !canSavePermissions"
+              @click="onSavePermissions"
+              >保存授权</ButtonLoading
+            >
           </template>
         </header>
-
-        <div class="min-h-0 flex-1 space-y-4 overflow-y-auto p-4">
-          <div class="grid items-start gap-3 md:grid-cols-2">
-            <label class="grid gap-1.5 text-sm">
-              <span class="text-muted-foreground">编码</span>
-              <Input
-                v-model="draftCode"
-                :disabled="!creating || !canManage"
-                placeholder="例如 ops-viewer"
-              />
-              <span class="min-h-[1.25rem] text-xs text-muted-foreground">创建后不可修改</span>
-            </label>
-            <label class="grid gap-1.5 text-sm">
-              <span class="text-muted-foreground">名称</span>
-              <Input v-model="draftName" :disabled="!canManage" placeholder="角色名称" />
-              <span class="min-h-[1.25rem]" aria-hidden="true"></span>
-            </label>
-            <label class="grid gap-1.5 text-sm md:col-span-2">
-              <span class="text-muted-foreground">描述</span>
-              <Input v-model="draftDescription" :disabled="!canManage" placeholder="可选" />
-            </label>
-            <label v-if="!creating" class="grid gap-1.5 text-sm">
-              <span class="text-muted-foreground">状态</span>
-              <Select v-model="draftStatus" :items="statusOptions" :disabled="!canManage" />
-            </label>
-          </div>
-
-          <template v-if="!creating">
-            <Separator />
-            <div class="space-y-3">
-              <div class="flex flex-wrap items-center gap-2">
-                <h3 class="m-0 flex-1 text-sm font-medium">功能权限</h3>
-                <ButtonLoading
-                  v-if="canManage"
-                  size="sm"
-                  variant="soft"
-                  :loading="busy"
-                  :disabled="!permissionsDirty || !canSavePermissions"
-                  @click="onSavePermissions"
-                >
-                  保存授权
-                </ButtonLoading>
-              </div>
-              <p class="m-0 text-xs text-muted-foreground">
-                权限来自当前产品版本；每项权限只能选择其声明的数据范围。自定义组织需要至少一个组织。导航菜单授权在导航模块配置。
-              </p>
-              <p v-if="organizationOptionsError" class="m-0 text-xs text-warning" role="status">
-                {{ organizationOptionsError }}
-              </p>
+        <div class="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+          <Tabs v-model="detailTab" :items="detailTabs" fill="auto">
+            <template #content="{ value }">
               <div
-                v-for="group in catalogByModule"
-                :key="group.moduleId"
-                class="rounded-md border border-border"
+                v-if="value === 'profile'"
+                class="grid max-w-3xl items-start gap-4 pt-5 sm:grid-cols-2"
               >
-                <div class="border-b border-border bg-muted/40 px-3 py-1.5 text-xs font-medium">
-                  {{ group.moduleId }}
-                </div>
-                <ul class="m-0 list-none divide-y divide-border">
-                  <li v-for="item in group.permissions" :key="item.code" class="px-3 py-2">
-                    <div class="flex flex-wrap items-center gap-3">
-                      <label class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-sm">
-                        <Switch
-                          :model-value="selectedPermissions.has(item.code)"
-                          :disabled="!canManage"
-                          @update:model-value="
-                            (value: boolean) => onTogglePermission(item.code, value)
-                          "
-                        />
-                        <span class="min-w-0">
-                          <span class="block truncate">{{ item.name }}</span>
-                          <span class="block truncate text-xs text-muted-foreground">
-                            {{ item.code }}
-                          </span>
-                        </span>
-                      </label>
-                      <Select
-                        v-if="item.allowedScopeTypes.length > 1"
-                        class="w-44 shrink-0"
-                        :model-value="selectedPermissions.get(item.code)?.scopeType ?? 'ALL'"
-                        :items="scopeOptionsFor(item)"
-                        :disabled="!canManage || !selectedPermissions.has(item.code)"
-                        @update:model-value="
-                          (value: string | number) =>
-                            onScopeChange(item.code, value as RoleDataScopeType)
-                        "
-                      />
-                      <span
-                        v-else
-                        class="shrink-0 rounded bg-muted px-2 py-1 text-xs text-muted-foreground"
-                      >
-                        无数据范围
-                      </span>
-                    </div>
-                    <div
-                      v-if="
-                        item.dataScopeProvider !== null &&
-                        selectedPermissions.get(item.code)?.scopeType === 'CUSTOM'
-                      "
-                      class="mt-2 max-h-48 overflow-y-auto rounded-md border border-border bg-muted/20 p-2"
-                    >
-                      <p
-                        v-if="organizationOptions.length === 0"
-                        class="m-0 text-xs text-muted-foreground"
-                      >
-                        {{
-                          organizationOptionsError || '暂无可用组织。请确认当前租户已配置有效组织。'
-                        }}
-                      </p>
-                      <label
-                        v-for="org in organizationOptions"
-                        :key="org.id"
-                        class="flex cursor-pointer items-center gap-2 py-0.5 text-sm"
-                      >
-                        <input
-                          type="checkbox"
-                          :disabled="!canManage"
-                          :checked="isOrgSelected(item.code, org.id)"
-                          @change="
-                            togglePermissionOrganization(
-                              item.code,
-                              org.id,
-                              ($event.target as HTMLInputElement).checked,
-                            )
-                          "
-                        />
-                        <span class="truncate">{{ orgIndent(org.depth) }}{{ org.name }}</span>
-                        <span class="shrink-0 font-mono text-xs text-muted-foreground">
-                          {{ org.code }}
-                        </span>
-                      </label>
-                    </div>
-                  </li>
-                </ul>
+                <label class="grid gap-1.5 text-sm">
+                  <span class="text-muted-foreground">编码</span>
+                  <Input
+                    v-if="creating"
+                    v-model="draftCode"
+                    :disabled="!canManage"
+                    placeholder="例如 ops-viewer"
+                  />
+                  <code v-else class="py-1.5 text-sm text-foreground select-text">{{
+                    draftCode
+                  }}</code>
+                  <span class="text-xs text-muted-foreground">创建后不可修改</span>
+                </label>
+                <label class="grid gap-1.5 text-sm">
+                  <span class="text-muted-foreground">名称</span>
+                  <Input v-model="draftName" :disabled="!canManage" placeholder="角色名称" />
+                </label>
+                <label class="grid gap-1.5 text-sm sm:col-span-2">
+                  <span class="text-muted-foreground">描述</span>
+                  <Input v-model="draftDescription" :disabled="!canManage" placeholder="可选" />
+                </label>
+                <label v-if="!creating" class="grid gap-1.5 text-sm">
+                  <span class="text-muted-foreground">状态</span>
+                  <Select v-model="draftStatus" :items="statusOptions" :disabled="!canManage" />
+                </label>
               </div>
-            </div>
-          </template>
+              <RolePermissionEditor
+                v-else
+                :catalog="catalog"
+                :selected-permissions="selectedPermissions"
+                :organization-options="organizationOptions"
+                :organization-options-error="organizationOptionsError"
+                :can-manage="canManage"
+                @toggle-permission="onTogglePermission"
+                @scope-change="onScopeChange"
+                @toggle-organization="togglePermissionOrganization"
+              />
+            </template>
+          </Tabs>
         </div>
       </section>
-
-      <section
+      <div
         v-else
-        class="flex items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground"
+        class="grid flex-1 place-items-center px-6 text-center text-sm text-muted-foreground"
       >
         选择左侧角色，或新建角色
-      </section>
-    </div>
-  </div>
+      </div>
+    </template>
+  </ManagementWorkspace>
 </template>

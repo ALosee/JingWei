@@ -411,6 +411,7 @@ export type components = {
             code: string;
             dataScopeProvider: string | null;
             moduleId: string;
+            moduleName: string;
             name: string;
         };
         IamRefreshSessionResult: {

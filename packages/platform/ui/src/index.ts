@@ -99,6 +99,20 @@ export { SSeparator as Separator } from './components/separator/index.js'
 export type { SeparatorProps } from './components/separator/index.js'
 export { SSlider as Slider } from './components/slider/index.js'
 export type { SliderEmits, SliderProps } from './components/slider/index.js'
+export {
+  SSplitterGroup as SplitterGroup,
+  SSplitterPanel as SplitterPanel,
+  SSplitterResizeHandle as SplitterResizeHandle,
+} from './components/splitter/index.js'
+export type {
+  SplitterGroupEmits,
+  SplitterGroupProps,
+  SplitterPanelEmits,
+  SplitterPanelExposed,
+  SplitterPanelProps,
+  SplitterResizeHandleEmits,
+  SplitterResizeHandleProps,
+} from './components/splitter/index.js'
 export { STooltip as Tooltip } from './components/tooltip/index.js'
 export type { TooltipEmits, TooltipProps, TooltipSlots } from './components/tooltip/index.js'
 export { toast, SToastProvider as ToastProvider } from './components/toast/index.js'
@@ -160,6 +174,18 @@ export type {
   ThemePaletteSelectProps,
 } from './patterns/theme-palette/index.js'
 export { ThemeScope } from './patterns/theme-scope/theme-scope.js'
+export {
+  ManagementListToolbar,
+  ManagementWorkspace,
+} from './patterns/management-workspace/index.js'
+export type {
+  ManagementListToolbarEmits,
+  ManagementListToolbarProps,
+  ManagementListToolbarSlots,
+  ManagementWorkspaceEmits,
+  ManagementWorkspaceProps,
+  ManagementWorkspaceSlots,
+} from './patterns/management-workspace/index.js'
 export type {
   ColorTokens as ThemeColorTokens,
   ColorValue as ThemeColorValue,

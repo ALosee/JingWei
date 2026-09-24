@@ -85,12 +85,29 @@ import type {
 } from './components/select/types'
 import type { SeparatorProps } from './components/separator/types'
 import type { SliderEmits, SliderProps } from './components/slider/types'
+import type {
+  SplitterGroupEmits,
+  SplitterGroupProps,
+  SplitterPanelEmits,
+  SplitterPanelExposed,
+  SplitterPanelProps,
+  SplitterResizeHandleEmits,
+  SplitterResizeHandleProps,
+} from './components/splitter/types'
 import type { SwitchEmits, SwitchProps, SwitchShape, SwitchSlots } from './components/switch/types'
 import type { TabsEmits, TabsOptionData, TabsProps, TabsSlots } from './components/tabs/types'
 import type { TextareaEmits, TextareaProps, TextareaSlots } from './components/textarea/types'
 import type { ToastProviderProps } from './components/toast/types'
 import type { TreeMenuEmits, TreeMenuProps, TreeMenuSlots } from './components/tree-menu/types'
 import type { TreeSlots } from './components/tree/types'
+import type {
+  ManagementListToolbarEmits,
+  ManagementListToolbarProps,
+  ManagementListToolbarSlots,
+  ManagementWorkspaceEmits,
+  ManagementWorkspaceProps,
+  ManagementWorkspaceSlots,
+} from './patterns/management-workspace/types'
 import type {
   RuntimeThemePalette,
   ThemePaletteColors,
@@ -134,6 +151,8 @@ export declare const Link: UiComponent<LinkProps>
 export declare const Layout: UiComponent<LayoutProps>
 export declare const LayoutTrigger: UiComponent<LayoutTriggerProps>
 export declare const Menubar: UiComponent<MenubarProps<string>>
+export declare const ManagementListToolbar: UiComponent<ManagementListToolbarProps>
+export declare const ManagementWorkspace: UiComponent<ManagementWorkspaceProps>
 export declare const PageTabs: UiComponent<PageTabsProps<PageTabsOptionData>>
 export declare const PalettePicker: UiComponent<PalettePickerProps>
 export declare const Popover: UiComponent<PopoverProps>
@@ -144,6 +163,9 @@ export declare const Segment: UiComponent<SegmentProps<SegmentOptionData>>
 export declare const Select: UiComponent<SelectProps>
 export declare const Separator: UiComponent<SeparatorProps>
 export declare const Slider: UiComponent<SliderProps>
+export declare const SplitterGroup: UiComponent<SplitterGroupProps>
+export declare const SplitterPanel: UiComponent<SplitterPanelProps>
+export declare const SplitterResizeHandle: UiComponent<SplitterResizeHandleProps>
 export declare const ThemeCustomizer: UiComponent
 export declare const ThemeSettingsPanel: UiComponent<ThemeCustomizerProps>
 export declare const ThemePaletteSelect: UiComponent<ThemePaletteSelectProps>
@@ -238,6 +260,12 @@ export type {
   LayoutSlots,
   LayoutTriggerProps,
   LayoutVariant,
+  ManagementListToolbarEmits,
+  ManagementListToolbarProps,
+  ManagementListToolbarSlots,
+  ManagementWorkspaceEmits,
+  ManagementWorkspaceProps,
+  ManagementWorkspaceSlots,
   MenubarEmits,
   MenubarProps,
   MenubarSlots,
@@ -261,6 +289,13 @@ export type {
   SeparatorProps,
   SliderEmits,
   SliderProps,
+  SplitterGroupEmits,
+  SplitterGroupProps,
+  SplitterPanelEmits,
+  SplitterPanelExposed,
+  SplitterPanelProps,
+  SplitterResizeHandleEmits,
+  SplitterResizeHandleProps,
   SwitchEmits,
   SwitchProps,
   SwitchShape,

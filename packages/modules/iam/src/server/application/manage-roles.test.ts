@@ -189,6 +189,7 @@ describe('ManageIamRoles', () => {
       'iam.role.manage',
       'iam.role.view',
     ])
+    expect(catalog.permissions.map((item) => item.moduleName)).toEqual(['IAM', 'IAM', 'IAM'])
 
     const role = await manage.create(context, { code: 'ops', name: '运维' })
     await expect(

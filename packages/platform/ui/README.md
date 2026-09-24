@@ -12,6 +12,7 @@ src/
 ├── styles/                     # sbean 生成的组件 recipe
 ├── theme/                      # 本地主题状态、Provider 配套与首屏恢复
 ├── patterns/                   # Jingwei 自有的跨模块通用组合组件
+│   ├── management-workspace/   # 管理页分栏外壳、列表工具栏与搜索
 │   ├── theme-settings-panel/
 │   ├── theme-palette/          # 受控色阶选择、生成与运行时注册
 │   └── theme-scope/            # 不改变全局状态的局部主题预览边界
@@ -34,7 +35,7 @@ src/
 
 `components` 内保留 sbean 生成的 `SButton`、`SInput` 等上游命名，以便升级时直接比较；
 `src/index.ts` 在包边界导出 `Button`、`Input`、`InputNumber`、`Textarea`、`Switch`、`Segment`、`Select`、
-`Slider`、`Separator`、`Dialog`、`Layout`、`Tabs`、`Tree`、`TreeMenu`、`Menubar`、`Breadcrumb`、`Popover`、
+`Slider`、`Separator`、`SplitterGroup`、`SplitterPanel`、`SplitterResizeHandle`、`Dialog`、`Layout`、`Tabs`、`Tree`、`TreeMenu`、`Menubar`、`Breadcrumb`、`Popover`、
 `PageTabs`、`ConfigProvider` 等简洁名称。不要为了改名去修改生成文件，也不要在业务代码中使用内部 `S*` 名称。
 
 `ThemeSettingsPanel`（上游 ThemeCustomizer 源码移植）仍作为主题能力参考；`ThemePaletteSelect`、
@@ -43,6 +44,9 @@ src/
 `ThemeScope` 接收受约束主题并生成带唯一 data selector 的局部
 亮/暗 CSS，用于 Branding 草稿预览且不改变应用级主题状态。设置入口、非模态容器和工作区文案由 Web
 壳拥有。新增公开组件时同步更新显式 export、README 和相应契约测试。
+`ManagementWorkspace` 将列表与详情放在无外框的同一工作区，组合本包从 sbean 导入的 Splitter 源码组件，提供可拖拽、可键盘调整的竖向分割线；页面名称仅保留给无障碍语义，并处理窄屏列表/详情切换；
+`ManagementListToolbar` 统一列表头部高度、展开搜索与新增图标入口。收起搜索只收起控件并保留关键词，清空由输入框 clearable 完成；关闭、返回与分割线的文案/无障碍名称可通过 prop 覆盖。
+这些组合不包含模块数据或业务操作；普通筛选框直接使用 `Input`。
 `themePaletteKey` 只计算已发布色板的内容寻址键；`registerThemePalette` 在显式的主题装配步骤注册。
 实时草稿预览使用 `createThemePaletteSlot` 覆盖固定临时键，组件卸载时调用 `dispose` 清理，避免每次
 调色都向主题引擎注册表追加一个永久条目。

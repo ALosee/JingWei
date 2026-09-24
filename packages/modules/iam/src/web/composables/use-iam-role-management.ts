@@ -66,6 +66,7 @@ export function useIamRoleManagement(dependencies?: RoleManagementDependencies) 
   const busy = ref(false)
   const error = ref('')
   const creating = ref(false)
+  const selectionBeforeCreate = ref('')
   const draftName = ref('')
   const draftCode = ref('')
   const draftDescription = ref('')
@@ -175,6 +176,7 @@ export function useIamRoleManagement(dependencies?: RoleManagementDependencies) 
 
   function beginCreate() {
     creating.value = true
+    selectionBeforeCreate.value = selectedId.value
     selectedId.value = ''
     draftName.value = ''
     draftCode.value = ''
@@ -186,6 +188,10 @@ export function useIamRoleManagement(dependencies?: RoleManagementDependencies) 
 
   function cancelCreate() {
     creating.value = false
+    const restoreId = selectionBeforeCreate.value
+    selectionBeforeCreate.value = ''
+    if (restoreId === '') return
+    select(restoreId)
   }
 
   async function createRole(input: CreateIamRole) {

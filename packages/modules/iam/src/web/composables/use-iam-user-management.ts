@@ -49,6 +49,7 @@ export function useIamUserManagement(
   const busy = ref(false)
   const error = ref('')
   const creating = ref(false)
+  const selectionBeforeCreate = ref('')
   /** Functional permission is enforced on the server; this only improves button UX. */
   const canManage = useIamPermission('iam.user.manage')
   const draftUsername = ref('')
@@ -137,6 +138,7 @@ export function useIamUserManagement(
 
   function beginCreate() {
     creating.value = true
+    selectionBeforeCreate.value = selectedId.value
     selectedId.value = ''
     draftUsername.value = ''
     draftDisplayName.value = ''
@@ -151,6 +153,10 @@ export function useIamUserManagement(
 
   function cancelCreate() {
     creating.value = false
+    const restoreId = selectionBeforeCreate.value
+    selectionBeforeCreate.value = ''
+    if (restoreId === '') return
+    select(restoreId)
   }
 
   async function createUser(input: CreateManagedUser) {

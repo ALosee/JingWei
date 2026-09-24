@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { Button, ButtonIcon, Icon, Input, Tree, TreeItem } from '@jingwei/ui'
+import { ButtonIcon, Icon, ManagementListToolbar, Tree, TreeItem } from '@jingwei/ui'
 import type { FlattenedItem } from '@jingwei/ui'
 
 import {
@@ -31,8 +31,8 @@ const emit = defineEmits<{
   select: [id: string]
   expandAll: []
   collapseAll: []
+  createRoot: []
   addChild: [parentId: string]
-  addRoot: []
 }>()
 
 const treeItems = computed(() => {
@@ -84,16 +84,22 @@ function itemOf(flat: FlattenedItem<OrganizationTreeItemData>) {
 </script>
 
 <template>
-  <section class="flex min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card/40">
-    <header class="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2.5">
-      <div class="min-w-0 flex-1">
-        <h2 class="m-0 text-sm font-semibold text-foreground">组织树</h2>
-        <p class="m-0 mt-0.5 text-xs text-muted-foreground">{{ unitCount }} 个组织单元</p>
-      </div>
-      <div class="flex items-center gap-0.5">
+  <section class="flex h-full min-h-0 flex-col overflow-hidden">
+    <ManagementListToolbar
+      title="组织树"
+      :summary="`${unitCount} 个组织单元`"
+      :model-value="search"
+      search-label="搜索组织"
+      search-placeholder="搜索名称或编码"
+      create-label="新建根组织"
+      :can-create="canManage"
+      :busy="busy"
+      @update:model-value="onSearchUpdate"
+      @create="emit('createRoot')"
+    >
+      <template #tools>
         <ButtonIcon
           icon="lucide:chevrons-down"
-          size="sm"
           aria-label="全部展开"
           title="全部展开"
           :disabled="busy"
@@ -101,30 +107,13 @@ function itemOf(flat: FlattenedItem<OrganizationTreeItemData>) {
         />
         <ButtonIcon
           icon="lucide:chevrons-up"
-          size="sm"
           aria-label="全部折叠"
           title="全部折叠"
           :disabled="busy"
           @click="emit('collapseAll')"
         />
-        <span class="mx-1 h-4 w-px bg-border" aria-hidden="true" />
-        <Button v-if="canManage" size="sm" :disabled="busy" @click="emit('addRoot')">
-          <Icon icon="lucide:plus" class="me-1 size-3.5" />
-          新建
-        </Button>
-      </div>
-    </header>
-
-    <div class="border-b border-border px-3 py-2">
-      <Input
-        :model-value="search"
-        clearable
-        placeholder="搜索名称 / 编码"
-        class="w-full"
-        @update:model-value="onSearchUpdate"
-        @clear="emit('updateSearch', '')"
-      />
-    </div>
+      </template>
+    </ManagementListToolbar>
 
     <div class="min-h-0 flex-1 overflow-auto p-1.5">
       <div v-if="isEmpty" class="grid min-h-16 place-items-center px-4 py-10 text-center">
@@ -211,7 +200,6 @@ function itemOf(flat: FlattenedItem<OrganizationTreeItemData>) {
               <ButtonIcon
                 v-if="canManage"
                 icon="lucide:plus"
-                size="sm"
                 class="opacity-0 transition-opacity group-hover:opacity-100"
                 :class="isSelected ? 'opacity-100' : ''"
                 aria-label="新建下级组织"

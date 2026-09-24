@@ -181,6 +181,7 @@ export const permissionCatalogItemSchema = z
   .object({
     code: iamPermissionCodeSchema,
     moduleId: z.string().min(1).max(80),
+    moduleName: z.string().min(1),
     name: z.string(),
     allowedScopeTypes: z.array(z.enum(roleDataScopeTypes)).min(1),
     dataScopeProvider: z.string().min(1).max(80).nullable(),

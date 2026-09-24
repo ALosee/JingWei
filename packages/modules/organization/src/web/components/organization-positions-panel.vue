@@ -105,7 +105,7 @@ watch(
           {{ positions.length }} 个岗位 · 编码在本组织内唯一
         </p>
       </div>
-      <Button v-if="canManage" size="sm" variant="outline" :disabled="busy" @click="openCreate">
+      <Button v-if="canManage" variant="outline" :disabled="busy" @click="openCreate">
         <Icon icon="lucide:plus" class="me-1 size-3.5" />
         新建岗位
       </Button>
@@ -113,16 +113,16 @@ watch(
 
     <div
       v-if="positions.length === 0"
-      class="rounded-md border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground"
+      class="border-y border-border px-4 py-8 text-center text-sm text-muted-foreground"
     >
       暂无岗位，点击「新建岗位」创建
     </div>
 
-    <ul v-else class="m-0 flex flex-col gap-1.5 list-none p-0">
+    <ul v-else class="m-0 list-none divide-y divide-border border-y border-border p-0">
       <li
         v-for="position in positions"
         :key="position.id"
-        class="flex items-center gap-2 rounded-md border border-border bg-background/40 px-3 py-2"
+        class="flex items-center gap-2 px-1 py-3"
       >
         <div class="min-w-0 flex-1">
           <div class="flex flex-wrap items-center gap-2">
@@ -150,7 +150,6 @@ watch(
         <div v-if="canManage" class="flex shrink-0 items-center gap-0.5">
           <ButtonIcon
             :icon="position.status === 'ENABLED' ? 'lucide:pause' : 'lucide:play'"
-            size="sm"
             variant="ghost"
             :aria-label="position.status === 'ENABLED' ? '停用' : '启用'"
             :disabled="busy"
@@ -158,7 +157,6 @@ watch(
           />
           <ButtonIcon
             icon="lucide:pencil"
-            size="sm"
             variant="ghost"
             aria-label="编辑"
             :disabled="busy"
@@ -166,7 +164,6 @@ watch(
           />
           <ButtonIcon
             icon="lucide:trash-2"
-            size="sm"
             variant="ghost"
             aria-label="删除"
             :disabled="busy"
@@ -206,14 +203,8 @@ watch(
           />
         </label>
         <div class="flex justify-end gap-2 pt-1">
-          <Button type="button" size="sm" variant="outline" @click="dialogOpen = false">
-            取消
-          </Button>
-          <Button
-            type="submit"
-            size="sm"
-            :disabled="draft.code.trim() === '' || draft.name.trim() === ''"
-          >
+          <Button type="button" variant="outline" @click="dialogOpen = false"> 取消 </Button>
+          <Button type="submit" :disabled="draft.code.trim() === '' || draft.name.trim() === ''">
             {{ isEditing ? '保存' : '创建' }}
           </Button>
         </div>

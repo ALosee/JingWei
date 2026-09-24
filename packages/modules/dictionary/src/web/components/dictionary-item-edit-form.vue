@@ -20,6 +20,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   cancel: []
   updateItem: [id: string, input: UpdateDictionaryItem]
+  dirtyChange: [dirty: boolean]
 }>()
 
 const statusItems: SelectSingleOptionData<string>[] = [
@@ -41,6 +42,12 @@ const canSave = computed(() => {
     draft.sortOrder !== props.item.sortOrder
   )
 })
+const dirty = computed(
+  () =>
+    draft.label !== props.item.label ||
+    draft.status !== props.item.status ||
+    draft.sortOrder !== props.item.sortOrder,
+)
 
 function save() {
   if (!canSave.value) return
@@ -73,28 +80,27 @@ watch(
   },
   { immediate: true },
 )
+watch(dirty, (value) => emit('dirtyChange', value), { immediate: true })
 </script>
 
 <template>
-  <section class="flex min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card/40">
-    <header class="flex flex-wrap items-center gap-3 border-b border-border px-4 py-3">
+  <section class="flex min-h-0 flex-1 flex-col overflow-hidden">
+    <header class="flex min-h-16 flex-wrap items-center gap-3 border-b border-border px-5 py-2">
       <div class="min-w-0 flex-1">
         <h2 class="m-0 truncate text-base font-semibold text-foreground">编辑字典条目</h2>
         <p class="m-0 mt-1 truncate text-xs text-muted-foreground">
           所属类型：{{ detail.type.name }} · {{ detail.type.code }}
         </p>
       </div>
-      <Button variant="ghost" size="sm" :disabled="busy" @click="emit('cancel')">取消</Button>
-      <ButtonLoading size="sm" :loading="busy" :disabled="!canSave" @click="save">
-        保存
-      </ButtonLoading>
+      <Button variant="ghost" :disabled="busy" @click="emit('cancel')">取消</Button>
+      <ButtonLoading :loading="busy" :disabled="!canSave" @click="save"> 保存 </ButtonLoading>
     </header>
 
-    <div class="min-h-0 flex-1 overflow-auto p-4">
+    <div class="min-h-0 flex-1 overflow-auto px-5 py-4">
       <div class="grid items-start gap-4 md:grid-cols-2">
         <label class="grid gap-1.5 text-sm">
           <span class="text-muted-foreground">稳定编码</span>
-          <Input :model-value="item.code" disabled />
+          <code class="py-1.5 text-sm text-foreground select-text">{{ item.code }}</code>
           <span class="text-xs text-muted-foreground">业务数据保存该编码，创建后不可修改</span>
         </label>
         <label class="grid gap-1.5 text-sm">

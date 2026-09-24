@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 
-import { Button, ButtonIcon, dialog, Icon, Input, Tree, TreeItem } from '@jingwei/ui'
+import { ButtonIcon, dialog, Icon, ManagementListToolbar, Tree, TreeItem } from '@jingwei/ui'
 import type { FlattenedItem, TreeItemData } from '@jingwei/ui'
 
 import type { DictionaryCategory, DictionaryStatus, DictionaryType } from '../../shared/index.js'
@@ -22,8 +22,8 @@ const emit = defineEmits<{
   updateSearch: [value: string]
   selectCategory: [id: string]
   selectType: [id: string]
-  beginCreateCategory: []
   beginCreateType: [categoryId: string]
+  createCategory: []
   deleteCategory: [id: string, expectedRevision: number]
 }>()
 
@@ -162,18 +162,22 @@ watch(
 </script>
 
 <template>
-  <section class="flex min-h-0 flex-col overflow-hidden rounded-lg border border-border bg-card/40">
-    <header class="flex items-center gap-2 border-b border-border px-3 py-2.5">
-      <div class="min-w-0 flex-1">
-        <h2 class="m-0 text-sm font-semibold text-foreground">字典目录</h2>
-        <p class="m-0 mt-0.5 text-xs text-muted-foreground">
-          {{ categoryCount }} 个分类 · {{ typeCount }} 个类型
-        </p>
-      </div>
-      <div class="flex items-center gap-0.5">
+  <section class="flex h-full min-h-0 flex-col overflow-hidden">
+    <ManagementListToolbar
+      title="字典目录"
+      :summary="`${categoryCount} 个分类 · ${typeCount} 个类型`"
+      :model-value="search"
+      search-label="搜索字典目录"
+      search-placeholder="搜索分类、类型或编码"
+      create-label="新建分类"
+      :can-create="canManage"
+      :busy="busy"
+      @update:model-value="onSearch"
+      @create="emit('createCategory')"
+    >
+      <template #tools>
         <ButtonIcon
           icon="lucide:chevrons-down"
-          size="sm"
           aria-label="全部展开"
           title="全部展开"
           :disabled="busy || typeCount === 0"
@@ -181,29 +185,13 @@ watch(
         />
         <ButtonIcon
           icon="lucide:chevrons-up"
-          size="sm"
           aria-label="全部折叠"
           title="全部折叠"
           :disabled="busy || typeCount === 0"
           @click="collapseAll"
         />
-        <span class="mx-1 h-4 w-px bg-border" aria-hidden="true" />
-        <Button v-if="canManage" size="sm" :disabled="busy" @click="emit('beginCreateCategory')">
-          <Icon icon="lucide:folder-plus" class="me-1 size-3.5" />
-          新建分类
-        </Button>
-      </div>
-    </header>
-
-    <div class="border-b border-border px-3 py-2">
-      <Input
-        :model-value="search"
-        clearable
-        placeholder="搜索分类、类型或编码"
-        @update:model-value="onSearch"
-        @clear="emit('updateSearch', '')"
-      />
-    </div>
+      </template>
+    </ManagementListToolbar>
 
     <div class="min-h-0 flex-1 overflow-auto p-1.5">
       <div v-if="isEmpty" class="grid min-h-20 place-items-center px-4 py-10 text-center">
@@ -229,7 +217,7 @@ watch(
       >
         <template #item="{ item }">
           <TreeItem
-            v-slot="{ isSelected, isExpanded, hasChildren }"
+            v-slot="{ isExpanded, hasChildren }"
             :value="item.value"
             :level="item.level"
             :disabled-toggle="true"
@@ -237,7 +225,9 @@ watch(
             <div
               class="group relative flex items-center gap-1 rounded-md pe-1 transition-colors"
               :class="
-                isSelected ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-accent/50'
+                selectedValue === item.value
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-foreground hover:bg-accent/50'
               "
               :style="{ paddingLeft: rowPadding(item.level) }"
             >
@@ -280,18 +270,16 @@ watch(
               <template v-if="canManage && itemOf(item).kind === 'category'">
                 <ButtonIcon
                   icon="lucide:plus"
-                  size="sm"
                   class="opacity-0 transition-opacity group-hover:opacity-100"
-                  :class="isSelected ? 'opacity-100' : ''"
+                  :class="selectedValue === item.value ? 'opacity-100' : ''"
                   aria-label="在分类下新建类型"
                   :disabled="busy"
                   @click.stop="emit('beginCreateType', itemOf(item).id)"
                 />
                 <ButtonIcon
                   icon="lucide:trash-2"
-                  size="sm"
                   class="opacity-0 transition-opacity group-hover:opacity-100"
-                  :class="isSelected ? 'opacity-100' : ''"
+                  :class="selectedValue === item.value ? 'opacity-100' : ''"
                   aria-label="删除分类"
                   :disabled="busy || itemOf(item).childCount > 0"
                   @click.stop="confirmDeleteCategory(itemOf(item).id)"

@@ -236,6 +236,8 @@ warn。无效 CUSTOM 历史引用继续 fail closed；数据库或事实适配�
 
 角色管理（CRUD、权限目录、整组替换授权）与用户管理（列表、创建、资料/状态更新、重置密码、角色分配）及对应管理页已实现。授权展示与校验以 Module Registry 为 Source of Truth；`iam.permission_definition` 仍可由 seed/运维投影，但服务端安装不再强制写库。Permission 通过 `dataScope.allowedTypes` 精确声明可选范围，Organization 的查看权限不提供 `SELF`。完整 Data Scope evaluator 已实现并被 Organization 读路径使用；CUSTOM ID 在保存时校验，并在求值时按当前租户再次校验，失效、停用或跨租户 ID 会令授权 fail closed。启用 Organization 时，Edition 生成代码显式注入服务端事实适配器和 Web `CustomScopeReferenceDirectory`；IAM-only Edition 不保留组织运行时端口。角色管理员通过专用 scope-options API 读取本租户全部有效组织，不依赖 `organization.view`。邮箱/手机变更与验证码、多设备会话列表仍是后续工作。开发种子会投影当前 Edition 的功能权限并初始化显式管理员 grant，但不能当作生产权限同步服务。
 
+用户与角色管理页使用统一无外框分栏工作区：列表和详情头部直接位于工作区顶部且等高，中间分割线可拖拽调整；左侧提供展开式搜索与新增图标入口，右侧按独立任务展示资料、角色或权限。角色功能权限按 Edition 模块定位，目录同时提供模块显示名；自定义组织范围在独立选择窗口维护。权限草稿跨模块保留，切换角色前提示未保存修改，功能权限与 Navigation 菜单授权仍分开。
+
 个人账号页已支持资料查看/编辑、修改密码（全会话撤销）和角色只读展示；路由使用 `/account?tab=profile|security|roles`，不引入无意义的 path id。
 
 角色导航授权由 Navigation 拥有的 navigation.role_navigation 保存 role UUID 与 navigation code，不在 IAM 中新建路由/菜单表，不建立跨模块外键。导航 grant 不能授予业务 API 权限；Navigation 的角色授权写接口同时要求 navigation.manage 与 iam.role.manage。
