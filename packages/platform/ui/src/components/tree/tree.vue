@@ -1,34 +1,66 @@
-<script setup lang="ts" generic="T extends TreeItemData">
-import { useForwardListeners } from '@soybeanjs/headless/composables'
-import { TreeRoot } from '@soybeanjs/headless/tree'
-import type { TreeItemData, TreeRootEmits, TreeRootProps } from '@soybeanjs/headless/tree'
+<script
+  setup
+  lang="ts"
+  generic="T extends TreeItemData, U extends MaybeArray<string> | undefined, M extends boolean"
+>
+import { useForwardListeners } from '@vean/aria/composables'
+import { isTreeMotionItem, TreeRoot } from '@vean/aria/tree'
+import type { TreeRootProps, TreeItemData, TreeRootEmits } from '@vean/aria/tree'
+import type { MaybeArray } from '@vean/aria/types'
 
+import STreeMotionBlock from './tree-motion-block.vue'
 import type { TreeSlots } from './types'
+import { useTreeMotionFocus } from './use-motion-focus'
 
 defineOptions({
   name: 'STree',
 })
 
-const props = withDefaults(defineProps<TreeRootProps<T>>(), {
+const props = withDefaults(defineProps<TreeRootProps<T, U>>(), {
   loop: true,
 })
 
-const emit = defineEmits<TreeRootEmits<TreeRootProps<T>['multiple']>>()
+const emit = defineEmits<TreeRootEmits<TreeRootProps<T, U>['multiple']>>()
 
 const listeners = useForwardListeners(emit)
 
 defineSlots<TreeSlots<T>>()
+
+const motionFocus = useTreeMotionFocus()
 </script>
 
 <template>
   <TreeRoot
-    v-slot="{ flattenItems, modelValue: rootModelValue, expanded: rootExpanded }"
+    v-slot="{ flattenItems, modelValue: rootModelValue, expanded: rootExpanded, motion }"
     v-bind="props"
     v-on="listeners"
+    @vue:before-update="motionFocus.beforeUpdate"
+    @vue:updated="motionFocus.afterUpdate"
+    @focusin="motionFocus.onFocusIn"
+    @focusout="motionFocus.onFocusOut"
   >
     <slot name="top" />
-    <template v-for="item in flattenItems" :key="item.value">
-      <slot name="item" :item="item" :model-value="rootModelValue" :expanded="rootExpanded" />
+    <template
+      v-for="listItem in motion ? motion.items : flattenItems"
+      :key="isTreeMotionItem(listItem) ? '__soybean_tree_motion__' : listItem.value"
+    >
+      <STreeMotionBlock
+        v-if="motion && isTreeMotionItem(listItem)"
+        :type="motion.type"
+        :items="motion.blockItems"
+        @end="motion.end()"
+      >
+        <template #item="{ item }">
+          <slot name="item" :item="item" :model-value="rootModelValue" :expanded="rootExpanded" />
+        </template>
+      </STreeMotionBlock>
+      <slot
+        v-else-if="!isTreeMotionItem(listItem)"
+        name="item"
+        :item="listItem"
+        :model-value="rootModelValue"
+        :expanded="rootExpanded"
+      />
     </template>
     <slot name="bottom" />
   </TreeRoot>

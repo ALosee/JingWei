@@ -28,7 +28,7 @@
   },
   "devDependencies": {
     "@playwright/test": "catalog:",
-    "@soybeanjs/ui-uno": "catalog:",
+    "@vean/unocss": "catalog:",
     "@soybeanjs/unocss-preset": "catalog:",
     "@types/node": "catalog:",
     "@vitejs/plugin-vue": "catalog:",

@@ -13,6 +13,7 @@
     },
     "./theme.css": "./src/theme.css",
     "./theme-init": "./src/theme/init.ts",
+    "./theme-unocss": "./src/theme/semantic-colors.ts",
     "./theme-palette": "./src/patterns/theme-palette/theme-palette.ts"
   },
   "scripts": {
@@ -22,15 +23,17 @@
     "@iconify/vue": "catalog:",
     "@soybeanjs/colord": "catalog:",
     "@soybeanjs/cva": "catalog:",
-    "@soybeanjs/headless": "catalog:",
-    "@soybeanjs/theme": "catalog:",
+    "@vean/aria": "catalog:",
+    "@vean/theme": "catalog:",
     "@soybeanjs/utils": "catalog:",
     "@vueuse/core": "catalog:",
+    "@tanstack/vue-virtual": "catalog:",
     "vue": "catalog:"
   },
   "devDependencies": {
     "@types/node": "catalog:",
     "typescript": "catalog:",
-    "vue-tsc": "catalog:"
+    "vue-tsc": "catalog:",
+    "vite": "catalog:"
   }
 }

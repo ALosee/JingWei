@@ -17,6 +17,10 @@ watch(
   (mode) => theme.setMode(mode),
   { immediate: true },
 )
+
+watch(theme.mode, (mode) => {
+  if (mode !== preferences.value.mode) appearance.patch({ mode })
+})
 </script>
 
 <template><span v-if="false" /></template>

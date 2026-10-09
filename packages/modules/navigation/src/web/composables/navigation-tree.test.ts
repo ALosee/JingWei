@@ -5,7 +5,7 @@ import { projectSidebarPreview } from './navigation-preview.js'
 import {
   buildNavigationTree,
   canNestNode,
-  flattenNavigationTree,
+  navigationTreeItems,
   nextSortOrder,
   parentOptionsFor,
   uniqueCode,
@@ -47,14 +47,24 @@ describe('navigation tree', () => {
     node({ id: 'link', code: 'link', type: 'EXTERNAL_LINK', name: '外链', sortOrder: 10 }),
   ]
 
-  it('builds sorted hierarchy and flattens with search', () => {
+  it('builds sorted hierarchical Tree items', () => {
     const tree = buildNavigationTree(nodes)
     expect(tree.map((item) => item.node.id)).toEqual(['dir', 'link'])
-    const rows = flattenNavigationTree(tree, new Set(['dir', 'menu-a']), '')
-    expect(rows.map((row) => row.node.id)).toEqual(['dir', 'menu-b', 'menu-a', 'page', 'link'])
-    const filtered = flattenNavigationTree(tree, new Set(), '详情')
-    expect(filtered.map((row) => row.node.id)).toContain('page')
-    expect(filtered.map((row) => row.node.id)).toContain('menu-a')
+    const items = navigationTreeItems(tree, '')
+    expect(items.map((item) => item.value)).toEqual(['dir', 'link'])
+    expect(items[0]?.children?.map((item) => item.value)).toEqual(['menu-b', 'menu-a'])
+    expect(items[0]?.children?.[1]?.children?.[0]?.value).toBe('page')
+    expect(items[1]?.children).toBeUndefined()
+  })
+
+  it('keeps matching descendants and their ancestors without unrelated siblings', () => {
+    const filtered = navigationTreeItems(buildNavigationTree(nodes), ' 详情 ')
+    expect(filtered.map((item) => item.value)).toEqual(['dir'])
+    expect(filtered[0]?.children?.map((item) => item.value)).toEqual(['menu-a'])
+    expect(filtered[0]?.children?.[0]?.children?.map((item) => item.value)).toEqual(['page'])
+    const directory = navigationTreeItems(buildNavigationTree(nodes), '系统')
+    expect(directory[0]?.children?.map((item) => item.value)).toEqual(['menu-b', 'menu-a'])
+    expect(navigationTreeItems(buildNavigationTree(nodes), 'missing')).toEqual([])
   })
 
   it('prevents invalid nesting and generates unique codes', () => {

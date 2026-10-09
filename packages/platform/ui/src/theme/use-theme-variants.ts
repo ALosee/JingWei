@@ -1,5 +1,5 @@
-import { resolveTheme } from '@soybeanjs/theme'
-import type { ColorKey, ColorValue } from '@soybeanjs/theme'
+import { resolveThemeMap, valueRef } from '@vean/theme'
+import type { ColorValue, SemanticToken } from '@vean/theme'
 import { computed } from 'vue'
 import type { ComputedRef, Ref, WritableComputedRef } from 'vue'
 
@@ -10,18 +10,19 @@ import type { UseThemeSettingsReturn } from './use-theme-settings'
  */
 export type VariantGroupKey =
   | 'surfaces'
-  | 'palette'
+  | 'fills'
   | 'hairlines'
+  | 'brand'
   | 'sidebar'
-  | 'charts'
   | 'feedback'
+  | 'charts'
 
 /**
  * the metadata of a single variant token.
  */
 export interface VariantTokenMeta {
   /** the color token key. */
-  key: ColorKey
+  key: SemanticToken
   /** the group this token belongs to. */
   group: VariantGroupKey
   /** the derivation source: base / primary / scheme. */
@@ -63,15 +64,15 @@ export interface UseThemeVariantsReturn {
   /** the variant groups (group → tokens). */
   groups: VariantGroupMeta[]
   /** the derived tokens from the left-column generator (the resolved preset). */
-  derived: ComputedRef<Partial<Record<ColorKey, ColorValue>>>
+  derived: ComputedRef<Record<SemanticToken, string>>
   /** a writable ref bound to the override for a token key. */
-  getOverride: (key: ColorKey) => WritableComputedRef<ColorValue | ''>
-  /** merge rule: override wins when present, otherwise falls back to derived. */
-  final: ComputedRef<Partial<Record<ColorKey, ColorValue>>>
+  getOverride: (key: SemanticToken) => WritableComputedRef<string>
+  /** merge rule: override wins when present, otherwise falls back to derived (`token.*` refs resolve to a colour form for the picker). */
+  final: ComputedRef<Record<SemanticToken, ColorValue>>
   /** whether the active mode has any explicit override. */
   hasOverrides: ComputedRef<boolean>
   /** clear the override for a token key. */
-  clearOverride: (key: ColorKey) => void
+  clearOverride: (key: SemanticToken) => void
 }
 
 const surfaces: VariantTokenMeta[] = [
@@ -82,14 +83,7 @@ const surfaces: VariantTokenMeta[] = [
     shadeLinked: true,
     i18n: 'theme.variant.background',
   },
-  { key: 'foreground', group: 'surfaces', source: 'base', i18n: 'theme.variant.foreground' },
   { key: 'card', group: 'surfaces', source: 'base', shadeLinked: true, i18n: 'theme.variant.card' },
-  {
-    key: 'cardForeground',
-    group: 'surfaces',
-    source: 'base',
-    i18n: 'theme.variant.cardForeground',
-  },
   {
     key: 'popover',
     group: 'surfaces',
@@ -98,167 +92,177 @@ const surfaces: VariantTokenMeta[] = [
     i18n: 'theme.variant.popover',
   },
   {
-    key: 'popoverForeground',
+    key: 'carbon',
+    group: 'surfaces',
+    source: 'base',
+    shadeLinked: true,
+    i18n: 'theme.variant.carbon',
+  },
+  { key: 'foreground', group: 'surfaces', source: 'base', i18n: 'theme.variant.foreground' },
+  {
+    key: 'muted-foreground',
+    group: 'surfaces',
+    source: 'base',
+    i18n: 'theme.variant.mutedForeground',
+  },
+  {
+    key: 'card-foreground',
+    group: 'surfaces',
+    source: 'base',
+    i18n: 'theme.variant.cardForeground',
+  },
+  {
+    key: 'popover-foreground',
     group: 'surfaces',
     source: 'base',
     i18n: 'theme.variant.popoverForeground',
   },
+  {
+    key: 'carbon-foreground',
+    group: 'surfaces',
+    source: 'base',
+    i18n: 'theme.variant.carbonForeground',
+  },
 ]
 
-const palette: VariantTokenMeta[] = [
-  { key: 'primary', group: 'palette', source: 'primary', i18n: 'theme.variant.primary' },
-  {
-    key: 'primaryForeground',
-    group: 'palette',
-    source: 'primary',
-    i18n: 'theme.variant.primaryForeground',
-  },
-  { key: 'ring', group: 'palette', source: 'primary', i18n: 'theme.variant.ring' },
-  {
-    key: 'secondary',
-    group: 'palette',
-    source: 'base',
-    shadeLinked: true,
-    i18n: 'theme.variant.secondary',
-  },
-  {
-    key: 'secondaryForeground',
-    group: 'palette',
-    source: 'base',
-    i18n: 'theme.variant.secondaryForeground',
-  },
-  {
-    key: 'muted',
-    group: 'palette',
-    source: 'base',
-    shadeLinked: true,
-    i18n: 'theme.variant.muted',
-  },
-  {
-    key: 'mutedForeground',
-    group: 'palette',
-    source: 'base',
-    shadeLinked: true,
-    i18n: 'theme.variant.mutedForeground',
-  },
+const mask: VariantTokenMeta[] = [
+  { key: 'mask', group: 'surfaces', source: 'base', i18n: 'theme.variant.mask' },
+]
+
+const fills: VariantTokenMeta[] = [
+  { key: 'muted', group: 'fills', source: 'base', shadeLinked: true, i18n: 'theme.variant.muted' },
   {
     key: 'accent',
-    group: 'palette',
+    group: 'fills',
     source: 'base',
     shadeLinked: true,
     i18n: 'theme.variant.accent',
   },
   {
-    key: 'accentForeground',
-    group: 'palette',
+    key: 'accent-foreground',
+    group: 'fills',
     source: 'base',
     i18n: 'theme.variant.accentForeground',
+  },
+  {
+    key: 'secondary',
+    group: 'fills',
+    source: 'base',
+    shadeLinked: true,
+    i18n: 'theme.variant.secondary',
+  },
+  {
+    key: 'secondary-foreground',
+    group: 'fills',
+    source: 'base',
+    i18n: 'theme.variant.secondaryForeground',
   },
 ]
 
 const hairlines: VariantTokenMeta[] = [
   { key: 'border', group: 'hairlines', source: 'base', i18n: 'theme.variant.border' },
   { key: 'input', group: 'hairlines', source: 'base', i18n: 'theme.variant.input' },
+  { key: 'ring', group: 'hairlines', source: 'primary', i18n: 'theme.variant.ring' },
+]
+
+const brand: VariantTokenMeta[] = [
+  { key: 'primary', group: 'brand', source: 'primary', i18n: 'theme.variant.primary' },
+  {
+    key: 'primary-foreground',
+    group: 'brand',
+    source: 'primary',
+    i18n: 'theme.variant.primaryForeground',
+  },
 ]
 
 const sidebar: VariantTokenMeta[] = [
   {
     key: 'sidebar',
     group: 'sidebar',
-    source: 'scheme',
+    source: 'base',
     shadeLinked: true,
     i18n: 'theme.variant.sidebar',
   },
   {
-    key: 'sidebarForeground',
+    key: 'sidebar-foreground',
     group: 'sidebar',
-    source: 'scheme',
+    source: 'base',
     i18n: 'theme.variant.sidebarForeground',
   },
+  { key: 'sidebar-border', group: 'sidebar', source: 'base', i18n: 'theme.variant.sidebarBorder' },
   {
-    key: 'sidebarPrimary',
+    key: 'sidebar-accent',
     group: 'sidebar',
-    source: 'scheme',
+    source: 'base',
+    shadeLinked: true,
+    i18n: 'theme.variant.sidebarAccent',
+  },
+  {
+    key: 'sidebar-accent-foreground',
+    group: 'sidebar',
+    source: 'base',
+    i18n: 'theme.variant.sidebarAccentForeground',
+  },
+  {
+    key: 'sidebar-primary',
+    group: 'sidebar',
+    source: 'primary',
     i18n: 'theme.variant.sidebarPrimary',
   },
   {
-    key: 'sidebarPrimaryForeground',
+    key: 'sidebar-primary-foreground',
     group: 'sidebar',
-    source: 'scheme',
+    source: 'primary',
     i18n: 'theme.variant.sidebarPrimaryForeground',
   },
-  { key: 'sidebarAccent', group: 'sidebar', source: 'scheme', i18n: 'theme.variant.sidebarAccent' },
-  {
-    key: 'sidebarAccentForeground',
-    group: 'sidebar',
-    source: 'scheme',
-    i18n: 'theme.variant.sidebarAccentForeground',
-  },
-  { key: 'sidebarBorder', group: 'sidebar', source: 'scheme', i18n: 'theme.variant.sidebarBorder' },
-  { key: 'sidebarRing', group: 'sidebar', source: 'scheme', i18n: 'theme.variant.sidebarRing' },
+  { key: 'sidebar-ring', group: 'sidebar', source: 'primary', i18n: 'theme.variant.sidebarRing' },
 ]
 
 const charts: VariantTokenMeta[] = [1, 2, 3, 4, 5].map((index) => ({
-  key: `chart${index}` as ColorKey,
+  key: `chart-${index}` as SemanticToken,
   group: 'charts' as const,
   source: 'scheme' as const,
   i18n: `theme.variant.chart${index}`,
 }))
 
-const feedback: VariantTokenMeta[] = [
-  { key: 'destructive', group: 'feedback', source: 'scheme', i18n: 'theme.variant.destructive' },
+const feedback: VariantTokenMeta[] = (
+  ['destructive', 'success', 'warning', 'info'] as const
+).flatMap((name) => [
   {
-    key: 'destructiveForeground',
-    group: 'feedback',
-    source: 'base',
-    i18n: 'theme.variant.destructiveForeground',
+    key: name,
+    group: 'feedback' as const,
+    source: 'scheme' as const,
+    i18n: `theme.variant.${name}`,
   },
-  { key: 'success', group: 'feedback', source: 'scheme', i18n: 'theme.variant.success' },
   {
-    key: 'successForeground',
-    group: 'feedback',
-    source: 'base',
-    i18n: 'theme.variant.successForeground',
+    key: `${name}-foreground` as SemanticToken,
+    group: 'feedback' as const,
+    source: 'scheme' as const,
+    i18n: `theme.variant.${name}Foreground`,
   },
-  { key: 'warning', group: 'feedback', source: 'scheme', i18n: 'theme.variant.warning' },
-  {
-    key: 'warningForeground',
-    group: 'feedback',
-    source: 'base',
-    i18n: 'theme.variant.warningForeground',
-  },
-  { key: 'info', group: 'feedback', source: 'scheme', i18n: 'theme.variant.info' },
-  {
-    key: 'infoForeground',
-    group: 'feedback',
-    source: 'base',
-    i18n: 'theme.variant.infoForeground',
-  },
-  { key: 'carbon', group: 'feedback', source: 'base', i18n: 'theme.variant.carbon' },
-  {
-    key: 'carbonForeground',
-    group: 'feedback',
-    source: 'base',
-    i18n: 'theme.variant.carbonForeground',
-  },
-]
+])
 
 /**
  * the built-in variant groups.
  */
 export const DEFAULT_VARIANT_GROUPS: VariantGroupMeta[] = [
-  { key: 'surfaces', i18n: 'theme.group.surfaces', tokens: surfaces },
-  { key: 'palette', i18n: 'theme.group.palette', tokens: palette },
+  { key: 'surfaces', i18n: 'theme.group.surfaces', tokens: [...surfaces, ...mask] },
+  { key: 'fills', i18n: 'theme.group.fills', tokens: fills },
   { key: 'hairlines', i18n: 'theme.group.hairlines', tokens: hairlines },
+  { key: 'brand', i18n: 'theme.group.brand', tokens: brand },
   { key: 'sidebar', i18n: 'theme.group.sidebar', tokens: sidebar },
-  { key: 'charts', i18n: 'theme.group.charts', tokens: charts },
   { key: 'feedback', i18n: 'theme.group.feedback', tokens: feedback },
+  { key: 'charts', i18n: 'theme.group.charts', tokens: charts },
 ]
 
 const ALL_TOKENS: VariantTokenMeta[] = DEFAULT_VARIANT_GROUPS.flatMap((group) => group.tokens)
 
 /**
- * The full-variants linkage model (§5.6).
+ * The full-variants linkage model (docs/theme.md §4).
+ *
+ * The groups mirror the v2 token families (surfaces / fills / hairlines / brand /
+ * region / status / charts); every entry is a v2 `SemanticToken`, so an override
+ * written here lands in the engine's own vocabulary.
  *
  * Derives the resolved token values from the left-column generator (the
  * settings `resolved` preset), exposes a per-token override channel bound to the
@@ -269,40 +273,29 @@ const ALL_TOKENS: VariantTokenMeta[] = DEFAULT_VARIANT_GROUPS.flatMap((group) =>
 export function useThemeVariants(options: UseThemeVariantsOptions): UseThemeVariantsReturn {
   const { settings, mode, groups = DEFAULT_VARIANT_GROUPS } = options
 
-  const derived = computed<Partial<Record<ColorKey, ColorValue>>>(() => {
-    const resolved = settings.resolved.value
+  const derived = computed<Record<SemanticToken, string>>(() => {
+    // 派生值来自引擎（与运行时同一套映射表），以 `palette.level` 形态展示 ——
+    // 与选择器接受的取值形态一致。
+    const map = resolveThemeMap(settings.resolved.value)
 
-    const preset = resolveTheme({
-      base: resolved.base ?? 'zinc',
-      primary: resolved.primary ?? 'indigo',
-      ...(resolved.feedback ? { feedback: resolved.feedback } : {}),
-      ...(resolved.chart ? { chart: resolved.chart } : {}),
-      ...(resolved.sidebar ? { sidebar: resolved.sidebar } : {}),
-      ...(resolved.sidebarDerive === undefined ? {} : { sidebarDerive: resolved.sidebarDerive }),
-      ...(resolved.lightLevel === undefined ? {} : { lightLevel: resolved.lightLevel }),
-      ...(resolved.darkLevel === undefined ? {} : { darkLevel: resolved.darkLevel }),
-      ...(resolved.overrides ? { overrides: resolved.overrides } : {}),
-      ...(resolved.size ? { size: resolved.size } : {}),
-      ...(resolved.radius ? { radius: resolved.radius } : {}),
-    })
-
-    // dark 层在生成时会被裁剪（与 light 相同的 token 被移除，CSS 由 light 继承），
-    // 因此 dark 模式需将 light 作为基底、dark 覆盖其上，避免裁剪 token 变为 undefined。
-    const tokens = mode.value === 'light' ? preset.light : { ...preset.light, ...preset.dark }
-
-    return { ...tokens }
+    return Object.fromEntries(
+      (Object.keys(map[mode.value]) as SemanticToken[]).map((token) => [
+        token,
+        valueRef(map[mode.value][token]),
+      ]),
+    ) as Record<SemanticToken, string>
   })
 
   // 每个 token 的 override 引用只创建一次并缓存，保证模板重复调用 `getOverride`
   // 拿到的是同一个 ref（否则每次渲染都会新建 computed，v-model 失效）。
-  const overrideCache = new Map<ColorKey, WritableComputedRef<ColorValue | ''>>()
+  const overrideCache = new Map<SemanticToken, WritableComputedRef<string>>()
 
-  const getOverride = (key: ColorKey): WritableComputedRef<ColorValue | ''> => {
+  const getOverride = (key: SemanticToken): WritableComputedRef<string> => {
     let ref = overrideCache.get(key)
 
     if (!ref) {
-      ref = computed<ColorValue | ''>({
-        get: () => settings.state.value.overrides?.[mode.value]?.[key] ?? '',
+      ref = computed<string>({
+        get: () => overrideOf(key),
         set: (value) => settings.setOverride(mode.value, key, value),
       })
       overrideCache.set(key, ref)
@@ -311,19 +304,31 @@ export function useThemeVariants(options: UseThemeVariantsOptions): UseThemeVari
     return ref
   }
 
-  const final = computed<Partial<Record<ColorKey, ColorValue>>>(() => {
-    const result = ALL_TOKENS.reduce<Partial<Record<ColorKey, ColorValue>>>((acc, meta) => {
-      const override = settings.state.value.overrides?.[mode.value]?.[meta.key]
-      const value = override ?? derived.value[meta.key]
+  /**
+   * read the current override value of a token.
+   *
+   * The persisted overrides are keyed by token name; the vocabulary lives in the
+   * engine, so the read is typed loosely here.
+   */
+  const overrideOf = (key: SemanticToken): string =>
+    settings.state.value.overrides?.[mode.value]?.[key] ?? ''
 
-      if (value) {
-        acc[meta.key] = value
-      }
+  const final = computed<Record<SemanticToken, ColorValue>>(() => {
+    // `token.*` 引用在引擎里已解析；面板选择器只吃 ColorValue，所以这里用
+    // 同一映射表的 valueRef 展示，而不是把 `token.primary` 字面量塞进 picker。
+    const map = resolveThemeMap(settings.resolved.value)
+
+    const result = ALL_TOKENS.reduce<Partial<Record<SemanticToken, string>>>((acc, meta) => {
+      const raw = overrideOf(meta.key)
+
+      acc[meta.key] = raw.startsWith('token.')
+        ? valueRef(map[mode.value][meta.key])
+        : raw || derived.value[meta.key]
 
       return acc
     }, {})
 
-    return result
+    return result as Record<SemanticToken, ColorValue>
   })
 
   const hasOverrides = computed<boolean>(() => {
@@ -332,7 +337,7 @@ export function useThemeVariants(options: UseThemeVariantsOptions): UseThemeVari
     return tokens != null && Object.keys(tokens).length > 0
   })
 
-  const clearOverride = (key: ColorKey): void => {
+  const clearOverride = (key: SemanticToken): void => {
     settings.setOverride(mode.value, key, '')
   }
 

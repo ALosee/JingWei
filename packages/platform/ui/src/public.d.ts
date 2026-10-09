@@ -1,20 +1,22 @@
-import type { InputClearProps } from '@soybeanjs/headless/input'
-import type { LayoutTriggerProps } from '@soybeanjs/headless/layout'
-import type { ProgressProviderProps } from '@soybeanjs/headless/progress'
-import type { TextareaClearProps } from '@soybeanjs/headless/textarea'
-import type { ToastProviderProps as HeadlessToastProviderProps } from '@soybeanjs/headless/toast'
+import type { InputClearProps } from '@vean/aria/input'
+import type { LayoutTriggerProps } from '@vean/aria/layout'
+import type { ProgressProviderProps } from '@vean/aria/progress'
+import type { TextareaClearProps } from '@vean/aria/textarea'
+import type { ToastProviderProps as HeadlessToastProviderProps } from '@vean/aria/toast'
 import type {
   FlattenedItem,
   TreeItemData,
+  TreeItemEmits,
   TreeItemProps,
   TreeRootEmits,
   TreeRootProps,
-} from '@soybeanjs/headless/tree'
-import type { PaletteColorLevel } from '@soybeanjs/theme'
-import type {
-  ColorTokens as ThemeColorTokens,
-  ColorValue as ThemeColorValue,
-} from '@soybeanjs/theme'
+  TreeVirtualizerItemProps,
+  TreeVirtualizerItemEmits,
+} from '@vean/aria/tree'
+import type { TreeNavOptionData } from '@vean/aria/tree-nav'
+import type { MaybeArray } from '@vean/aria/types'
+import type { PaletteLevel } from '@vean/theme'
+import type { ColorValue as ThemeColorValue } from '@vean/theme'
 import type { DefineComponent } from 'vue'
 
 import type {
@@ -68,6 +70,12 @@ import type {
   PageTabsSlots,
   PageTabsVariant,
 } from './components/page-tabs/types'
+import type {
+  PaletteChangePayload,
+  PalettePickerEmits,
+  PalettePickerProps,
+  PaletteSelectValue,
+} from './components/palette-picker/types'
 import type { PopoverEmits, PopoverProps, PopoverSlots } from './components/popover/types'
 import type { ProgressCircleProps, ProgressProps } from './components/progress/types'
 import type {
@@ -97,9 +105,15 @@ import type {
 import type { SwitchEmits, SwitchProps, SwitchShape, SwitchSlots } from './components/switch/types'
 import type { TabsEmits, TabsOptionData, TabsProps, TabsSlots } from './components/tabs/types'
 import type { TextareaEmits, TextareaProps, TextareaSlots } from './components/textarea/types'
+import type {
+  ThemeCustomizerProps,
+  ThemeCustomizerSection,
+} from './components/theme-customizer/types'
+import type { ThemeModeSegmentProps } from './components/theme-mode-segment/types'
 import type { ToastProviderProps } from './components/toast/types'
 import type { TreeMenuEmits, TreeMenuProps, TreeMenuSlots } from './components/tree-menu/types'
-import type { TreeSlots } from './components/tree/types'
+import type { TreeNavProps, TreeNavEmits, TreeNavSlots } from './components/tree-nav/types'
+import type { TreeSlots, TreeVirtualizerProps, TreeVirtualizerEmits } from './components/tree/types'
 import type {
   ManagementListToolbarEmits,
   ManagementListToolbarProps,
@@ -108,25 +122,12 @@ import type {
   ManagementWorkspaceProps,
   ManagementWorkspaceSlots,
 } from './patterns/management-workspace/types'
-import type {
-  RuntimeThemePalette,
-  ThemePaletteColors,
-  ThemePaletteSlot,
-} from './patterns/theme-palette/theme-palette'
+import type { ThemePaletteColors } from './patterns/theme-palette/theme-palette'
 import type {
   ThemePaletteSelectItem,
   ThemePaletteSelectProps,
 } from './patterns/theme-palette/types'
-import type {
-  PaletteChangePayload,
-  PalettePickerEmits,
-  PalettePickerProps,
-  PaletteSelectValue,
-} from './patterns/theme-settings-panel/palette-picker-types'
-import type {
-  ThemeCustomizerProps,
-  ThemeCustomizerSection,
-} from './patterns/theme-settings-panel/types'
+import type { ThemeColorTokens } from './theme/types'
 
 type UiComponent<Props = object> = DefineComponent<Props>
 
@@ -168,6 +169,7 @@ export declare const SplitterPanel: UiComponent<SplitterPanelProps>
 export declare const SplitterResizeHandle: UiComponent<SplitterResizeHandleProps>
 export declare const ThemeCustomizer: UiComponent
 export declare const ThemeSettingsPanel: UiComponent<ThemeCustomizerProps>
+export declare const ThemeModeSegment: UiComponent<ThemeModeSegmentProps>
 export declare const ThemePaletteSelect: UiComponent<ThemePaletteSelectProps>
 export declare const ThemeScope: UiComponent<{
   theme: ConfigProviderProps['theme']
@@ -176,16 +178,22 @@ export declare const ThemeScope: UiComponent<{
 export declare const Tooltip: UiComponent
 export declare const ToastProvider: UiComponent<HeadlessToastProviderProps & ToastProviderProps>
 export declare const Tabs: UiComponent<TabsProps<TabsOptionData>>
+export declare const TreeNav: UiComponent<TreeNavProps>
 export declare const TreeMenu: UiComponent<TreeMenuProps>
 export declare const Tree: UiComponent<TreeRootProps>
 export declare const TreeItem: UiComponent<TreeItemProps>
+export declare const TreeVirtualizer: UiComponent<
+  TreeVirtualizerProps<TreeItemData, MaybeArray<string> | undefined, boolean>
+>
+export declare const TreeVirtualizerItem: UiComponent<TreeVirtualizerItemProps>
 export declare const Switch: UiComponent<SwitchProps>
 export declare const Textarea: UiComponent<TextareaProps>
 export declare const TextareaClear: UiComponent<TextareaClearProps>
 
-export { dialog } from '@soybeanjs/headless/dialog'
-export { progress } from '@soybeanjs/headless/progress'
-export { toast } from '@soybeanjs/headless/toast'
+export { dialog } from '@vean/aria/dialog'
+export { progress } from '@vean/aria/progress'
+export { toast } from '@vean/aria/toast'
+export type { TreeSelectEvent, TreeToggleEvent } from '@vean/aria/types'
 
 export declare function useTheme(): ThemeContext | null
 export declare function generateThemePaletteColors(seedColor: string): ThemePaletteColors
@@ -197,16 +205,7 @@ export declare function normalizeThemePaletteColor(input: string): {
   hsl: string
   oklch: string
 }
-export declare function registerThemePalette(
-  palette: RuntimeThemePalette,
-  target: 'base' | 'primary',
-): string
-export declare function themePaletteKey(
-  palette: RuntimeThemePalette,
-  target: 'base' | 'primary',
-): string
-export declare function createThemePaletteSlot(target: 'base' | 'primary'): ThemePaletteSlot
-export declare const themePaletteLevels: readonly PaletteColorLevel[]
+export declare const themePaletteLevels: readonly PaletteLevel[]
 
 export type {
   ThemeCustomizerProps,
@@ -215,9 +214,7 @@ export type {
   PalettePickerEmits,
   PalettePickerProps,
   PaletteSelectValue,
-  RuntimeThemePalette,
   ThemePaletteColors,
-  ThemePaletteSlot,
   ThemePaletteSelectItem,
   ThemePaletteSelectProps,
   ThemeColorTokens,
@@ -308,13 +305,23 @@ export type {
   TabsProps,
   TabsSlots,
   ThemeContext,
+  ThemeModeSegmentProps,
+  TreeNavProps,
+  TreeNavEmits,
+  TreeNavSlots,
+  TreeNavOptionData,
   TreeMenuEmits,
   TreeMenuProps,
   TreeMenuSlots,
   TreeItemData,
   TreeItemProps,
+  TreeItemEmits,
   TreeRootEmits as TreeEmits,
   TreeRootProps as TreeProps,
   TreeSlots,
+  TreeVirtualizerProps,
+  TreeVirtualizerEmits,
+  TreeVirtualizerItemProps,
+  TreeVirtualizerItemEmits,
   FlattenedItem,
 }

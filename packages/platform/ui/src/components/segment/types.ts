@@ -6,8 +6,8 @@ import type {
   SegmentCompactSlots,
   SegmentUi,
   SegmentOptionData,
-} from '@soybeanjs/headless/segment'
-import type { AcceptableValue, ClassValue } from '@soybeanjs/headless/types'
+} from '@vean/aria/segment'
+import type { AcceptableValue, ClassValue } from '@vean/aria/types'
 
 /**
  * Properties for the Segment component.

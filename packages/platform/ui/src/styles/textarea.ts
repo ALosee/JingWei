@@ -7,9 +7,7 @@ import { miniButtonIconVariants } from './button'
 
 export const textareaVariants = scv({
   extendBase: (props) => ({
-    clear: miniButtonIconVariants(
-      props.size === undefined ? { shape: 'circle' } : { size: props.size, shape: 'circle' },
-    ),
+    clear: miniButtonIconVariants({ size: props.size ?? 'md', shape: 'circle' }),
   }),
   slots: {
     root: ['group relative flex flex-col', ...fieldChrome, ...fieldDisabled],

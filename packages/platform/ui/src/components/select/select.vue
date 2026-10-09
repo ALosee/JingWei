@@ -1,10 +1,10 @@
 <script setup lang="ts" generic="T extends DefinedValue, M extends boolean = false">
 import { selectVariants } from '#ui/styles/select'
-import { useForwardListeners, useOmitProps } from '@soybeanjs/headless/composables'
-import { SelectCompact, provideSelectUi } from '@soybeanjs/headless/select'
-import { keysOf } from '@soybeanjs/headless/shared'
-import type { DefinedValue } from '@soybeanjs/headless/types'
-import { computed } from 'vue'
+import { useForwardListeners, useOmitProps } from '@vean/aria/composables'
+import { SelectCompact, provideSelectUi } from '@vean/aria/select'
+import { keysOf } from '@vean/aria/shared'
+import type { DefinedValue } from '@vean/aria/types'
+import { computed, useAttrs } from 'vue'
 
 import type { SelectProps, SelectEmits, SelectSlots } from './types'
 
@@ -22,7 +22,10 @@ const emit = defineEmits<SelectEmits<T, M>>()
 
 const slots = defineSlots<SelectSlots<T, M>>()
 
-const forwardedProps = useOmitProps(props, ['class', 'ui', 'size'])
+const forwardedProps = useOmitProps(props, ['class', 'ui', 'size', 'triggerProps'])
+
+const attrs = useAttrs()
+const triggerProps = computed(() => ({ ...attrs, ...props.triggerProps }))
 
 const listeners = useForwardListeners(emit)
 
@@ -34,7 +37,12 @@ provideSelectUi(ui)
 </script>
 
 <template>
-  <SelectCompact v-bind="forwardedProps" :items="items" v-on="listeners">
+  <SelectCompact
+    v-bind="forwardedProps"
+    :items="items"
+    :trigger-props="triggerProps"
+    v-on="listeners"
+  >
     <template v-for="slotName in slotNames" #[slotName]="slotProps">
       <!-- @vue-ignore ignore vue slot props type -->
       <slot :name="slotName" v-bind="slotProps" />

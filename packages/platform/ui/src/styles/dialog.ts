@@ -12,15 +12,17 @@ export const dialogVariants = scv({
   }),
   slots: {
     overlay: [
-      `fixed inset-0 z-50 bg-black/80`,
+      // 遮罩 = 一个 token：通道在 `--mask`、浓度在 `--mask-alpha`（0.25 亮 / 0.30 暗），
+      // 不再由每个模态各自写 `bg-black/25 dark:bg-black/30`
+      `fixed inset-0 z-base bg-mask`,
       `data-[state=open]:animate-in data-[state=open]:fade-in-0`,
       `data-[state=closed]:animate-out data-[state=closed]:fade-out-0`,
     ],
     popup: [
-      `group fixed start-1/2 top-1/2 z-50 flex flex-col w-max lt-sm:w-full border bg-background shadow-lg outline-none duration-200 rounded-lg`,
+      `group fixed start-1/2 top-1/2 z-base flex flex-col w-max lt-sm:w-full lt-sm:min-w-auto lt-sm:max-w-full border bg-popover shadow-lg outline-none duration-200 rounded-lg`,
       `-translate-x-1/2 -translate-y-1/2 [&[dir=rtl]]:translate-x-1/2`,
       `data-[dragging]:transition-none data-[dragging]:select-none`,
-      // Always present so the fullscreen visuals respond to the headless
+      // Always present so the fullscreen visuals respond to the Aria
       // `data-fullscreen` attribute in both controlled and uncontrolled modes.
       `data-[fullscreen]:w-screen data-[fullscreen]:h-screen`,
       `data-[fullscreen]:max-w-none data-[fullscreen]:rounded-none data-[fullscreen]:shadow-none`,
@@ -39,7 +41,10 @@ export const dialogVariants = scv({
     description: `text-muted-foreground m-0`,
     close: `absolute`,
     fullscreen: `absolute`,
-    content: `grow overflow-auto`,
+    // `overscroll-behavior: contain` keeps a scroll that reaches the content's
+    // edge from chaining to the page behind — the body is deliberately left
+    // scrollable on iOS so the browser chrome does not re-appear mid-open.
+    content: `grow overflow-auto [overscroll-behavior:contain]`,
     footer: `flex justify-end lt-sm:flex-col-reverse`,
     cancel: '',
     confirm: '',

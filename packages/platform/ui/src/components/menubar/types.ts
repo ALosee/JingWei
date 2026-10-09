@@ -1,20 +1,42 @@
 import type { ThemeSize } from '#ui/theme'
 import type {
-  MenubarCompactEmits,
   MenubarCompactProps,
+  MenubarCompactEmits,
   MenubarCompactSlots,
   MenubarUi,
-} from '@soybeanjs/headless/menubar'
-import type { AlignSide, ClassValue, DefinedValue } from '@soybeanjs/headless/types'
+} from '@vean/aria/menubar'
+import type { ClassValue, AlignSide, DefinedValue } from '@vean/aria/types'
 
+/**
+ * Properties for the Menubar component.
+ */
 export interface MenubarProps<
   T extends DefinedValue = DefinedValue,
 > extends MenubarCompactProps<T> {
+  /**
+   * class of menubar root
+   */
   class?: ClassValue
+  /**
+   * Visual size of the component.
+   */
   size?: ThemeSize
+  /**
+   * Per-slot class overrides for the component.
+   */
   ui?: Partial<MenubarUi>
+  /**
+   * Indicator position.
+   */
   indicatorPosition?: AlignSide
 }
 
+/**
+ * Events for the Menubar component.
+ */
 export type MenubarEmits<T extends DefinedValue = DefinedValue> = MenubarCompactEmits<T>
+
+/**
+ * Slots for the Menubar component.
+ */
 export type MenubarSlots<T extends DefinedValue = DefinedValue> = MenubarCompactSlots<T>

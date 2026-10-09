@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { defaultBrandConfiguration } from '@jingwei/module-branding/shared'
-import { registerBrandThemePalettes } from '@jingwei/module-branding/web'
-import { generateThemePaletteColors, getThemePaletteColors } from '@jingwei/ui'
+import { generateThemePaletteColors } from '@jingwei/ui'
 
 import { tenantThemeOptions } from './tenant-theme.js'
 
@@ -17,19 +16,17 @@ describe('tenant theme adapter', () => {
         },
         'lg',
       ),
-    ).toEqual({
+    ).toMatchObject({
       base: 'zinc',
       primary: 'rose',
-      radius: 'md',
-      sidebar: 'contrast',
-      sidebarDerive: true,
+      radius: '0.625rem',
       feedback: 'classic',
-      chart: 'vivid',
-      lightLevel: 0,
-      darkLevel: 0,
       borderOpacity: 1,
-      overrides: { light: {}, dark: {} },
       size: 'lg',
+      overrides: {
+        light: { sidebar: 'zinc.800', 'sidebar-primary': 'white', 'chart-1': 'orange.600' },
+        dark: { sidebar: 'zinc.900' },
+      },
     })
   })
 
@@ -54,11 +51,8 @@ describe('tenant theme adapter', () => {
     }
     const options = tenantThemeOptions(visualTheme, 'md')
 
-    expect(options.primary).toMatch(/^tenant-primary-/)
-    if (!options.primary) throw new Error('Tenant primary palette key was not derived')
-    registerBrandThemePalettes(visualTheme)
-    expect(getThemePaletteColors(options.primary, 'primary')[100]).toEqual(colors[100])
-    expect(options.overrides?.light?.card).toBe(`${options.primary}.100`)
-    expect(options.overrides?.dark?.card).toBe(`${options.primary}.900`)
+    expect(options.primary).toBe('indigo')
+    expect(options.overrides?.light?.card).toBe(colors[100].hsl)
+    expect(options.overrides?.dark?.card).toBe(colors[900].hsl)
   })
 })

@@ -3,7 +3,7 @@ import type {
   CollapsibleRootEmits,
   CollapsibleRootProps,
   CollapsibleUi,
-} from '@soybeanjs/headless/collapsible'
+} from '@vean/aria/collapsible'
 
 /**
  * Properties for the Collapsible component.

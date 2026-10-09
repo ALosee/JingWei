@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { inputNumberVariants } from '#ui/styles/input-number'
-import { useOmitProps } from '@soybeanjs/headless/composables'
-import { InputNumberCompact, provideInputNumberUi } from '@soybeanjs/headless/input-number'
-import { keysOf } from '@soybeanjs/headless/shared'
+import { useOmitProps } from '@vean/aria/composables'
+import { InputNumberCompact, provideInputNumberUi } from '@vean/aria/input-number'
+import { keysOf } from '@vean/aria/shared'
 import { computed } from 'vue'
 
 import type { InputNumberProps, InputNumberEmits, InputNumberSlots } from './types'

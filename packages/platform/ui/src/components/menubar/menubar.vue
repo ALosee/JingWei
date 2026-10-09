@@ -1,37 +1,51 @@
-<script setup lang="ts">
-import { menuVariants } from '#ui/styles/menu'
+<script setup lang="ts" generic="T extends DefinedValue = DefinedValue">
 import { menubarVariants } from '#ui/styles/menubar'
-import { useForwardListeners, useOmitProps } from '@soybeanjs/headless/composables'
-import { provideMenuUi } from '@soybeanjs/headless/menu'
-import { MenubarCompact, provideMenubarUi } from '@soybeanjs/headless/menubar'
-import { keysOf } from '@soybeanjs/utils'
+import { useForwardListeners, useOmitProps } from '@vean/aria/composables'
+import { MenubarCompact, provideMenubarUi } from '@vean/aria/menubar'
+import { keysOf } from '@vean/aria/shared'
+import type { DefinedValue } from '@vean/aria/types'
 import { computed } from 'vue'
 
-import type { MenubarEmits, MenubarProps, MenubarSlots } from './types'
+import { provideMenuUi } from '../menu/context'
+import type { MenubarProps, MenubarEmits, MenubarSlots } from './types'
 
-defineOptions({ name: 'SMenubar' })
+defineOptions({
+  name: 'SMenubar',
+})
 
-const props = defineProps<MenubarProps<string>>()
-const emit = defineEmits<MenubarEmits<string>>()
-const slots = defineSlots<MenubarSlots<string>>()
+const props = defineProps<MenubarProps>()
+
+const emit = defineEmits<MenubarEmits>()
+
+const slots = defineSlots<MenubarSlots>()
+
 const forwardedProps = useOmitProps(props, ['class', 'size', 'ui', 'indicatorPosition'])
+
 const listeners = useForwardListeners(emit)
-const slotNames = computed(() => keysOf(slots))
+
+const slotNames = computed(() =>
+  keysOf(slots).filter((key) => key !== 'trigger' && key !== 'more-trigger'),
+)
+
 const ui = computed(() =>
   menubarVariants({ size: props.size, collapsible: props.collapsible }, props.ui, {
     root: props.class,
   }),
 )
-const menuUi = computed(() => menuVariants({ size: props.size }))
 
 provideMenubarUi(ui)
-provideMenuUi(menuUi)
+provideMenuUi(() => props)
 </script>
 
 <template>
   <MenubarCompact v-bind="forwardedProps" v-on="listeners">
+    <template #trigger="{ item }">
+      <slot name="trigger" :item="item" />
+    </template>
+    <template #more-trigger>
+      <slot name="more-trigger" />
+    </template>
     <template v-for="slotName in slotNames" :key="slotName" #[slotName]="slotProps">
-      <!-- @vue-ignore Headless owns the discriminated slot props. -->
       <slot :name="slotName" v-bind="slotProps" />
     </template>
   </MenubarCompact>

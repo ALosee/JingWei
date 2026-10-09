@@ -1,14 +1,13 @@
 import { colord, extend } from '@soybeanjs/colord'
 import a11yPlugin from '@soybeanjs/colord/plugins/a11y'
-import { resolveTheme } from '@soybeanjs/theme'
-import { createTheme } from '@soybeanjs/theme'
+import { resolveThemeMap, emitThemeCss, paletteChannel } from '@vean/theme'
 import { describe, expect, it } from 'vitest'
 
-import { generateThemePaletteColors, getThemePaletteColors } from '@jingwei/ui/theme-palette'
+import { generateThemePaletteColors } from '@jingwei/ui/theme-palette'
 
 import { inspectBrandThemePair, validateBrandTheme } from '../shared/brand-theme-validation.js'
 import { defaultBrandConfiguration, type BrandVisualTheme } from '../shared/index.js'
-import { brandThemeOptions, registerBrandThemePalettes } from './brand-theme.js'
+import { brandThemeOptions } from './brand-theme.js'
 
 extend([a11yPlugin])
 
@@ -20,17 +19,26 @@ function effectiveCssColor(css: string, mode: 'light' | 'dark', key: string): st
   const value =
     (mode === 'dark' ? declaration.exec(dark)?.[1] : undefined) ?? declaration.exec(root)?.[1]
   if (value === undefined) throw new Error(`Theme CSS is missing ${variable}`)
-  return `hsl(${value})`
+  const channels = value.replace(
+    /var\(--([a-z]+)-(\d+)\)/g,
+    (_, palette: string, level: string) =>
+      paletteChannel(
+        palette as Parameters<typeof paletteChannel>[0],
+        Number(level) as Parameters<typeof paletteChannel>[1],
+        'hsl',
+      ) ?? '',
+  )
+  return `hsl(${channels})`
 }
 
 function actualContrast(theme: BrandVisualTheme, surface: string, foreground: string): number {
-  registerBrandThemePalettes(theme)
-  const css = createTheme({
+  const options = {
     ...brandThemeOptions(theme),
-    styleTarget: ':root',
+    styleTarget: ':root' as const,
     darkSelector: '.dark',
-    format: 'hsl',
-  })
+    format: 'hsl' as const,
+  }
+  const css = emitThemeCss(resolveThemeMap(options), options)
   return colord(effectiveCssColor(css, 'dark', surface)).contrast(
     effectiveCssColor(css, 'dark', foreground),
   )
@@ -48,12 +56,10 @@ describe('published brand theme adapter', () => {
       },
     }
     const options = brandThemeOptions(theme)
-    expect(getThemePaletteColors(options.primary, 'primary')).toEqual({})
+    expect(options.primary).toBe('indigo')
+    expect(options.overrides?.light?.primary).toBe(theme.customPrimaryPalette?.colors[500].hsl)
 
-    registerBrandThemePalettes(theme)
-    expect(getThemePaletteColors(options.primary, 'primary')[500]).toEqual(
-      theme.customPrimaryPalette?.colors[500],
-    )
+    expect(options.overrides?.dark?.primary).toBe(theme.customPrimaryPalette?.colors[500].hsl)
   })
 
   it('keeps a tuned neutral primary in the neutral family', () => {
@@ -67,11 +73,16 @@ describe('published brand theme adapter', () => {
         colors: generateThemePaletteColors('#71717a'),
       },
     }
-    registerBrandThemePalettes(theme)
     const options = brandThemeOptions(theme)
-    const resolved = resolveTheme(options)
-    expect(resolved.light.primary).toBe(`${options.primary}.800`)
-    expect(resolved.dark.primary).toBe(`${options.primary}.200`)
+    const resolved = resolveThemeMap(options)
+    expect(resolved.light.primary).toEqual({
+      kind: 'color',
+      value: theme.customPrimaryPalette?.colors[800].hsl,
+    })
+    expect(resolved.dark.primary).toEqual({
+      kind: 'color',
+      value: theme.customPrimaryPalette?.colors[200].hsl,
+    })
   })
 
   it('agrees with generated dark CSS when only light primary or card is changed', () => {

@@ -62,7 +62,7 @@ const layoutUi = {
         <div
           v-if="showSiderBrand"
           data-global-brand-region="sider"
-          class="h-[var(--soybean-layout-header-height)] flex shrink-0 items-center overflow-hidden pl-4"
+          class="h-[var(--vean-layout-header-height)] flex shrink-0 items-center overflow-hidden pl-4"
         >
           <GlobalBrand :compact="preferences.siderCollapsed" />
         </div>

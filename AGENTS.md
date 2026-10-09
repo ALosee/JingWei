@@ -84,8 +84,8 @@
 
 ### 7.1 UI 源码与组件归属（ADR 0010）
 
-- `@jingwei/ui` 拥有 styled UI 源码，禁止 workspace package 依赖或 authored source 导入 `@soybeanjs/ui`；允许使用固定版本的 `@soybeanjs/headless`、`@soybeanjs/theme`、`@soybeanjs/ui-uno`、`@soybeanjs/cva` 和 sbean。
-- sbean 生成组件保留原生小写目录、完整组件族和内部 `S*` 命名；只在 `@jingwei/ui` 公共入口映射 `Button`、`Input`、`Dialog`、`ConfigProvider` 等无前缀名称。禁止业务代码导入 `@jingwei/ui/src`。
+- `@jingwei/ui` 拥有 styled UI 源码，禁止 workspace package 依赖或 authored source 导入 `@vean/ui`（包括旧名 `@soybeanjs/ui`）；允许使用固定版本的 `@vean/aria`、`@vean/theme`、`@vean/unocss`、`@soybeanjs/cva` 和 vean。
+- vean 生成组件保留原生小写目录、完整组件族和内部 `S*` 命名；只在 `@jingwei/ui` 公共入口映射 `Button`、`Input`、`Dialog`、`ConfigProvider` 等无前缀名称。禁止业务代码导入 `@jingwei/ui/src`。
 - 无业务基础组件归 `packages/platform/ui/src/components`，跨模块通用组合归 `src/patterns`，模块业务组件归 Owner Module 的 `src/web/components`，应用壳组件归 `apps/web/src/components`。不得以复用为由把组织、权限等业务语义下沉到平台 UI。
 - 新增基础组件使用 `pnpm ui:inspect <name>`、`pnpm ui:add <name>` 和 `pnpm ui:diff <name>`；生成后 review、补显式公共 export 与交互测试，不再人工重排生成目录。
 

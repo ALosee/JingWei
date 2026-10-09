@@ -1,21 +1,25 @@
 <script setup lang="ts">
 import { textareaVariants } from '#ui/styles/textarea'
-import { useOmitProps } from '@soybeanjs/headless/composables'
-import { keysOf } from '@soybeanjs/headless/shared'
-import { TextareaCompact, provideTextareaUi } from '@soybeanjs/headless/textarea'
-import { computed } from 'vue'
+import { useOmitProps } from '@vean/aria/composables'
+import { keysOf } from '@vean/aria/shared'
+import { TextareaCompact, provideTextareaUi } from '@vean/aria/textarea'
+import { computed, useAttrs } from 'vue'
 
 import type { TextareaProps, TextareaEmits, TextareaSlots } from './types'
 
 defineOptions({
   name: 'STextarea',
+  inheritAttrs: false,
 })
 
 const props = defineProps<TextareaProps>()
 
 const emit = defineEmits<TextareaEmits>()
 
-const forwardedProps = useOmitProps(props, ['class', 'size', 'ui', 'resize'])
+const forwardedProps = useOmitProps(props, ['class', 'size', 'ui', 'resize', 'controlProps'])
+
+const attrs = useAttrs()
+const controlProps = computed(() => ({ ...attrs, ...props.controlProps }))
 
 const slots = defineSlots<TextareaSlots>()
 
@@ -36,7 +40,11 @@ provideTextareaUi(ui)
 </script>
 
 <template>
-  <TextareaCompact v-bind="forwardedProps" @update:model-value="emit('update:modelValue', $event)">
+  <TextareaCompact
+    v-bind="forwardedProps"
+    :control-props="controlProps"
+    @update:model-value="emit('update:modelValue', $event)"
+  >
     <template v-for="slotName in slotNames" :key="slotName" #[slotName]="slotProps">
       <slot :name="slotName" v-bind="slotProps" />
     </template>

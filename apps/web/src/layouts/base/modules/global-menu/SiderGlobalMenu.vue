@@ -34,7 +34,7 @@ const collapsed = computed(() => !isMobile.value && preferences.value.siderColla
         :items="items"
         :collapsed="collapsed"
         :collapsed-width="64"
-        expand-strategy="active"
+        expand-strategy="selected"
       />
     </nav>
   </Teleport>

@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import { toastVariants } from '#ui/styles/toast'
-import { useOmitProps } from '@soybeanjs/headless/composables'
-import { ToastProvider, provideToastUi } from '@soybeanjs/headless/toast'
-import { useStyleTag } from '@vueuse/core'
+import { useOmitProps } from '@vean/aria/composables'
+import { ToastProvider, provideToastUi } from '@vean/aria/toast'
 import { computed } from 'vue'
 
 import type { ToastProviderProps } from './types'
-
-import toastStyles from './styles.css?raw'
 
 defineOptions({
   name: 'SToastProvider',
@@ -28,10 +25,6 @@ const ui = computed(() =>
     props.ui,
   ),
 )
-
-useStyleTag(toastStyles, {
-  id: '__SoybeanUI_toastStyle',
-})
 
 provideToastUi(ui)
 </script>

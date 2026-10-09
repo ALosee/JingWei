@@ -1,10 +1,10 @@
 // @vitest-environment happy-dom
 
-import { getRegistry } from '@soybeanjs/theme'
 import { shallowMount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 
-import { generateThemePaletteColors, getThemePaletteColors } from '@jingwei/ui/theme-palette'
+import { ThemeScope } from '@jingwei/ui'
+import { generateThemePaletteColors } from '@jingwei/ui/theme-palette'
 
 import { defaultBrandConfiguration } from '../../shared/index.js'
 import BrandingLivePreview from './branding-live-preview.vue'
@@ -42,8 +42,7 @@ describe('BrandingLivePreview', () => {
     )
   })
 
-  it('updates a draft ramp in one registry slot and releases it on unmount', async () => {
-    const registeredBefore = new Set(Object.keys(getRegistry().primary))
+  it('updates controlled draft colors without registering global theme state', async () => {
     const first = generateThemePaletteColors('#6366f1')
     const second = generateThemePaletteColors('#dc2626')
     const preview = {
@@ -59,21 +58,11 @@ describe('BrandingLivePreview', () => {
       },
     }
     const wrapper = shallowMount(BrandingLivePreview, {
-      global: { stubs: { ThemeScope: { template: '<div><slot /></div>' } } },
-      props: {
-        preview,
-        logoUrl: null,
-        markUrl: null,
-        faviconUrl: null,
-        state: 'DRAFT',
-      },
+      props: { preview, logoUrl: null, markUrl: null, faviconUrl: null, state: 'DRAFT' },
     })
-    const slotKey = Object.keys(getRegistry().primary).find(
-      (key) => key.startsWith('tenant-preview-primary-') && !registeredBefore.has(key),
+    expect(wrapper.getComponent(ThemeScope).props('theme')?.overrides?.light?.primary).toBe(
+      first[500].hsl,
     )
-    if (slotKey === undefined) throw new Error('Preview palette slot was not registered')
-    expect(getThemePaletteColors(slotKey, 'primary')[500]).toEqual(first[500])
-
     await wrapper.setProps({
       preview: {
         ...preview,
@@ -83,9 +72,9 @@ describe('BrandingLivePreview', () => {
         },
       },
     })
-    expect(getThemePaletteColors(slotKey, 'primary')[500]).toEqual(second[500])
-
+    expect(wrapper.getComponent(ThemeScope).props('theme')?.overrides?.light?.primary).toBe(
+      second[500].hsl,
+    )
     wrapper.unmount()
-    expect(getThemePaletteColors(slotKey, 'primary')).toEqual({})
   })
 })

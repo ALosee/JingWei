@@ -1,8 +1,8 @@
-import { createTheme } from '@soybeanjs/theme'
 import { computed, defineComponent, Fragment, h, useId } from 'vue'
 import type { PropType } from 'vue'
 
 import type { ConfigProviderThemeOptions } from '../../components/config-provider/types'
+import { buildThemeCss } from '../../theme/adapter'
 
 /** Render a theme inside an isolated CSS-variable scope without replacing the application theme. */
 export const ThemeScope = defineComponent({
@@ -22,7 +22,7 @@ export const ThemeScope = defineComponent({
     const id = useId()
     const selector = `[data-ui-theme-scope="${id}"]`
     const css = computed(() =>
-      createTheme({
+      buildThemeCss({
         ...props.theme,
         styleTarget: ':root',
         darkSelector: `${selector}[data-theme-mode="dark"]`,

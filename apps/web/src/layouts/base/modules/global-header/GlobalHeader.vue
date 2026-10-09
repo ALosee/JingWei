@@ -19,7 +19,7 @@ defineProps<{
       v-if="showBrand"
       data-global-brand-region="header"
       class="h-full flex shrink-0 items-center overflow-hidden"
-      :class="reserveBrandSpace ? 'w-[--soybean-sidebar-width] px-4' : 'px-4'"
+      :class="reserveBrandSpace ? 'w-[--vean-sidebar-width] px-4' : 'px-4'"
     >
       <GlobalBrand :compact="brandCompact" />
     </div>

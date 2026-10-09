@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 
 import { ButtonIcon, Icon, ManagementListToolbar, Tree, TreeItem } from '@jingwei/ui'
-import type { FlattenedItem } from '@jingwei/ui'
+import type { FlattenedItem, TreeToggleEvent } from '@jingwei/ui'
 
 import {
   organizationTypeLabel,
@@ -78,8 +78,18 @@ function rowPadding(level: number): string {
   return `${0.35 + Math.max(0, level - 1) * 0.9}rem`
 }
 
-function itemOf(flat: FlattenedItem<OrganizationTreeItemData>) {
-  return flat.data
+// Row selection keeps the branch open state; Vean handles arrow-key expansion.
+function onToggle(event: TreeToggleEvent): void {
+  const original = event.detail.originalEvent
+  if (!(original instanceof KeyboardEvent) || !['ArrowLeft', 'ArrowRight'].includes(original.key)) {
+    event.preventDefault()
+  }
+}
+
+function toggleBranch(value: string): void {
+  expanded.value = expanded.value.includes(value)
+    ? expanded.value.filter((id) => id !== value)
+    : [...expanded.value, value]
 }
 </script>
 
@@ -138,14 +148,18 @@ function itemOf(flat: FlattenedItem<OrganizationTreeItemData>) {
         :items="treeItems"
         allow-parent-select
         selection-behavior="replace"
+        aria-label="组织架构"
         class="m-0 list-none p-0"
       >
-        <template #item="{ item }">
+        <template #item="{ item }: { item: FlattenedItem<OrganizationTreeItemData> }">
           <TreeItem
             v-slot="{ isSelected, isExpanded, hasChildren }"
             :value="item.value"
+            :data-vean-tree-value="item.value"
             :level="item.level"
-            :disabled-toggle="true"
+            :aria-label="`${item.data.name} ${item.data.code}`"
+            class="group rounded-md outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-inset"
+            @toggle="onToggle"
           >
             <div
               class="group relative flex items-center gap-1 rounded-md pe-1"
@@ -157,16 +171,10 @@ function itemOf(flat: FlattenedItem<OrganizationTreeItemData>) {
               <button
                 v-if="hasChildren"
                 type="button"
+                tabindex="-1"
                 class="grid size-5 shrink-0 place-items-center border-none bg-transparent text-muted-foreground cursor-pointer"
-                :aria-label="isExpanded ? '折叠' : '展开'"
-                @click.stop="
-                  emit(
-                    'updateExpandedIds',
-                    isExpanded
-                      ? expanded.filter((id) => id !== item.value)
-                      : [...expanded, item.value],
-                  )
-                "
+                :aria-label="`${isExpanded ? '折叠' : '展开'} ${item.data.name}`"
+                @click.stop="toggleBranch(item.value)"
               >
                 <Icon
                   :icon="isExpanded ? 'lucide:chevron-down' : 'lucide:chevron-right'"
@@ -177,14 +185,14 @@ function itemOf(flat: FlattenedItem<OrganizationTreeItemData>) {
 
               <div class="flex min-w-0 flex-1 items-center gap-2 py-1.5 pe-1">
                 <Icon
-                  :icon="organizationUnitIcon(itemOf(item).type)"
+                  :icon="organizationUnitIcon(item.data.type)"
                   class="size-3.5 shrink-0 opacity-65"
                 />
                 <span class="min-w-0 flex-1 truncate text-sm">
-                  {{ itemOf(item).name }}
+                  {{ item.data.name }}
                 </span>
                 <span
-                  v-if="itemOf(item).status === 'DISABLED'"
+                  v-if="item.data.status === 'DISABLED'"
                   class="shrink-0 rounded-full bg-muted px-1.5 py-px text-[0.65rem] text-muted-foreground"
                 >
                   停用
@@ -193,14 +201,14 @@ function itemOf(flat: FlattenedItem<OrganizationTreeItemData>) {
                   v-else
                   class="shrink-0 truncate text-[0.65rem] text-muted-foreground max-w-5rem"
                 >
-                  {{ organizationTypeLabel(itemOf(item).type) }}
+                  {{ organizationTypeLabel(item.data.type) }}
                 </span>
               </div>
 
               <ButtonIcon
                 v-if="canManage"
                 icon="lucide:plus"
-                class="opacity-0 transition-opacity group-hover:opacity-100"
+                class="opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
                 :class="isSelected ? 'opacity-100' : ''"
                 aria-label="新建下级组织"
                 :disabled="busy"

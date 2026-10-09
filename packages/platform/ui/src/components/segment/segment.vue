@@ -1,8 +1,7 @@
 <script setup lang="ts" generic="T extends SegmentOptionData = SegmentOptionData">
 import { segmentVariants } from '#ui/styles/segment'
-import { useForwardListeners, useOmitProps } from '@soybeanjs/headless/composables'
-import { SegmentCompact } from '@soybeanjs/headless/segment'
-import { provideTabsUi } from '@soybeanjs/headless/tabs'
+import { useForwardListeners, useOmitProps } from '@vean/aria/composables'
+import { provideSegmentUi, SegmentCompact } from '@vean/aria/segment'
 import { computed } from 'vue'
 
 import type { SegmentProps, SegmentEmits, SegmentSlots, SegmentOptionData } from './types'
@@ -41,7 +40,7 @@ const ui = computed(() =>
   ),
 )
 
-provideTabsUi(ui)
+provideSegmentUi(ui)
 </script>
 
 <template>

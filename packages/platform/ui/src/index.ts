@@ -118,16 +118,36 @@ export type { TooltipEmits, TooltipProps, TooltipSlots } from './components/tool
 export { toast, SToastProvider as ToastProvider } from './components/toast/index.js'
 export { STabs as Tabs } from './components/tabs/index.js'
 export type { TabsEmits, TabsOptionData, TabsProps, TabsSlots } from './components/tabs/index.js'
+export { SThemeModeSegment as ThemeModeSegment } from './components/theme-mode-segment/index.js'
+export type { ThemeModeSegmentProps } from './components/theme-mode-segment/index.js'
+export { STreeNav as TreeNav } from './components/tree-nav/index.js'
+export type {
+  TreeNavProps,
+  TreeNavEmits,
+  TreeNavSlots,
+  TreeNavOptionData,
+} from './components/tree-nav/index.js'
 export { STreeMenu as TreeMenu } from './components/tree-menu/index.js'
 export type { TreeMenuEmits, TreeMenuProps, TreeMenuSlots } from './components/tree-menu/index.js'
-export { STree as Tree, STreeItem as TreeItem } from './components/tree/index.js'
+export {
+  STree as Tree,
+  STreeItem as TreeItem,
+  STreeVirtualizer as TreeVirtualizer,
+  STreeVirtualizerItem as TreeVirtualizerItem,
+} from './components/tree/index.js'
+export type { TreeSelectEvent, TreeToggleEvent } from '@vean/aria/types'
 export type {
   FlattenedItem,
   TreeItemData,
   TreeItemProps,
+  TreeItemEmits,
   TreeRootEmits as TreeEmits,
   TreeRootProps as TreeProps,
   TreeSlots,
+  TreeVirtualizerProps,
+  TreeVirtualizerEmits,
+  TreeVirtualizerItemProps,
+  TreeVirtualizerItemEmits,
 } from './components/tree/index.js'
 export { SSwitch as Switch } from './components/switch/index.js'
 export type {
@@ -158,18 +178,13 @@ export type {
 } from './patterns/theme-settings-panel/index.js'
 export { ThemePaletteSelect } from './patterns/theme-palette/index.js'
 export {
-  createThemePaletteSlot,
   generateThemePaletteColors,
   getThemePaletteColors,
   normalizeThemePaletteColor,
-  registerThemePalette,
-  themePaletteKey,
   themePaletteLevels,
 } from './patterns/theme-palette/index.js'
 export type {
-  RuntimeThemePalette,
   ThemePaletteColors,
-  ThemePaletteSlot,
   ThemePaletteSelectItem,
   ThemePaletteSelectProps,
 } from './patterns/theme-palette/index.js'
@@ -186,7 +201,5 @@ export type {
   ManagementWorkspaceProps,
   ManagementWorkspaceSlots,
 } from './patterns/management-workspace/index.js'
-export type {
-  ColorTokens as ThemeColorTokens,
-  ColorValue as ThemeColorValue,
-} from '@soybeanjs/theme'
+export type { ThemeColorTokens } from './theme/types'
+export type { ColorValue as ThemeColorValue } from '@vean/theme'

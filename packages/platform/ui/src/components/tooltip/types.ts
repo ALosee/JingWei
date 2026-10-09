@@ -4,8 +4,8 @@ import type {
   TooltipCompactProps,
   TooltipCompactSlots,
   TooltipUi,
-} from '@soybeanjs/headless/tooltip'
-import type { ClassValue } from '@soybeanjs/headless/types'
+} from '@vean/aria/tooltip'
+import type { ClassValue } from '@vean/aria/types'
 
 /**
  * Properties for the Tooltip component.

@@ -6,7 +6,7 @@ import type { VariantProps } from '@soybeanjs/cva'
 export const buttonVariants = cv({
   base: [
     'inline-flex items-center justify-center font-medium transition-all-150',
-    'outline-none focus-visible:ring-3 focus-visible:ring-offset-background',
+    'outline-none focus-visible:ring-3 focus-visible:ring-offset-card',
     'data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50',
   ],
   variants: {
@@ -17,16 +17,16 @@ export const buttonVariants = cv({
       warning: `focus-visible:ring-warning/30`,
       info: `focus-visible:ring-info/30`,
       carbon: `focus-visible:ring-carbon/30`,
-      secondary: `focus-visible:ring-secondary-foreground/20`,
-      accent: `focus-visible:ring-accent-foreground/20`,
+      secondary: `focus-visible:ring-secondary-foreground/20 text-secondary-foreground`,
+      accent: `focus-visible:ring-accent-foreground/10 text-accent-foreground`,
     },
     variant: {
-      solid: `bg-primary text-primary-foreground data-[normal]:hover:bg-primary/80 data-[normal]:active:bg-primary-600`,
-      pure: 'border border-border bg-background text-accent-foreground data-[normal]:hover:bg-accent/60 data-[normal]:active:bg-accent',
-      plain: 'border border-border bg-background text-foreground',
-      outline: 'border bg-background',
-      dashed: 'border border-dashed bg-background',
-      soft: 'bg-primary/10 data-[normal]:hover:bg-primary/10 data-[normal]:active:bg-primary/20',
+      solid: '',
+      pure: 'border border-border bg-card text-accent-foreground data-[normal]:hover:bg-accent data-[normal]:active:bg-accent-foreground/10',
+      plain: 'border border-border bg-card text-foreground',
+      outline: 'border bg-card',
+      dashed: 'border border-dashed bg-card',
+      soft: '',
       ghost: 'bg-transparent',
       link: 'bg-transparent underline-offset-4 data-[normal]:hover:underline',
     },
@@ -41,8 +41,8 @@ export const buttonVariants = cv({
     shape: {
       auto: 'rounded-md',
       rounded: 'rounded-full',
-      square: 'h-8 w-8 p-0 gap-0 rounded-md',
-      circle: 'h-8 w-8 p-0 gap-0 rounded-full',
+      square: 'rounded-md',
+      circle: 'rounded-full',
     },
     shadow: {
       none: 'shadow-none',
@@ -56,6 +56,11 @@ export const buttonVariants = cv({
     },
   },
   compoundVariants: [
+    {
+      color: 'primary',
+      variant: 'solid',
+      class: `bg-primary text-primary-foreground data-[normal]:hover:bg-primary/80 data-[normal]:active:bg-primary-600`,
+    },
     {
       color: 'destructive',
       variant: 'solid',
@@ -79,17 +84,17 @@ export const buttonVariants = cv({
     {
       color: 'carbon',
       variant: 'solid',
-      class: `bg-carbon text-carbon-foreground data-[normal]:hover:bg-carbon/80 data-[normal]:active:bg-carbon-600`,
+      class: `bg-carbon text-carbon-foreground data-[normal]:hover:bg-carbon/80 data-[normal]:active:bg-carbon`,
     },
     {
       color: 'secondary',
-      variant: 'solid',
-      class: `bg-secondary text-secondary-foreground data-[normal]:hover:bg-secondary/80 data-[normal]:active:bg-secondary-foreground/20`,
+      variant: ['solid', 'soft'],
+      class: `bg-secondary`,
     },
     {
       color: 'accent',
-      variant: 'solid',
-      class: `bg-accent text-accent-foreground data-[normal]:hover:bg-accent/80 data-[normal]:active:bg-accent-foreground/20`,
+      variant: ['solid', 'soft'],
+      class: `bg-accent`,
     },
     {
       color: 'primary',
@@ -120,16 +125,6 @@ export const buttonVariants = cv({
       color: 'carbon',
       variant: ['outline', 'dashed', 'soft', 'ghost', 'link'],
       class: 'text-carbon',
-    },
-    {
-      color: 'secondary',
-      variant: ['outline', 'dashed', 'soft', 'ghost', 'link'],
-      class: 'text-secondary-foreground',
-    },
-    {
-      color: 'accent',
-      variant: ['outline', 'dashed', 'soft', 'ghost', 'link'],
-      class: 'text-accent-foreground',
     },
     {
       color: 'primary',
@@ -163,15 +158,13 @@ export const buttonVariants = cv({
     },
     {
       color: 'secondary',
-      variant: ['outline', 'dashed', 'ghost'],
-      class:
-        'data-[normal]:hover:bg-secondary-foreground/10 data-[normal]:active:bg-secondary-foreground/20',
+      variant: ['solid', 'outline', 'dashed', 'soft', 'ghost'],
+      class: 'data-[normal]:hover:bg-secondary data-[normal]:active:bg-secondary-foreground/20',
     },
     {
       color: 'accent',
-      variant: ['outline', 'dashed', 'ghost'],
-      class:
-        'data-[normal]:hover:bg-accent-foreground/10 data-[normal]:active:bg-accent-foreground/20',
+      variant: ['solid', 'outline', 'dashed', 'soft', 'ghost'],
+      class: 'data-[normal]:hover:bg-accent data-[normal]:active:bg-accent-foreground/10',
     },
     {
       color: 'primary',
@@ -206,14 +199,12 @@ export const buttonVariants = cv({
     {
       color: 'secondary',
       variant: 'plain',
-      class:
-        'data-[normal]:hover:border-secondary-foreground data-[normal]:hover:text-secondary-foreground',
+      class: 'data-[normal]:hover:border-secondary-foreground/20',
     },
     {
       color: 'accent',
       variant: 'plain',
-      class:
-        'data-[normal]:hover:border-accent-foreground data-[normal]:hover:text-accent-foreground',
+      class: 'data-[normal]:hover:border-accent-foreground/10',
     },
     {
       color: 'primary',
@@ -248,12 +239,17 @@ export const buttonVariants = cv({
     {
       color: 'secondary',
       variant: ['outline', 'dashed'],
-      class: 'border-secondary-foreground',
+      class: 'border-secondary-foreground/20',
     },
     {
       color: 'accent',
       variant: ['outline', 'dashed'],
-      class: 'border-accent-foreground',
+      class: 'border-accent-foreground/10',
+    },
+    {
+      color: 'primary',
+      variant: 'soft',
+      class: 'bg-primary/10 data-[normal]:hover:bg-primary/10 data-[normal]:active:bg-primary/20',
     },
     {
       color: 'destructive',
@@ -280,18 +276,6 @@ export const buttonVariants = cv({
       color: 'carbon',
       variant: 'soft',
       class: 'bg-carbon/10 data-[normal]:hover:bg-carbon/10 data-[normal]:active:bg-carbon/20',
-    },
-    {
-      color: 'secondary',
-      variant: 'soft',
-      class:
-        'bg-secondary-foreground/10 data-[normal]:hover:bg-secondary-foreground/10 data-[normal]:active:bg-secondary-foreground/20',
-    },
-    {
-      color: 'accent',
-      variant: 'soft',
-      class:
-        'bg-accent-foreground/10 data-[normal]:hover:bg-accent-foreground/10 data-[normal]:active:bg-accent-foreground/20',
     },
     {
       size: 'xs',
@@ -354,6 +338,11 @@ export const buttonVariants = cv({
       class: 'h-12 px-10',
     },
     {
+      shape: ['square', 'circle'],
+      fitContent: false,
+      class: 'p-0 gap-0',
+    },
+    {
       size: 'xs',
       fitContent: false,
       shape: ['square', 'circle'],
@@ -364,6 +353,12 @@ export const buttonVariants = cv({
       fitContent: false,
       shape: ['square', 'circle'],
       class: 'w-7',
+    },
+    {
+      size: 'md',
+      fitContent: false,
+      shape: ['square', 'circle'],
+      class: 'w-8',
     },
     {
       size: 'lg',

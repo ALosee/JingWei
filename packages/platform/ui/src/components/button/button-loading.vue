@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useOmitProps } from '@soybeanjs/headless/composables'
+import { useOmitProps } from '@vean/aria/composables'
 import { computed, ref, useAttrs, watchEffect } from 'vue'
 
 import Icon from '../icon/icon.vue'
@@ -12,6 +12,7 @@ defineOptions({
 })
 
 const props = withDefaults(defineProps<ButtonLoadingProps>(), {
+  loading: false,
   loadingIcon: 'svg-spinners:270-ring',
   loadingPosition: 'start',
 })

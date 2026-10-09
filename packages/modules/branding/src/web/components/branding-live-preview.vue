@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref, watch } from 'vue'
+import { computed, ref } from 'vue'
 
-import { createThemePaletteSlot, Icon, Segment, ThemeScope } from '@jingwei/ui'
+import { Icon, Segment, ThemeScope } from '@jingwei/ui'
 import type { SegmentOptionData } from '@jingwei/ui'
 
 import { resolveHorizontalBrandMode, type BrandConfiguration } from '../../shared/index.js'
-import { brandThemeOptions, brandThemePalette } from '../brand-theme.js'
+import { brandThemeOptions } from '../brand-theme.js'
 import { platformDefaultFavicon } from '../platform-brand.js'
 import BrandLogoAsset from './brand-logo-asset.vue'
 import DefaultBrandMark from './default-brand-mark.vue'
@@ -38,31 +38,7 @@ const browserTitle = computed(() =>
     ? props.preview.systemName
     : `工作区 · ${props.preview.systemName}`,
 )
-const paletteSlots = {
-  base: createThemePaletteSlot('base'),
-  primary: createThemePaletteSlot('primary'),
-}
-watch(
-  () => props.preview.visualTheme,
-  (theme) => {
-    for (const target of ['base', 'primary'] as const) {
-      const palette = brandThemePalette(theme, target)
-      if (palette !== null) paletteSlots[target].update(palette)
-    }
-  },
-  { deep: true, immediate: true, flush: 'sync' },
-)
-onUnmounted(() => {
-  paletteSlots.base.dispose()
-  paletteSlots.primary.dispose()
-})
-const previewTheme = computed(() => {
-  const theme = props.preview.visualTheme
-  return brandThemeOptions(theme, undefined, {
-    ...(theme.customBasePalette === null ? {} : { base: paletteSlots.base.key }),
-    ...(theme.customPrimaryPalette === null ? {} : { primary: paletteSlots.primary.key }),
-  })
-})
+const previewTheme = computed(() => brandThemeOptions(props.preview.visualTheme))
 const horizontalMode = computed(() =>
   resolveHorizontalBrandMode(props.preview.horizontalBrandMode, props.logoUrl),
 )

@@ -1,11 +1,11 @@
 import type { NavigationNode } from '@jingwei/module-navigation/shared'
 import { navigationTarget } from '@jingwei/module-navigation/shared'
-import type { MenubarProps, TreeMenuProps } from '@jingwei/ui'
+import type { TreeNavProps, TreeMenuProps } from '@jingwei/ui'
 
 import { childNavigationNodes, resolveNavigationIcon } from '../../../../navigation/presentation.js'
 
 export type SiderMenuItem = TreeMenuProps['items'][number]
-export type HeaderMenuItem = MenubarProps<string>['items'][number]
+export type HeaderMenuItem = TreeNavProps['items'][number]
 
 export function createSiderMenuItems(
   nodes: readonly NavigationNode[],
@@ -47,7 +47,7 @@ export function createHeaderMenuItems(
       icon: resolveNavigationIcon(node.icon, node.type),
     }
 
-    if (children.length > 0) return { ...common, children }
+    if (children.length > 0) return { ...common, children, isGroup: node.type === 'GROUP' }
     if (node.type === 'MENU') return { ...common, to: navigationTarget(node) ?? '/__recovery' }
     if (node.type === 'EXTERNAL_LINK') {
       return {

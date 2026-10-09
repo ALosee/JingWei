@@ -1,33 +1,54 @@
-<script setup lang="ts">
-import { menuVariants } from '#ui/styles/menu'
+<script setup lang="ts" generic="T extends TreeMenuBaseOptionData = TreeMenuBaseOptionData">
 import { treeMenuVariants } from '#ui/styles/tree-menu'
-import { useForwardListeners, useOmitProps } from '@soybeanjs/headless/composables'
-import { provideMenuUi } from '@soybeanjs/headless/menu'
-import { TreeMenuCompact, provideTreeMenuUi } from '@soybeanjs/headless/tree-menu'
-import { keysOf } from '@soybeanjs/utils'
+import { themeSizeMap, themeSizeRatio } from '#ui/theme'
+import { useForwardListeners, useOmitProps } from '@vean/aria/composables'
+import { keysOf } from '@vean/aria/shared'
+import { TreeMenuCompact, provideTreeMenuUi } from '@vean/aria/tree-menu'
+import type { TreeMenuBaseOptionData } from '@vean/aria/tree-menu'
 import { computed } from 'vue'
 
-import type { TreeMenuEmits, TreeMenuProps, TreeMenuSlots } from './types'
+import { provideMenuUi } from '../menu/context'
+import type { TreeMenuProps, TreeMenuEmits, TreeMenuSlots } from './types'
 
-defineOptions({ name: 'STreeMenu' })
+defineOptions({
+  name: 'STreeMenu',
+})
 
-const props = withDefaults(defineProps<TreeMenuProps>(), { collapsed: undefined })
+const props = withDefaults(defineProps<TreeMenuProps>(), {
+  size: 'md',
+  collapsed: undefined,
+})
+
 const emit = defineEmits<TreeMenuEmits>()
-const slots = defineSlots<TreeMenuSlots>()
-const forwardedProps = useOmitProps(props, ['class', 'size', 'ui'])
-const listeners = useForwardListeners(emit)
-const slotNames = computed(() => keysOf(slots))
-const ui = computed(() => treeMenuVariants({ size: props.size }, props.ui, { root: props.class }))
-const menuUi = computed(() => menuVariants({ size: props.size }))
 
-provideMenuUi(menuUi)
+const slots = defineSlots<TreeMenuSlots>()
+
+const forwardedProps = useOmitProps(props, ['class', 'size', 'ui', 'pxToRem'])
+
+const listeners = useForwardListeners(emit)
+
+const slotNames = computed(() => keysOf(slots))
+
+const ui = computed(() => treeMenuVariants({ size: props.size }, props.ui, { root: props.class }))
+
+const pxToRem = (px: number) => {
+  if (props.pxToRem) {
+    return props.pxToRem(px)
+  }
+
+  return (px * themeSizeRatio[props.size]) / themeSizeMap.md
+}
+
+provideMenuUi(() => ({
+  size: props.size,
+}))
 provideTreeMenuUi(ui)
 </script>
 
 <template>
-  <TreeMenuCompact v-bind="forwardedProps" v-on="listeners">
+  <TreeMenuCompact v-bind="forwardedProps" :px-to-rem="pxToRem" v-on="listeners">
     <template v-for="slotName in slotNames" #[slotName]="slotProps">
-      <!-- @vue-ignore Headless owns the recursive slot props. -->
+      <!-- @vue-expect-error ignore slot type -->
       <slot :name="slotName" v-bind="slotProps" />
     </template>
   </TreeMenuCompact>

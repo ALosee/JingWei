@@ -5,18 +5,19 @@ packages:
   - tooling/*
 
 catalog:
+  '@tanstack/vue-virtual': 3.13.39
   '@iconify/vue': 5.0.1
   '@eslint/js': 10.0.1
   '@hono/node-server': 2.1.1
   '@hono/zod-openapi': 1.6.3
   '@playwright/test': 1.62.1
-  '@soybeanjs/colord': 0.7.1
+  '@soybeanjs/colord': 0.8.1
   '@soybeanjs/cva': 0.1.1
   '@soybeanjs/fetch': 0.1.0
-  '@soybeanjs/headless': 0.30.0
+  '@vean/aria': 0.50.0
   '@soybeanjs/utils': 0.1.1
-  '@soybeanjs/theme': 0.30.0
-  '@soybeanjs/ui-uno': 0.30.0
+  '@vean/theme': 0.50.0
+  '@vean/unocss': 0.50.0
   '@soybeanjs/unocss-preset': 0.2.0
   '@types/node': 24.13.3
   '@types/pg': 8.23.1
@@ -38,7 +39,7 @@ catalog:
   pinia: 4.0.3
   pino: 10.3.1
   saxes: 6.0.0
-  sbean: 0.30.0
+  '@vean/cli': 0.50.0
   tsdown: 0.22.14
   tsx: 4.23.13
   typescript: 5.9.3

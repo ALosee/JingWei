@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 
 import { ButtonIcon, dialog, Icon, ManagementListToolbar, Tree, TreeItem } from '@jingwei/ui'
-import type { FlattenedItem, TreeItemData } from '@jingwei/ui'
+import type { TreeItemData, FlattenedItem, TreeToggleEvent } from '@jingwei/ui'
 
 import type { DictionaryCategory, DictionaryStatus, DictionaryType } from '../../shared/index.js'
 
@@ -98,10 +98,6 @@ function typeValue(id: string) {
   return `type:${id}`
 }
 
-function itemOf(flat: FlattenedItem<DictionaryTreeItemData>) {
-  return flat.data
-}
-
 function rowPadding(level: number) {
   return `${0.35 + Math.max(0, level - 1) * 0.9}rem`
 }
@@ -121,6 +117,14 @@ function toggleExpanded(value: string, isExpanded: boolean) {
   expanded.value = isExpanded
     ? expanded.value.filter((id) => id !== value)
     : [...expanded.value, value]
+}
+
+// Row selection keeps the branch open state; Vean handles arrow-key expansion.
+function onToggle(event: TreeToggleEvent): void {
+  const original = event.detail.originalEvent
+  if (!(original instanceof KeyboardEvent) || !['ArrowLeft', 'ArrowRight'].includes(original.key)) {
+    event.preventDefault()
+  }
 }
 
 function expandAll() {
@@ -213,29 +217,32 @@ watch(
         :items="treeItems"
         allow-parent-select
         selection-behavior="replace"
+        aria-label="字典目录"
         class="m-0 list-none p-0"
       >
-        <template #item="{ item }">
+        <template #item="{ item }: { item: FlattenedItem<DictionaryTreeItemData> }">
           <TreeItem
-            v-slot="{ isExpanded, hasChildren }"
+            v-slot="{ isSelected, isExpanded, hasChildren }"
             :value="item.value"
+            :data-vean-tree-value="item.value"
             :level="item.level"
-            :disabled-toggle="true"
+            :aria-label="`${item.data.name} ${item.data.code}`"
+            class="group rounded-md outline-none focus-visible:ring-2 focus-visible:ring-primary/60 focus-visible:ring-inset"
+            @toggle="onToggle"
           >
             <div
               class="group relative flex items-center gap-1 rounded-md pe-1 transition-colors"
               :class="
-                selectedValue === item.value
-                  ? 'bg-primary/10 text-primary'
-                  : 'text-foreground hover:bg-accent/50'
+                isSelected ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-accent/50'
               "
               :style="{ paddingLeft: rowPadding(item.level) }"
             >
               <button
                 v-if="hasChildren"
                 type="button"
+                tabindex="-1"
                 class="grid size-5 shrink-0 place-items-center border-none bg-transparent text-muted-foreground cursor-pointer"
-                :aria-label="isExpanded ? '折叠' : '展开'"
+                :aria-label="`${isExpanded ? '折叠' : '展开'} ${item.data.name}`"
                 @click.stop="toggleExpanded(item.value, isExpanded)"
               >
                 <Icon
@@ -247,42 +254,42 @@ watch(
 
               <div class="flex min-w-0 flex-1 items-center gap-2 py-1.5 pe-1">
                 <Icon
-                  :icon="itemOf(item).kind === 'category' ? 'lucide:folder' : 'lucide:list'"
+                  :icon="item.data.kind === 'category' ? 'lucide:folder' : 'lucide:list'"
                   class="size-3.5 shrink-0 opacity-65"
                 />
                 <span class="min-w-0 flex-1">
-                  <span class="block truncate text-sm font-medium">{{ itemOf(item).name }}</span>
+                  <span class="block truncate text-sm font-medium">{{ item.data.name }}</span>
                   <span class="block truncate font-mono text-[0.68rem] text-muted-foreground">
-                    {{ itemOf(item).code }}
-                    <template v-if="itemOf(item).kind === 'category'">
-                      · {{ itemOf(item).childCount }} 个类型
+                    {{ item.data.code }}
+                    <template v-if="item.data.kind === 'category'">
+                      · {{ item.data.childCount }} 个类型
                     </template>
                   </span>
                 </span>
                 <span
-                  v-if="itemOf(item).kind === 'type' && itemOf(item).status === 'DISABLED'"
+                  v-if="item.data.kind === 'type' && item.data.status === 'DISABLED'"
                   class="shrink-0 rounded bg-muted px-1.5 py-0.5 text-[11px] text-muted-foreground"
                 >
                   停用
                 </span>
               </div>
 
-              <template v-if="canManage && itemOf(item).kind === 'category'">
+              <template v-if="canManage && item.data.kind === 'category'">
                 <ButtonIcon
                   icon="lucide:plus"
-                  class="opacity-0 transition-opacity group-hover:opacity-100"
-                  :class="selectedValue === item.value ? 'opacity-100' : ''"
+                  class="opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+                  :class="isSelected ? 'opacity-100' : ''"
                   aria-label="在分类下新建类型"
                   :disabled="busy"
-                  @click.stop="emit('beginCreateType', itemOf(item).id)"
+                  @click.stop="emit('beginCreateType', item.data.id)"
                 />
                 <ButtonIcon
                   icon="lucide:trash-2"
-                  class="opacity-0 transition-opacity group-hover:opacity-100"
-                  :class="selectedValue === item.value ? 'opacity-100' : ''"
+                  class="opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
+                  :class="isSelected ? 'opacity-100' : ''"
                   aria-label="删除分类"
-                  :disabled="busy || itemOf(item).childCount > 0"
-                  @click.stop="confirmDeleteCategory(itemOf(item).id)"
+                  :disabled="busy || item.data.childCount > 0"
+                  @click.stop="confirmDeleteCategory(item.data.id)"
                 />
               </template>
             </div>

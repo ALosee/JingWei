@@ -185,6 +185,28 @@ test.beforeEach(async ({ page }) => {
             createdAt: now,
             updatedAt: now,
           },
+          {
+            id: id(31),
+            parentId: id(30),
+            code: 'TECH',
+            name: '技术部',
+            type: 'DEPARTMENT',
+            status: 'ENABLED',
+            sortOrder: 0,
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            id: id(32),
+            parentId: id(31),
+            code: 'DEV',
+            name: '研发组',
+            type: 'TEAM',
+            status: 'DISABLED',
+            sortOrder: 0,
+            createdAt: now,
+            updatedAt: now,
+          },
         ],
       },
     }),
@@ -300,9 +322,10 @@ test('role permissions stay within the selected module', async ({ page }) => {
   await expect(page.getByRole('searchbox', { name: '搜索角色' })).toHaveValue('租户')
   await page
     .getByRole('searchbox', { name: '搜索角色' })
-    .locator('xpath=ancestor::*[@data-soybean-input-root]')
-    .locator('button[data-soybean-input-clearable]')
+    .locator('xpath=ancestor::*[@data-vean-input-root]')
+    .locator('button[data-vean-input-clearable]')
     .click()
+  await expect(searchField).toHaveValue('')
   await page.getByRole('button', { name: '关闭搜索' }).click()
   await page.getByRole('button', { name: '新建角色' }).click()
   await expect(page.getByRole('heading', { name: '新建角色' })).toBeVisible()
@@ -320,8 +343,8 @@ test('role permissions stay within the selected module', async ({ page }) => {
   await permissionSearch.fill('organization')
   await expect(page.getByText('organization.view')).toBeVisible()
   await permissionSearch
-    .locator('xpath=ancestor::*[@data-soybean-input-root]')
-    .locator('button[data-soybean-input-clearable]')
+    .locator('xpath=ancestor::*[@data-vean-input-root]')
+    .locator('button[data-vean-input-clearable]')
     .click()
   await expect(permissionSearch).toHaveValue('')
 })
@@ -364,4 +387,94 @@ test('dictionary management keeps type actions in the detail', async ({ page }) 
   await page.getByRole('treeitem', { name: /来源类型/ }).click()
   await expect(page.getByRole('heading', { name: '来源类型' })).toBeVisible()
   await expect(page.getByRole('button', { name: '新建条目' })).toHaveCount(1)
+})
+
+test('organization tree separates selection, keyboard expansion, search and node actions', async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await page.goto('/organization/units')
+  const tree = page.getByRole('tree', { name: '组织架构', exact: true })
+  const headquarters = tree.getByRole('treeitem', { name: /总部/ })
+  await page.getByRole('button', { name: '全部折叠', exact: true }).click()
+  await expect(headquarters).toHaveAttribute('aria-expanded', 'false')
+  await headquarters.click()
+  await expect(headquarters).toHaveAttribute('aria-selected', 'true')
+  await expect(headquarters).toHaveAttribute('aria-expanded', 'false')
+  await headquarters.focus()
+  await page.keyboard.press('ArrowRight')
+  await expect(headquarters).toHaveAttribute('aria-expanded', 'true')
+  await page.keyboard.press('ArrowRight')
+  const department = tree.getByRole('treeitem', { name: /技术部/ })
+  await expect(department).toBeFocused()
+  await expect(tree.locator('[data-vean-tree-motion]')).toHaveCount(0)
+  await expect(department).toBeFocused()
+  await expect(department.getByRole('button', { name: '新建下级组织' })).toHaveCSS('opacity', '1')
+  await page.keyboard.press('ArrowRight')
+  await expect(department).toHaveAttribute('aria-expanded', 'true')
+  await expect(department).toBeFocused()
+  await page.keyboard.press('ArrowDown')
+  const team = tree.getByRole('treeitem', { name: /研发组/ })
+  await expect(team).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(team).toHaveAttribute('aria-selected', 'true')
+  await expect(page.getByRole('heading', { name: '研发组', exact: true })).toBeVisible()
+  await page.screenshot({
+    path: testInfo.outputPath('organization-tree.png'),
+    animations: 'disabled',
+  })
+  await page.keyboard.press('ArrowLeft')
+  await expect(department).toBeFocused()
+  await page.keyboard.press('ArrowLeft')
+  await expect(department).toHaveAttribute('aria-expanded', 'false')
+  await page.getByRole('button', { name: '全部折叠', exact: true }).click()
+  await page.getByRole('button', { name: '搜索组织', exact: true }).click()
+  const search = page.getByRole('searchbox', { name: '搜索组织' })
+  await search.fill('DEV')
+  await expect(team).toBeVisible()
+  await search.fill('')
+  await expect(headquarters).toHaveAttribute('aria-expanded', 'false')
+  await expect(team).toHaveCount(0)
+  await headquarters.getByRole('button', { name: '新建下级组织' }).click()
+  await expect(page.getByRole('heading', { name: '新建组织', exact: true })).toBeVisible()
+  await expect(headquarters).toHaveAttribute('aria-selected', 'false')
+})
+
+test('dictionary tree supports keyboard expansion and preserves selection on category actions', async ({
+  page,
+}, testInfo) => {
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await page.goto('/dictionary/entries')
+  const tree = page.getByRole('tree', { name: '字典目录', exact: true })
+  const category = tree.getByRole('treeitem', { name: /通用数据/ })
+  await page.getByRole('button', { name: '全部折叠', exact: true }).click()
+  await category.click()
+  await expect(category).toHaveAttribute('aria-selected', 'true')
+  await expect(category).toHaveAttribute('aria-expanded', 'false')
+  await category.focus()
+  await page.keyboard.press('ArrowRight')
+  await expect(category).toHaveAttribute('aria-expanded', 'true')
+  await page.keyboard.press('ArrowRight')
+  const type = tree.getByRole('treeitem', { name: /来源类型/ })
+  await expect(type).toBeFocused()
+  await page.keyboard.press('Space')
+  await expect(type).toHaveAttribute('aria-selected', 'true')
+  await expect(category).toHaveAttribute('aria-selected', 'false')
+  await expect(page.getByRole('heading', { name: '来源类型', exact: true })).toBeVisible()
+  await page.screenshot({
+    path: testInfo.outputPath('dictionary-tree.png'),
+    animations: 'disabled',
+  })
+  await category.getByRole('button', { name: '在分类下新建类型' }).click()
+  await expect(page.getByRole('heading', { name: '新建字典类型', exact: true })).toBeVisible()
+  await expect(type).toHaveAttribute('aria-selected', 'true')
+  await expect(category.getByRole('button', { name: '删除分类' })).toBeDisabled()
+  await page.getByRole('button', { name: '全部折叠', exact: true }).click()
+  await page.getByRole('button', { name: '搜索字典目录', exact: true }).click()
+  const search = page.getByRole('searchbox', { name: '搜索字典目录' })
+  await search.fill('common.source')
+  await expect(type).toBeVisible()
+  await search.fill('')
+  await expect(category).toHaveAttribute('aria-expanded', 'false')
+  await expect(type).toHaveCount(0)
 })

@@ -4,8 +4,8 @@ import type {
   ButtonEmits,
   ButtonGroupProps as _ButtonGroupProps,
   ButtonProps as _ButtonProps,
-} from '@soybeanjs/headless/button'
-import type { Align, ClassValue, PropsToContext } from '@soybeanjs/headless/types'
+} from '@vean/aria/button'
+import type { Align, ClassValue, ToContext } from '@vean/aria/types'
 
 import type { IconValue, IconProps } from '../icon/types'
 import type { LinkProps } from '../link/types'
@@ -149,7 +149,7 @@ export interface ButtonGroupProps extends _ButtonGroupProps {
 /**
  * Context for the ButtonGroup component.
  */
-export type ButtonGroupContext = PropsToContext<
+export type ButtonGroupContext = ToContext<
   ButtonGroupProps,
   'color' | 'size' | 'variant' | 'shape' | 'shadow' | 'disabled' | 'fitContent'
 >

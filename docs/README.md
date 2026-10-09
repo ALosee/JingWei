@@ -58,7 +58,7 @@
 | [testing-quality.md](./testing-quality.md)                             | 如何测试，CI 为什么会失败？                                  |
 | [operations.md](./operations.md)                                       | 如何配置、迁移、构建、启动和排障？                           |
 | [glossary.md](./glossary.md)                                           | 项目术语的精确定义是什么？                                   |
-| [references/soybean-ui.md](./references/soybean-ui.md)                 | SoybeanUI Skill、AI 文档和上游版本如何固定与更新？           |
+| [references/vean-ui.md](./references/vean-ui.md)                       | VeanUI Skill、AI 文档和上游版本如何固定与更新？              |
 
 ## 子项目文档
 
@@ -90,7 +90,7 @@
 | module-sdk    | [README](../packages/platform/module-sdk/README.md)    | Manifest、Edition、Registry、模块契约   |
 | auth          | [README](../packages/platform/auth/README.md)          | 密码、会话、Origin 与 CSRF              |
 | control-plane | [README](../packages/platform/control-plane/README.md) | 平台管理员、独立会话与租户管理          |
-| api-client    | [README](../packages/platform/api-client/README.md)    | Soybean Fetch + OpenAPI 模块客户端      |
+| api-client    | [README](../packages/platform/api-client/README.md)    | Vean Fetch + OpenAPI 模块客户端         |
 | http-contract | [README](../packages/platform/http-contract/README.md) | 平台 HTTP 错误与安全方案契约            |
 | audit         | [README](../packages/platform/audit/README.md)         | 审计写入                                |
 | observability | [README](../packages/platform/observability/README.md) | 结构化日志                              |
@@ -133,7 +133,7 @@
 - 0006：限制 Elegant Router 为构建期页面注册表
 - [0007](./adr/0007-unified-navigation-and-role-grants.md)：统一五类导航节点、数据库布局配置与角色 navigation code 授权
 - [0008](./adr/0008-thin-entrypoints-and-owned-workflows.md)：调用式入口、装配与功能流程分离、状态所有权和自动职责检查
-- [0009](./adr/0009-openapi-contract-and-soybean-fetch.md)：Zod OpenAPI 单一契约、Scalar 文档与 Soybean Fetch 模块客户端
+- [0009](./adr/0009-openapi-contract-and-soybean-fetch.md)：Zod OpenAPI 单一契约、Scalar 文档与 Vean Fetch 模块客户端
 - [0015](./adr/0015-declare-http-authorization-contracts.md)：接口授权契约、启动校验与授权评估观测
 - [0016](./adr/0016-own-tenant-branding-in-a-dedicated-module.md)：独立租户品牌所有权、发布模型与壳层组合
 - [0017](./adr/0017-own-tenant-lifecycle-in-platform-tenancy.md)：平台租户生命周期、初始化与会话门禁

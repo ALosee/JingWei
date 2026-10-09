@@ -1,5 +1,5 @@
 import type { ThemeSize } from '#ui/theme'
-import type { ToastProviderProps as _ToastProviderProps, ToastUi } from '@soybeanjs/headless/toast'
+import type { ToastProviderProps as _ToastProviderProps, ToastUi } from '@vean/aria/toast'
 
 /**
  * Properties for the ToastProvider component.

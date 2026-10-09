@@ -72,14 +72,14 @@ IAM 登录页使用 useSignIn 管理提交状态和成功后的跳转。页面�
 ### 4.1 Web 组件归属
 
 ```text
-packages/platform/ui/src/components/          # sbean 管理的无业务基础组件
+packages/platform/ui/src/components/          # vean 管理的无业务基础组件
 packages/platform/ui/src/patterns/            # 跨模块通用组合模式
 packages/modules/<id>/src/web/components/     # 模块业务组件
 apps/web/src/components/                      # 仅属于应用壳的组件
 ```
 
-`@jingwei/ui` 源码拥有 styled layer，只以 `@soybeanjs/headless` 和 theme/recipe 包为底层；
-业务与应用代码禁止导入 `@soybeanjs/ui`。模块组件的判断标准是业务语义和变化所有权，不是
+`@jingwei/ui` 源码拥有 styled layer，只以 `@vean/aria` 和 theme/recipe 包为底层；
+业务与应用代码禁止导入 `@vean/ui`。模块组件的判断标准是业务语义和变化所有权，不是
 文件大小：OrganizationPicker 属于 Organization，即使多个模块使用也应通过该模块公开的
 Web 契约演进；Button、Input、Dialog 等无业务词汇的原语才属于平台 UI。页面专用的小组件
 可以紧邻页面，形成稳定复用后再移入模块 `web/components`，不预设万能 common 目录。
@@ -105,7 +105,7 @@ commands 是有明确目的的运维流程，不是把一般业务规则搬出 M
 | page-workflow-boundary          | 模块 Vue pages 不直接导入 client/api-client                                          |
 | workflow-outside-boundary       | 页面/装配不直接调用 fetch 或已识别模块 client                                        |
 | module-no-process-env           | 模块通过注入获得配置，不读取 process.env                                             |
-| source-controlled-ui            | package 与 authored source 不引入 `@soybeanjs/ui` styled 包                          |
+| source-controlled-ui            | package 与 authored source 不引入 `@vean/ui` styled 包                               |
 | ui-private-import               | `#ui/*` 私有 alias 不泄漏到 `@jingwei/ui` 之外                                       |
 
 检查 authored TS/Vue script，排除测试、generated、dist 和 node_modules。TypeScript AST 避免将模板文本、注释或普通字符串误认为代码。Application/API 可 type-only 引用 `@jingwei/tenancy` 的 TenantDirectory/ActiveTenantSnapshot 与 `@jingwei/config` 的 AppConfig 契约，但不能因此导入 DatabaseRuntime/Kysely 实现。

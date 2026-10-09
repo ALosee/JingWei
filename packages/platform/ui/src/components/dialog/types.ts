@@ -4,13 +4,19 @@ import type {
   DialogCompactEmits,
   DialogCompactSlots,
   DialogUi,
-} from '@soybeanjs/headless/dialog'
-import type { ClassValue } from '@soybeanjs/headless/types'
+} from '@vean/aria/dialog'
+import type { ClassValue } from '@vean/aria/types'
 
 /**
  * Properties for the Dialog component.
  */
 export interface DialogProps extends DialogCompactProps {
+  /**
+   * Whether show the fullscreen toggle button in the header of the dialog.
+   *
+   * @defaultValue false
+   */
+  showFullscreen?: boolean
   /**
    * the popup class of the dialog
    */

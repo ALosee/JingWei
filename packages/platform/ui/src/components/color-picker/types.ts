@@ -3,8 +3,8 @@ import type {
   ColorPickerCompactProps,
   ColorPickerCompactEmits,
   ColorPickerUi,
-} from '@soybeanjs/headless/color-picker'
-import type { ClassValue } from '@soybeanjs/headless/types'
+} from '@vean/aria/color-picker'
+import type { ClassValue } from '@vean/aria/types'
 
 /**
  * Properties for the ColorPicker component.

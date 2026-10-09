@@ -4,22 +4,48 @@ import { scv } from '@soybeanjs/cva'
 export const breadcrumbVariants = scv({
   slots: {
     root: '',
-    list: 'my-0 flex flex-nowrap items-center gap-2 overflow-hidden px-0 text-muted-foreground',
-    item: 'inline-flex min-w-0 items-center gap-2 list-none',
-    page: 'truncate font-normal text-foreground',
-    separator: 'shrink-0 text-muted-foreground list-none',
+    list: 'flex flex-wrap items-center my-0 px-0 break-words text-muted-foreground',
+    item: 'inline-flex items-center list-none',
+    page: 'font-normal text-foreground',
+    separator: 'text-muted-foreground shrink-0 list-none',
     ellipsis: 'flex items-center justify-center',
-    link: 'truncate rounded-sm decoration-none outline-none transition-colors-200 hover:text-foreground focus-visible:ring-3 focus-visible:ring-primary/30',
+    link: 'decoration-none hover:text-foreground transition-colors-200 rounded-sm outline-none focus-visible:ring-3 focus-visible:ring-offset-card focus-visible:ring-primary/30',
   },
   variants: {
     size: {
-      xs: { root: 'text-2xs' },
-      sm: { root: 'text-xs' },
-      md: { root: 'text-sm' },
-      lg: { root: 'text-base' },
-      xl: { root: 'text-lg' },
-      '2xl': { root: 'text-xl' },
+      xs: {
+        root: 'text-2xs',
+        list: 'gap-2',
+        item: 'gap-1.5',
+      },
+      sm: {
+        root: 'text-xs',
+        list: 'gap-2.5',
+        item: 'gap-1.75',
+      },
+      md: {
+        root: 'text-sm',
+        list: 'gap-3',
+        item: 'gap-2',
+      },
+      lg: {
+        root: 'text-base',
+        list: 'gap-3.5',
+        item: 'gap-2.5',
+      },
+      xl: {
+        root: 'text-lg',
+        list: 'gap-4',
+        item: 'gap-3',
+      },
+      '2xl': {
+        root: 'text-xl',
+        list: 'gap-4.5',
+        item: 'gap-3.5',
+      },
     },
   },
-  defaultVariants: { size: 'md' },
+  defaultVariants: {
+    size: 'md',
+  },
 })

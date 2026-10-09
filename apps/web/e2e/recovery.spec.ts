@@ -192,7 +192,7 @@ test('groups, directories, hidden dynamic pages and safe links remain distinct o
   await expect(menu.getByRole('link', { name: '帮助中心' })).toBeVisible()
 })
 
-test('editor saves a complete typed draft with CSRF', async ({ page, context }) => {
+test('editor saves a complete typed draft with CSRF', async ({ page, context }, testInfo) => {
   const nodes = [login, group, directory, manage, account, external]
   const published: NavigationVersion = {
     id: id(100),
@@ -294,11 +294,47 @@ test('editor saves a complete typed draft with CSRF', async ({ page, context }) 
     })
   })
   await page.goto('/navigation/manage')
+  const tree = page.getByRole('tree', { name: '导航结构' })
+  const root = tree.getByRole('treeitem', { name: '分组 工作区', exact: true })
+  const directoryItem = tree.getByRole('treeitem', { name: '目录 系统管理', exact: true })
+  const menuItem = tree.getByRole('treeitem', { name: '菜单 导航管理', exact: true })
+  await page.getByRole('button', { name: '全部折叠', exact: true }).click()
+  await root.click()
+  await expect(root).toHaveAttribute('aria-selected', 'true')
+  await expect(root).toHaveAttribute('aria-expanded', 'false')
+  await root.focus()
+  await page.keyboard.press('ArrowRight')
+  await expect(root).toHaveAttribute('aria-expanded', 'true')
+  await page.keyboard.press('ArrowRight')
+  await expect(tree.getByRole('treeitem', { name: '外链 帮助中心', exact: true })).toBeFocused()
+  await page.keyboard.press('ArrowDown')
+  await expect(directoryItem).toBeFocused()
+  await page.keyboard.press('ArrowRight')
+  await expect(directoryItem).toHaveAttribute('aria-expanded', 'true')
+  await page.keyboard.press('ArrowDown')
+  await expect(menuItem).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(menuItem).toHaveAttribute('aria-selected', 'true')
+  await expect(menuItem).toHaveAttribute('aria-expanded', 'false')
+  await page.getByRole('button', { name: '全部折叠', exact: true }).click()
+  const search = page.getByRole('textbox', { name: '搜索导航节点' })
+  await search.fill('个人账号')
+  await expect(tree.getByRole('treeitem', { name: '页面 个人账号', exact: true })).toBeVisible()
+  await expect(tree.getByRole('treeitem', { name: '外链 帮助中心', exact: true })).toHaveCount(0)
+  await search.fill('')
+  await expect(root).toHaveAttribute('aria-expanded', 'false')
+  await expect(menuItem).toHaveCount(0)
   await expect(page.getByRole('button', { name: '新建草稿', exact: true })).toBeEnabled()
   await page.getByRole('button', { name: '新建草稿', exact: true }).click()
   await expect(page.getByText('已创建草稿；普通用户仍使用当前发布版本。')).toBeVisible()
-  await page.getByRole('button', { name: '菜单 导航管理' }).click()
+  await page.getByRole('button', { name: '全部展开', exact: true }).click()
+  await tree.getByRole('treeitem', { name: '菜单 导航管理', exact: true }).click()
+  await page.screenshot({
+    path: testInfo.outputPath('navigation-tree.png'),
+    animations: 'disabled',
+  })
   await page.getByRole('textbox', { name: '名称', exact: true }).fill('新的导航名称')
+  await page.getByRole('button', { name: '高级', exact: true }).click()
   await page
     .getByRole('textbox', { name: '默认 query（JSON）', exact: true })
     .fill('{"section":"nodes"}')
@@ -310,6 +346,8 @@ test('editor saves a complete typed draft with CSRF', async ({ page, context }) 
   await page.getByRole('tab', { name: '角色授权' }).click()
   await page.getByRole('tabpanel', { name: '角色授权' }).getByRole('combobox').click()
   await page.getByRole('option', { name: 'Reader · reader' }).click()
-  await expect(page.getByRole('alert')).toContainText('没有功能权限')
+  await expect(page.getByRole('alert').filter({ visible: true }).last()).toContainText(
+    '没有功能权限',
+  )
   await expect(page.getByRole('button', { name: '保存角色授权' })).toBeDisabled()
 })

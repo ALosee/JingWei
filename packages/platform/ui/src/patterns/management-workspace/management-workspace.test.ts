@@ -6,7 +6,7 @@ import ManagementListToolbar from './management-list-toolbar.vue'
 import ManagementWorkspace from './management-workspace.vue'
 
 describe('ManagementListToolbar', () => {
-  it('expands search, keeps the keyword on close, and restores the actions', async () => {
+  it('expands search, keeps the keyword on close, and clears it independently', async () => {
     const wrapper = mount(ManagementListToolbar, {
       attachTo: document.body,
       props: {
@@ -33,6 +33,15 @@ describe('ManagementListToolbar', () => {
       await input.trigger('keydown', { key: 'Escape' })
       expect(wrapper.emitted('update:modelValue')).toEqual([['管理员']])
       expect(wrapper.get('button[aria-label="搜索角色"]').element).toBe(document.activeElement)
+
+      await wrapper.setProps({ modelValue: '管理员' })
+      await wrapper.get('button[aria-label="搜索角色"]').trigger('click')
+      expect(wrapper.get<HTMLInputElement>('input[aria-label="搜索角色"]').element.value).toBe(
+        '管理员',
+      )
+      await wrapper.get('button[data-vean-input-clearable]').trigger('click')
+      expect(wrapper.emitted('update:modelValue')).toEqual([['管理员'], ['']])
+      expect(wrapper.find('input[aria-label="搜索角色"]').exists()).toBe(true)
     } finally {
       wrapper.unmount()
     }

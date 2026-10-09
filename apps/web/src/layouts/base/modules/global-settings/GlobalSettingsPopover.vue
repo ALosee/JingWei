@@ -11,12 +11,6 @@ const tabs = [
   { value: 'appearance', label: '外观设置' },
   { value: 'layout', label: '布局设置' },
 ]
-const sectionTabsUi = {
-  list: 'w-full justify-start gap-2 rounded-none border-b border-border bg-transparent p-0',
-  trigger:
-    'flex-none rounded-none border-b-2 border-transparent px-3 py-2.5 text-sm text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none',
-  content: 'mt-0',
-}
 </script>
 
 <template>
@@ -31,27 +25,24 @@ const sectionTabsUi = {
       <ButtonIcon icon="lucide:settings" variant="ghost" aria-label="工作区设置" />
     </template>
 
-    <header class="mb-5">
-      <h2 class="m-0 text-lg text-foreground font-650">工作区设置</h2>
-      <p class="mb-0 mt-1 text-xs text-muted-foreground">
-        个人调整会按当前租户和账号保存在本浏览器。
-      </p>
-    </header>
-    <Tabs
-      v-model="activeTab"
-      class="w-full"
-      :items="tabs"
-      :ui="sectionTabsUi"
-      :enable-indicator="false"
-      fill="auto"
-      activation-mode="manual"
-    >
-      <template #content="{ value }">
-        <div class="min-w-0 px-1 pt-4">
+    <div class="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-x-3 gap-y-5">
+      <h2 class="m-0 whitespace-nowrap text-base text-foreground font-650 sm:text-lg">
+        工作区设置
+      </h2>
+      <Tabs
+        v-model="activeTab"
+        class="contents"
+        :items="tabs"
+        :ui="{ list: 'justify-self-end', content: 'col-span-2 mt-0 min-w-0' }"
+        size="sm"
+        fill="auto"
+        activation-mode="manual"
+      >
+        <template #content="{ value }">
           <AppearanceSettings v-if="value === 'appearance'" />
           <LayoutSettings v-else />
-        </div>
-      </template>
-    </Tabs>
+        </template>
+      </Tabs>
+    </div>
   </Popover>
 </template>

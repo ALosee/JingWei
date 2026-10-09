@@ -63,10 +63,14 @@ export function inspectSourceResponsibilities(
     const target = specifier.startsWith('.')
       ? posix.normalize(posix.join(posix.dirname(file), specifier))
       : specifier
-    if (specifier === '@soybeanjs/ui' || specifier.startsWith('@soybeanjs/ui/')) {
+    if (
+      ['@soybeanjs/ui', '@vean/ui'].some(
+        (name) => specifier === name || specifier.startsWith(`${name}/`),
+      )
+    ) {
       report(
         'source-controlled-ui',
-        'Import local components from @jingwei/ui; the styled @soybeanjs/ui package is forbidden',
+        'Import local components from @jingwei/ui; upstream styled UI packages are forbidden',
       )
     }
     if (specifier.startsWith('#ui/') && !file.startsWith('packages/platform/ui/')) {

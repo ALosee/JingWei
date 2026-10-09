@@ -1,11 +1,6 @@
 import type { ThemeColor, ThemeSize } from '#ui/theme'
-import type {
-  SliderCompactProps,
-  SliderCompactEmits,
-  SliderCompactSlots,
-  SliderUi,
-} from '@soybeanjs/headless/slider'
-import type { ClassValue } from '@soybeanjs/headless/types'
+import type { SliderCompactProps, SliderCompactEmits, SliderUi } from '@vean/aria/slider'
+import type { ClassValue } from '@vean/aria/types'
 
 /**
  * Properties for the Slider component.
@@ -33,8 +28,3 @@ export interface SliderProps extends SliderCompactProps {
  * Events for the Slider component.
  */
 export type SliderEmits = SliderCompactEmits
-
-/**
- * Slots for the Slider component.
- */
-export type SliderSlots = SliderCompactSlots

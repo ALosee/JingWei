@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { sliderVariants } from '#ui/styles/slider'
-import { useForwardListeners, useOmitProps } from '@soybeanjs/headless/composables'
-import { SliderCompact, provideSliderUi } from '@soybeanjs/headless/slider'
+import { useForwardListeners, useOmitProps } from '@vean/aria/composables'
+import { SliderCompact, provideSliderUi } from '@vean/aria/slider'
 import { computed } from 'vue'
 
-import type { SliderProps, SliderEmits, SliderSlots } from './types'
+import type { SliderProps, SliderEmits } from './types'
 
 defineOptions({
   name: 'SSlider',
@@ -14,7 +14,9 @@ const props = defineProps<SliderProps>()
 
 const emit = defineEmits<SliderEmits>()
 
-const slots = defineSlots<SliderSlots>()
+const slots = defineSlots<{
+  default?: (props: { modelValue: number[]; index: number; value: number }) => unknown
+}>()
 
 const listeners = useForwardListeners(emit)
 

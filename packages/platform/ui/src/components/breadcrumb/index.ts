@@ -1,7 +1,8 @@
 export { default as SBreadcrumb } from './breadcrumb.vue'
 export {
-  BreadcrumbEllipsis as SBreadcrumbEllipsis,
   BreadcrumbPage as SBreadcrumbPage,
-} from '@soybeanjs/headless/breadcrumb'
-export type * from '@soybeanjs/headless/breadcrumb'
+  BreadcrumbEllipsis as SBreadcrumbEllipsis,
+} from '@vean/aria/breadcrumb'
+
+export type * from '@vean/aria/breadcrumb'
 export type * from './types'

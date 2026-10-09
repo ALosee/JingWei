@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { tooltipVariants } from '#ui/styles/tooltip'
-import { useForwardListeners, useOmitProps } from '@soybeanjs/headless/composables'
-import { TooltipCompact, provideTooltipUi } from '@soybeanjs/headless/tooltip'
+import { useForwardListeners, useOmitProps } from '@vean/aria/composables'
+import { TooltipCompact, provideTooltipUi } from '@vean/aria/tooltip'
 import { computed } from 'vue'
 
 import type { TooltipProps, TooltipEmits, TooltipSlots } from './types'

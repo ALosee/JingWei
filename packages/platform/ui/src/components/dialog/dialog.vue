@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { dialogVariants } from '#ui/styles/dialog'
-import { useForwardListeners, useOmitProps } from '@soybeanjs/headless/composables'
-import { DialogCompact, provideDialogUi } from '@soybeanjs/headless/dialog'
-import { keysOf } from '@soybeanjs/utils'
+import { useForwardListeners, useOmitProps } from '@vean/aria/composables'
+import { DialogCompact, provideDialogUi } from '@vean/aria/dialog'
+import { keysOf } from '@vean/aria/shared'
 import { computed } from 'vue'
 
 import type { DialogProps, DialogEmits, DialogSlots } from './types'
@@ -16,7 +16,7 @@ const props = withDefaults(defineProps<DialogProps>(), {
   fullscreen: undefined,
   modal: true,
   showClose: true,
-  showFullscreen: true,
+  showFullscreen: false,
 })
 
 const emit = defineEmits<DialogEmits>()

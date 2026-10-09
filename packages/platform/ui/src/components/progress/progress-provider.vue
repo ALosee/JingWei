@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { progressProviderVariants } from '#ui/styles/progress'
-import { ProgressProvider, provideProgressProviderUi } from '@soybeanjs/headless/progress'
-import type { ProgressProviderProps } from '@soybeanjs/headless/progress'
+import { ProgressProvider, provideProgressProviderUi } from '@vean/aria/progress'
+import type { ProgressProviderProps } from '@vean/aria/progress'
 import { computed } from 'vue'
 
 defineOptions({

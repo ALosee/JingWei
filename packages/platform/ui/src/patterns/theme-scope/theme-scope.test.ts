@@ -1,12 +1,10 @@
 // @vitest-environment happy-dom
 
+import type { ColorValue } from '@vean/theme'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 
-import {
-  createThemePaletteSlot,
-  generateThemePaletteColors,
-} from '../theme-palette/theme-palette.js'
+import { generateThemePaletteColors } from '../theme-palette/theme-palette.js'
 import { ThemeScope } from './theme-scope.js'
 
 describe('ThemeScope', () => {
@@ -24,29 +22,19 @@ describe('ThemeScope', () => {
     expect(css).not.toContain(':root')
   })
 
-  it('regenerates scoped CSS when a preview slot is updated in place', async () => {
-    const slot = createThemePaletteSlot('primary')
-    try {
-      slot.update({
-        name: 'Draft',
-        family: 'chromatic',
-        colors: generateThemePaletteColors('#6366f1'),
-      })
-      const wrapper = mount(ThemeScope, {
-        props: { theme: { base: 'zinc', primary: slot.key } },
-      })
-      const originalCss = wrapper.find('style').text()
-
-      slot.update({
-        name: 'Draft',
-        family: 'chromatic',
-        colors: generateThemePaletteColors('#dc2626'),
-      })
-      await wrapper.setProps({ theme: { base: 'zinc', primary: slot.key } })
-      expect(wrapper.find('style').text()).not.toBe(originalCss)
-      wrapper.unmount()
-    } finally {
-      slot.dispose()
-    }
+  it('regenerates scoped CSS when controlled draft colors change', async () => {
+    const first = generateThemePaletteColors('#6366f1')[500].hsl as ColorValue
+    const second = generateThemePaletteColors('#dc2626')[500].hsl as ColorValue
+    const wrapper = mount(ThemeScope, {
+      props: {
+        theme: { base: 'zinc', primary: 'indigo', overrides: { light: { primary: first } } },
+      },
+    })
+    const originalCss = wrapper.find('style').text()
+    await wrapper.setProps({
+      theme: { base: 'zinc', primary: 'indigo', overrides: { light: { primary: second } } },
+    })
+    expect(wrapper.find('style').text()).not.toBe(originalCss)
+    wrapper.unmount()
   })
 })

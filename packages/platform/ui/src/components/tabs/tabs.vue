@@ -1,11 +1,11 @@
-<script setup lang="ts">
+<script setup lang="ts" generic="T extends TabsOptionData = TabsOptionData">
 import { tabsVariants } from '#ui/styles/tabs'
-import { useForwardListeners, useOmitProps } from '@soybeanjs/headless/composables'
-import { TabsCompact, provideTabsUi } from '@soybeanjs/headless/tabs'
-import { keysOf } from '@soybeanjs/utils'
+import { useForwardListeners, useOmitProps } from '@vean/aria/composables'
+import { keysOf } from '@vean/aria/shared'
+import { TabsCompact, provideTabsUi } from '@vean/aria/tabs'
 import { computed } from 'vue'
 
-import type { TabsProps, TabsEmits, TabsSlots } from './types'
+import type { TabsProps, TabsEmits, TabsSlots, TabsOptionData } from './types'
 
 defineOptions({
   name: 'STabs',
@@ -19,7 +19,7 @@ const props = withDefaults(defineProps<TabsProps>(), {
   enableIndicator: true,
 })
 
-const emit = defineEmits<TabsEmits>()
+const emit = defineEmits<TabsEmits<T['value']>>()
 
 const slots = defineSlots<TabsSlots>()
 

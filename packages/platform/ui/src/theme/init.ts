@@ -1,2 +1,2 @@
-export { createThemeInitScript } from '@soybeanjs/theme/ssr'
-export { THEME_STORAGE_KEY } from '@soybeanjs/theme/storage'
+export { createThemeInitScript } from '@vean/theme/ssr'
+export { THEME_STORAGE_KEY } from '@vean/theme/storage'

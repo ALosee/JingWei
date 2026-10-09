@@ -28,7 +28,7 @@
     "@jingwei/tenancy": "workspace:*",
     "@jingwei/ui": "workspace:*",
     "@soybeanjs/colord": "catalog:",
-    "@soybeanjs/theme": "catalog:",
+    "@vean/theme": "catalog:",
     "hono": "catalog:",
     "kysely": "catalog:",
     "saxes": "catalog:",

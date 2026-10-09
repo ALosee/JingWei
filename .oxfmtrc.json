@@ -35,8 +35,8 @@
     "**/generated/**",
     "**/_generated/**",
     ".agents/skills/fetch-*/**",
-    ".agents/skills/soybean-headless/**",
-    ".agents/skills/soybean-ui/**",
+    ".agents/skills/vean-aria/**",
+    ".agents/skills/vean-ui/**",
     "pnpm-lock.yaml"
   ]
 }

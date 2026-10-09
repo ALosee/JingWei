@@ -1,10 +1,34 @@
 import { generatePalette, paletteColorLevels, tailwindPalette } from '@soybeanjs/colord/palette'
 import { describe, expect, it } from 'vitest'
 
+import { resolveBrandThemeColor } from './brand-theme-options.js'
 import { validateBrandTheme } from './brand-theme-validation.js'
 import { defaultBrandConfiguration } from './index.js'
 
 describe('tenant brand theme validation', () => {
+  it('preserves a transparent card in both modes without rejecting its inherited dark surface', () => {
+    const theme = {
+      ...defaultBrandConfiguration.visualTheme,
+      overrides: {
+        light: { card: { kind: 'SIMPLE' as const, value: 'transparent' as const } },
+        dark: {},
+      },
+    }
+    expect(resolveBrandThemeColor(theme, 'light', 'card')).toBe('rgba(0, 0, 0, 0)')
+    expect(resolveBrandThemeColor(theme, 'dark', 'card')).toBe('rgba(0, 0, 0, 0)')
+    expect(validateBrandTheme(theme)).toEqual([])
+    expect(
+      resolveBrandThemeColor(
+        {
+          ...theme,
+          overrides: { ...theme.overrides, dark: { card: { kind: 'SIMPLE', value: 'white' } } },
+        },
+        'dark',
+        'card',
+      ),
+    ).toBe('#ffffff')
+  })
+
   it('accepts the derived platform theme', () => {
     expect(validateBrandTheme(defaultBrandConfiguration.visualTheme)).toEqual([])
   })

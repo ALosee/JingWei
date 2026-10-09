@@ -22,7 +22,7 @@ function goHome(): void {
 </script>
 
 <template>
-  <div class="flex shrink-0 items-center gap-0.5" aria-label="工作区功能区">
+  <div class="flex shrink-0 items-center gap-1" aria-label="工作区功能区">
     <ButtonIcon icon="lucide:house" variant="ghost" aria-label="回到默认首页" @click="goHome" />
     <MenuSearchPopover />
     <ButtonIcon

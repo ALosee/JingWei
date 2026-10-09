@@ -4,44 +4,124 @@ import type { VariantProps } from '@soybeanjs/cva'
 
 export const pageTabsVariants = scv({
   slots: {
-    root: 'flex',
+    root: `scrollbar-none overflow-y-hidden flex`,
     item: [
-      'group/item relative flex cursor-pointer select-none items-center gap-2 px-3 py-1.5 outline-none',
-      'data-[active=true]:z-2 data-[active=true]:bg-primary-50 data-[active=true]:text-primary',
-      'data-[active=false]:hover:bg-accent data-[active=false]:focus:bg-accent',
-      'dark:data-[active=true]:bg-accent dark:data-[active=true]:text-foreground',
+      `group/item relative flex items-center cursor-pointer select-none outline-none`,
+      `data-[selected=true]:bg-primary-50 data-[selected=true]:text-primary data-[selected=true]:z-2`,
+      `data-[selected=false]:hover:bg-accent data-[selected=false]:focus:bg-accent`,
+      `dark:data-[selected=true]:bg-accent dark:data-[selected=true]:text-foreground`,
+      `data-[draggable=true]:cursor-grab`,
+      `data-[dragging=true]:z-3 data-[dragging=true]:cursor-grabbing data-[dragging=true]:shadow-lg`,
     ],
-    itemText: 'max-w-60 grow truncate',
-    close: 'rounded-full outline-none hover:bg-accent-foreground/20',
+    itemText: 'grow truncate',
+    close: [
+      `flex justify-center items-center outline-none rounded-full hover:text-muted-foreground group-data-[selected=true]/item:hover:bg-primary-100`,
+      `group-data-[selected=false]/item:hover:bg-accent-foreground/10`,
+      `dark:hover:text-foreground dark:group-data-[selected=true]/item:hover:bg-accent-foreground/10`,
+    ],
     pin: 'outline-none',
     chromeBgLeft: [
-      'absolute end-full bottom-0 h-2 w-2 fill-transparent',
-      'group-hover/item:fill-accent group-data-[active=true]/item:z-2 group-data-[active=true]/item:fill-primary-50 dark:group-data-[active=true]/item:fill-accent',
+      `absolute end-full bottom-0 fill-transparent size-0.5714em`, // 8/14 = 0.5714
+      `group-hover/item:fill-accent group-data-[selected=true]/item:fill-primary-50 dark:group-data-[selected=true]/item:fill-accent group-data-[selected=true]/item:z-2`,
     ],
     chromeBgRight: [
-      'absolute start-full bottom-0 h-2 w-2 fill-transparent',
-      'group-hover/item:fill-accent group-data-[active=true]/item:z-2 group-data-[active=true]/item:fill-primary-50 dark:group-data-[active=true]/item:fill-accent',
+      `absolute start-full bottom-0 fill-transparent size-0.5714em`, // 8/14 = 0.5714
+      `group-hover/item:fill-accent group-data-[selected=true]/item:fill-primary-50 dark:group-data-[selected=true]/item:fill-accent group-data-[selected=true]/item:z-2`,
     ],
-    sliderIndicator:
-      'absolute bottom-0 start-0 h-0.5 w-full group-data-[active=true]/item:bg-primary',
+    sliderIndicator: `absolute bottom-0 start-0 w-full h-0.5 group-data-[selected=true]/item:bg-primary`,
   },
   variants: {
     size: {
-      xs: { root: 'text-2xs' },
-      sm: { root: 'text-xs' },
-      md: { root: 'text-sm' },
-      lg: { root: 'text-base' },
-      xl: { root: 'text-lg' },
-      '2xl': { root: 'text-xl' },
+      xs: {
+        root: 'text-2xs px-1.5',
+        item: 'gap-2 px-1 py-1',
+        itemText: 'max-w-50',
+        close: 'text-3xs size-3',
+      },
+      sm: {
+        root: 'text-xs px-1.75',
+        item: 'gap-2.5 px-1.5 py-1',
+        itemText: 'max-w-55',
+        close: 'text-2xs size-4',
+      },
+      md: {
+        root: 'text-sm px-2',
+        item: 'gap-3 px-2 py-1.5',
+        itemText: 'max-w-60',
+        close: 'text-xs size-5',
+      },
+      lg: {
+        root: 'text-base px-2.5',
+        item: 'gap-3.5 px-2.5 py-1.5',
+        itemText: 'max-w-65',
+        close: 'text-sm size-6',
+      },
+      xl: {
+        root: 'text-lg px-3',
+        item: 'gap-4 px-3 py-2',
+        itemText: 'max-w-70',
+        close: 'text-base size-7',
+      },
+      '2xl': {
+        root: 'text-xl px-4',
+        item: 'gap-4.5 px-3.5 py-2.5',
+        itemText: 'max-w-75',
+        close: 'text-lg size-8',
+      },
     },
     variant: {
-      chrome: { root: 'items-end', item: 'rounded-t-md' },
-      card: { root: 'items-center gap-2', item: 'rounded-md border border-border shadow-sm' },
-      slider: { root: 'items-end', item: 'rounded-t-md' },
+      chrome: {
+        root: 'items-end',
+        item: 'rounded-t-md',
+      },
+      card: {
+        root: 'items-center',
+        item: 'rounded-md shadow-sm border border-border',
+      },
+      slider: {
+        root: 'items-end',
+        item: 'rounded-t-md',
+      },
     },
   },
-  defaultVariants: { size: 'md', variant: 'chrome' },
+  compoundVariants: [
+    {
+      variant: 'card',
+      size: 'xs',
+      class: { root: 'gap-1' },
+    },
+    {
+      variant: 'card',
+      size: 'sm',
+      class: { root: 'gap-1.5' },
+    },
+    {
+      variant: 'card',
+      size: 'md',
+      class: { root: 'gap-2' },
+    },
+    {
+      variant: 'card',
+      size: 'lg',
+      class: { root: 'gap-2.5' },
+    },
+    {
+      variant: 'card',
+      size: 'xl',
+      class: { root: 'gap-3' },
+    },
+    {
+      variant: 'card',
+      size: '2xl',
+      class: { root: 'gap-3.5' },
+    },
+  ],
+  defaultVariants: {
+    size: 'md',
+    variant: 'chrome',
+  },
 })
 
 type PageTabsVariants = VariantProps<typeof pageTabsVariants>
+
 export type PageTabsVariant = NonNullable<PageTabsVariants['variant']>

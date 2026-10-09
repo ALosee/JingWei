@@ -4,8 +4,8 @@ import type {
   InputCompactSlots,
   InputRootEmits,
   InputUi,
-} from '@soybeanjs/headless/input'
-import type { ClassValue } from '@soybeanjs/headless/types'
+} from '@vean/aria/input'
+import type { ClassValue } from '@vean/aria/types'
 
 /**
  * Properties for the Input component.

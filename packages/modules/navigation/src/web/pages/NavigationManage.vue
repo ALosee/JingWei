@@ -24,7 +24,8 @@ const {
   search,
   highlightId,
   readOnly,
-  rows,
+  treeItems,
+  treeExpandedIds,
   parentOptions,
   selectNode,
   changeType,
@@ -34,7 +35,6 @@ const {
   removeNode,
   moveNode,
   moveNodeToParent,
-  toggleExpanded,
   expandAll,
   collapseAll,
   revealNode,
@@ -230,15 +230,16 @@ function onChangeRoute(routeKey: string | null): void {
     >
       <NavigationStructureTree
         class="min-h-0 overflow-hidden border-b border-border xl:border-b-0 xl:border-e xl:border-border"
-        :rows="rows"
+        :items="treeItems"
+        :expanded-ids="treeExpandedIds"
         :selected-id="selectedId"
         :highlight-id="highlightId"
         :search="search"
         :read-only="readOnly"
         :busy="busy"
         @update-search="(value) => (search = value)"
+        @update-expanded-ids="(ids) => (treeExpandedIds = ids)"
         @select="selectNode"
-        @toggle="toggleExpanded"
         @expand-all="expandAll"
         @collapse-all="collapseAll"
         @add-child="addChild"

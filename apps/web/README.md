@@ -3,9 +3,13 @@
 Jingwei 的 Vue 3 Web 壳应用。它在同一套制品中按 URL namespace 启动平台控制面或租户工作空间；租户端负责恢复动态导航和 Edition 页面，平台端使用独立会话与静态管理路由。
 
 Web 构建通过 `unocss/vite` 扫描壳与各模块页面，`src/bootstrap/start-web.ts` 统一加载生成样式。
-`uno.config.ts` 使用 `@soybeanjs/ui-uno` 的 `presetSbean()` 读取 `packages/platform/ui/sbean.json`，并由
-`@soybeanjs/theme` 生成亮色、暗色、语义颜色、圆角和尺寸变量。组件和页面直接使用 Soybean
+`uno.config.ts` 使用 `@vean/unocss` 的 `presetVean()` 读取 `packages/platform/ui/vean.json`，并由
+`@vean/theme` 生成亮色、暗色、语义颜色、圆角和尺寸变量。组件和页面直接使用 Vean
 主题语义，不另建一套 CSS 变量。
+UnoCSS 通过 `@jingwei/ui/theme-unocss` 保留语义色透明度，并与 `bg-card/40` 等工具类
+的透明度相乘；直接使用语义色的 body 也读取同一透明度变量。
+构建配置显式使用 Vean 原生语义颜色映射，避免开发配置重载后残留旧的透明度表达式；
+透明度在 UnoCSS 替换占位符后组合，主题适配源码也列为配置重载依赖。
 
 `TenantApp.vue` 挂载 `@jingwei/ui` 源码拥有的 `ConfigProvider`，运行时完整色阶、明暗语义色和圆角来自租户
 Branding；`PlatformApp.vue` 使用固定平台主题，且不读取租户配置。Base 工作区的
@@ -13,7 +17,7 @@ Branding；`PlatformApp.vue` 使用固定平台主题，且不读取租户配置
 Vite 将最小明暗模式脚本注入 HTML head，在租户应用加载前恢复用户模式提示；完整租户主题与界面
 尺寸在 Provider 挂载前由组合根解析。平台路径跳过该提示脚本。
 UnoCSS 扫描 `@jingwei/ui` 的本地 Vue/TS 源码，并使用 `presetSoybean` 补齐布局快捷类。
-Web 不依赖 `@soybeanjs/ui` styled 包。升级生成源码时必须复核
+Web 不依赖 `@vean/ui` styled 包。升级生成源码时必须复核
 组件 diff 和主题浏览器测试。
 
 ## 职责边界
@@ -138,19 +142,22 @@ Route Definition 只允许两种页面外部结构：
 
 `base` 内部的左侧/顶部菜单由租户提供默认值，用户可在自己的浏览器中覆盖；它不扩展 Navigation
 或 Manifest 的 layout 枚举。
-工作区基于 `@jingwei/ui` 的 Soybean Headless Layout 包装，使用 `scrollBehavior=content` 保证页面
+工作区基于 `@jingwei/ui` 的 Vean Headless Layout 包装，使用 `scrollBehavior=content` 保证页面
 滚动不带动 Header 和 Sider。左侧模式且品牌位于 Header 时使用纵向外层布局，使 Header 横跨
 Sider 与 Content；品牌位于 Sider 时切换为横向外层布局。顶部模式不渲染 Sider。
 
 布局模式由 `layout-mode-registry.ts` 注册菜单组件、Header 上下文组件、Sider 可见性和几何策略，
 `BaseLayout` 只通过动态组件消费定义。新增混合模式时增加定义与对应模块，不扩展 `v-if/else`
 分支链。各菜单区域提供稳定挂载点；`SiderGlobalMenu` 和 `HeaderGlobalMenu` 分别通过 Teleport
-投放 Soybean Headless TreeMenu 与 Menubar，布局骨架不拥有菜单实现。
+投放 Vean Headless TreeMenu 与 TreeNav，布局骨架不拥有菜单实现。
+
+顶部 TreeNav 由当前路由的 navigation code 驱动选中项与祖先高亮；hover 仅展开菜单，不修改选中值。
+控件融入 Header，保留 150 ms 打开延迟、300 ms 快速重入、键盘与溢出“更多”，窄屏按可用宽度折叠。
 
 菜单数据转换层显示 DIRECTORY、GROUP、MENU 与 EXTERNAL_LINK，PAGE 不显示；当前 PAGE 会向上
 解析到最近的可见 MENU，以保持 TreeMenu 展开和选中状态。MENU 使用 `navigationTarget` 生成默认
 参数跳转，刷新时保留浏览器实际 URL；外链由共享 Link 语义补齐安全属性。Header 在左侧模式使用
-Soybean Headless Breadcrumb，在顶部模式承载 Menubar；页签使用 PageTabs；菜单搜索和设置使用
+Vean Headless Breadcrumb，在顶部模式承载 TreeNav；页签使用 PageTabs；菜单搜索和设置使用
 非模态 Popover；全屏能力使用 VueUse。
 
 页签记录当前 BaseLayout 生命周期内访问过的具体 fullPath，支持切换和关闭；刷新只恢复当前页，

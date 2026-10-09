@@ -5,8 +5,8 @@ import type {
   SwitchCompactProps,
   SwitchCompactSlots,
   SwitchUi,
-} from '@soybeanjs/headless/switch'
-import type { AcceptableBooleanValue, ClassValue } from '@soybeanjs/headless/types'
+} from '@vean/aria/switch'
+import type { AcceptableBooleanValue, ClassValue } from '@vean/aria/types'
 
 /**
  * Properties for the Switch component.

@@ -1,30 +1,30 @@
 ---
 name: jingwei-ui-development
-description: Build or adapt shared Vue UI components in @jingwei/ui with UnoCSS and @soybeanjs/headless. Use for design tokens, shared component APIs, SoybeanUI source adaptation, exports, and component tests. Do not use for module-owned business components or ordinary page composition.
+description: Build or adapt shared Vue UI components in @jingwei/ui with UnoCSS and @vean/aria. Use for design tokens, shared component APIs, VeanUI source adaptation, exports, and component tests. Do not use for module-owned business components or ordinary page composition.
 ---
 
 # Jingwei UI Development
 
-Build Jingwei's shared components in `packages/platform/ui`. Treat SoybeanUI as the upstream
+Build Jingwei's shared components in `packages/platform/ui`. Treat VeanUI as the upstream
 component source, headless implementation, and theme system, while keeping Jingwei's public
 component API independent.
 
 ## Read first
 
 - Read the repository `AGENTS.md` and `packages/platform/ui/README.md` before editing.
-- Read [the local SoybeanHeadless skill](../soybean-headless/SKILL.md) for primitive APIs and
+- Read [the local Vean Aria skill](../vean-aria/SKILL.md) for primitive APIs and
   composition rules.
 - When adapting an upstream styled component, read
-  [the local SoybeanUI skill](../soybean-ui/SKILL.md) and only the reference for that component.
-- Read `docs/references/soybean-ui.md` for the pinned upstream version and update policy.
+  [the local VeanUI skill](../vean-ui/SKILL.md) and only the reference for that component.
+- Read `docs/references/vean-ui.md` for the pinned upstream version and update policy.
 
 ## Ownership and public API
 
 - Application and module code imports shared components only from `@jingwei/ui`.
-- Keep direct `@soybeanjs/headless` imports inside `packages/platform/ui`.
+- Keep direct `@vean/aria` imports inside `packages/platform/ui`.
 - Keep `ConfigProvider`, `useTheme`, provider components, and the reusable theme settings panel
   source-owned in `@jingwei/ui`. Keep app-specific launchers, placement, and copy in the Web shell.
-  Do not import or add the styled `@soybeanjs/ui` package.
+  Do not import or add the styled `@vean/ui` package.
 - Export concise component names such as `Button`, `Dialog`, and `Select`; the package name is
   already the namespace. Do not add `Jw` or preserve upstream `S` prefixes.
 - Add a shared wrapper only when it owns Jingwei styling, variants, composition, or behavior.
@@ -33,10 +33,10 @@ component API independent.
 
 ## Headless and styled boundaries
 
-- Let `@soybeanjs/headless` own ARIA semantics, keyboard interaction, focus management, and
+- Let `@vean/aria` own ARIA semantics, keyboard interaction, focus management, and
   controlled or uncontrolled state.
 - Let local components own DOM composition, public props and slots, UnoCSS classes, variants,
-  and loading presentation. Use `@soybeanjs/theme` for the shared theme vocabulary.
+  and loading presentation. Use `@vean/theme` for the shared theme vocabulary.
 - Prefer the upstream primitive parts when custom structure is required. Use a Compact component
   only when its data-driven structure matches the desired public API.
 - Keep the headless package as a pinned dependency. Copy headless internals only for a verified
@@ -58,14 +58,15 @@ component API independent.
 ## UnoCSS language
 
 - Express component styling with UnoCSS utilities and statically discoverable variant recipes.
-- Mount one local `ConfigProvider` at the application root with `persistTheme`. Runtime theme changes
+- Mount one local `ConfigProvider` at the application root. Runtime theme changes
   go through its `useTheme()` context; do not create another theme store. Explicit theme props override
-  stored preferences, so never pass editable defaults as permanent overrides.
-- Generate the build-time fallback theme through `packages/platform/ui/sbean.json`, `presetSbean()` from
-  `@soybeanjs/ui-uno`, and `@soybeanjs/theme`. Components consume Soybean semantic utilities such
+  stored preferences, so never pass editable defaults as permanent overrides. Tenant themes use explicit
+  native overrides and a controlled primary ramp; personal mode/size remain scoped to tenant+user.
+- Generate the build-time fallback theme through `packages/platform/ui/vean.json`, `presetVean()` from
+  `@vean/unocss`, and `@vean/theme`. Components consume Vean semantic utilities such
   as `bg-background`, `text-foreground`, `border-border`, and `bg-primary`.
 - Do not create a parallel project-prefixed theme variable layer. Customize theme seeds or use the
-  Soybean theme override API when the built-in semantic vocabulary is insufficient.
+  Vean theme override API when the built-in semantic vocabulary is insufficient.
 - Avoid dynamically interpolated class fragments. Use complete class strings in variant maps,
   shortcuts, or an intentional safelist.
 - Keep global CSS limited to reset, fonts, theme variables, shared keyframes, and behavior-critical

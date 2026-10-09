@@ -6,12 +6,10 @@ export interface NavigationTreeNode {
   depth: number
 }
 
-export interface NavigationTreeRow {
+export interface NavigationTreeItemData {
+  value: string
   node: NavigationNode
-  depth: number
-  expanded: boolean
-  childCount: number
-  hasChildren: boolean
+  children?: NavigationTreeItemData[]
 }
 
 export function compareNodes(left: NavigationNode, right: NavigationNode): number {
@@ -44,41 +42,27 @@ export function matchesNodeSearch(node: NavigationNode, query: string): boolean 
   )
 }
 
-function branchMatches(
-  node: NavigationNode,
-  children: NavigationTreeNode[],
-  query: string,
-): boolean {
-  return matchesNodeSearch(node, query) || children.some((child) => branchMatchesNode(child, query))
-}
-
-function branchMatchesNode(tree: NavigationTreeNode, query: string): boolean {
-  return branchMatches(tree.node, tree.children, query)
-}
-
-export function flattenNavigationTree(
+/** Tree owns flattening and expansion; the module owns hierarchy, sorting and search. */
+export function navigationTreeItems(
   tree: readonly NavigationTreeNode[],
-  expandedIds: ReadonlySet<string>,
   query: string,
-): NavigationTreeRow[] {
-  const rows: NavigationTreeRow[] = []
-  const walk = (nodes: readonly NavigationTreeNode[], parentVisible: boolean): void => {
+): NavigationTreeItemData[] {
+  const walk = (
+    nodes: readonly NavigationTreeNode[],
+    includeBranch: boolean,
+  ): NavigationTreeItemData[] => {
+    const items: NavigationTreeItemData[] = []
     for (const item of nodes) {
-      if (!parentVisible && !branchMatchesNode(item, query)) continue
-      const hasChildren = item.children.length > 0
-      const expanded = query.trim() !== '' ? true : expandedIds.has(item.node.id)
-      rows.push({
-        node: item.node,
-        depth: item.depth,
-        expanded,
-        childCount: item.children.length,
-        hasChildren,
-      })
-      if (hasChildren && expanded) walk(item.children, true)
+      const matches = includeBranch || matchesNodeSearch(item.node, query)
+      const children = walk(item.children, matches)
+      if (!matches && children.length === 0) continue
+      const data: NavigationTreeItemData = { value: item.node.id, node: item.node }
+      if (children.length > 0) data.children = children
+      items.push(data)
     }
+    return items
   }
-  walk(tree, false)
-  return rows
+  return walk(tree, false)
 }
 
 export function collectDescendantIds(

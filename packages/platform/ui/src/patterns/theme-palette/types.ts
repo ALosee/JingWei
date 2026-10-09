@@ -1,4 +1,4 @@
-import type { PaletteColorLevel } from '@soybeanjs/theme'
+import type { PaletteLevel } from '@vean/theme'
 
 import type { ThemeSize } from '../../theme'
 import type { ThemePaletteColors } from './theme-palette'
@@ -14,5 +14,5 @@ export interface ThemePaletteSelectProps {
   items: ThemePaletteSelectItem[]
   disabled?: boolean
   size?: ThemeSize
-  decorateLevels?: PaletteColorLevel[]
+  decorateLevels?: PaletteLevel[]
 }

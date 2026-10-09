@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useForwardListeners } from '@soybeanjs/headless/composables'
-import { SplitterPanel } from '@soybeanjs/headless/splitter'
+import { useForwardListeners } from '@vean/aria/composables'
+import { SplitterPanel } from '@vean/aria/splitter'
 import { useTemplateRef } from 'vue'
 
 import type { SplitterPanelProps, SplitterPanelEmits, SplitterPanelExposed } from './types'

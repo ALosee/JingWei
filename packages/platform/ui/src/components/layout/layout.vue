@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { layoutVariants } from '#ui/styles/layout'
 import { themeSizeMap, themeSizeRatio } from '#ui/theme'
-import { useOmitProps } from '@soybeanjs/headless/composables'
-import { LayoutCompact, provideLayoutUi } from '@soybeanjs/headless/layout'
-import { keysOf } from '@soybeanjs/utils'
+import { useOmitProps } from '@vean/aria/composables'
+import { LayoutCompact, provideLayoutUi } from '@vean/aria/layout'
+import { keysOf } from '@vean/aria/shared'
 import { computed } from 'vue'
 
 import type { LayoutProps, LayoutEmits, LayoutSlots } from './types'
@@ -14,6 +14,11 @@ defineOptions({
 
 const props = withDefaults(defineProps<LayoutProps>(), {
   open: undefined,
+  // Unset on purpose: the headless root then follows the viewport.
+  isMobile: undefined,
+  // Unset on purpose: an absent boolean prop is cast to `false` downstream, which
+  // would turn the drawer into a controlled state that never opens.
+  mobileOpen: undefined,
   size: 'md',
   defaultOpen: true,
   sidebarVisible: true,
@@ -61,6 +66,7 @@ provideLayoutUi(ui)
     v-bind="forwardedProps"
     :px-to-rem="pxToRem"
     @update:open="emit('update:open', $event)"
+    @update:mobile-open="emit('update:mobileOpen', $event)"
   >
     <template #sidebar="slotProps">
       <slot name="sidebar" v-bind="slotProps" />

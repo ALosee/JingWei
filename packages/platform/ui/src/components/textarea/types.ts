@@ -5,8 +5,8 @@ import type {
   TextareaCompactProps,
   TextareaCompactSlots,
   TextareaUi,
-} from '@soybeanjs/headless/textarea'
-import type { ClassValue } from '@soybeanjs/headless/types'
+} from '@vean/aria/textarea'
+import type { ClassValue } from '@vean/aria/types'
 
 /**
  * Properties for the Textarea component.

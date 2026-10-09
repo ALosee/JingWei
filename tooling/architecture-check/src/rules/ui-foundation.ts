@@ -23,13 +23,14 @@ export function inspectUiPackageManifest(file: string, content: string): Archite
     ...packageManifest.peerDependencies,
   }
 
-  if (!('@soybeanjs/ui' in dependencies)) return []
+  const styledPackage = ['@soybeanjs/ui', '@vean/ui'].find((name) => name in dependencies)
+  if (styledPackage === undefined) return []
 
   return [
     {
       file,
       rule: 'source-controlled-ui',
-      message: 'The styled @soybeanjs/ui package is forbidden; own generated source in @jingwei/ui',
+      message: `The styled ${styledPackage} package is forbidden; own generated source in @jingwei/ui`,
     },
   ]
 }

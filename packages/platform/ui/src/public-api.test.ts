@@ -1,0 +1,90 @@
+import { describe, expect, it } from 'vitest'
+
+import type {
+  BreadcrumbOptionData,
+  ButtonProps,
+  ConfigProviderProps,
+  DialogProps,
+  DropdownMenuProps,
+  InputProps,
+  LayoutProps,
+  MenubarProps,
+  PageTabsOptionData,
+  PageTabsProps,
+  PalettePickerProps,
+  SelectOptionData,
+  SliderProps,
+  SwitchProps,
+  TabsOptionData,
+  TextareaProps,
+  ThemeContext,
+  ThemeModeSegmentProps,
+  TreeProps,
+  TreeVirtualizerProps,
+  TreeItemData,
+  TreeItemEmits,
+  TreeToggleEvent,
+  TreeNavProps,
+  TreeNavOptionData,
+} from './public'
+
+// Missing re-exports inside a declaration facade can silently erase consumer types when
+// skipLibCheck is enabled. These compile-time checks reproduce the PageTabs upgrade regression.
+type IsErased<T> = 0 extends 1 & T ? true : false
+const contracts: [
+  IsErased<BreadcrumbOptionData>,
+  IsErased<ButtonProps>,
+  IsErased<ConfigProviderProps>,
+  IsErased<DialogProps>,
+  IsErased<DropdownMenuProps>,
+  IsErased<InputProps>,
+  IsErased<LayoutProps>,
+  IsErased<MenubarProps>,
+  IsErased<PageTabsOptionData>,
+  IsErased<PageTabsProps>,
+  IsErased<PalettePickerProps>,
+  IsErased<SelectOptionData>,
+  IsErased<SliderProps>,
+  IsErased<SwitchProps>,
+  IsErased<TabsOptionData>,
+  IsErased<TextareaProps>,
+  IsErased<ThemeContext>,
+  IsErased<ThemeModeSegmentProps>,
+  IsErased<TreeProps>,
+  IsErased<TreeVirtualizerProps<TreeItemData, string, false>>,
+  IsErased<TreeItemEmits>,
+  IsErased<TreeToggleEvent>,
+  IsErased<TreeNavProps>,
+  IsErased<TreeNavOptionData>,
+] = [
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+  false,
+]
+
+describe('public UI consumer types', () => {
+  it('preserves concrete contracts through the declaration facade', () => {
+    expect(contracts).not.toContain(true)
+  })
+})

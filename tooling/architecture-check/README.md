@@ -30,7 +30,7 @@ pnpm architecture:check
 | `page-workflow-boundary`           | 模块 pages 直接导入 module client 或 api-client                                                 |
 | `workflow-outside-boundary`        | 页面或装配直接执行 fetch / 已识别的 module client 调用                                          |
 | `module-no-process-env`            | 模块自行读取 process.env，而非接收显式配置                                                      |
-| `source-controlled-ui`             | package dependency 或 authored source 引入 `@soybeanjs/ui` styled 包                            |
+| `source-controlled-ui`             | package dependency 或 authored source 引入 `@vean/ui` styled 包                                 |
 | `ui-private-import`                | `#ui/*` 生成器 alias 被 `@jingwei/ui` 之外的源码导入                                            |
 | `api-authorization-contract`       | Module OpenAPI route 绕过授权契约工厂，导致接口缺少机器可读授权声明                             |
 | `platform-authorization-boundary`  | Control Plane 之外的包导入平台会话授权契约                                                      |

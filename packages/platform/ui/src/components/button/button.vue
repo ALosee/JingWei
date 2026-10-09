@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { buttonVariants } from '#ui/styles/button'
-import { Button } from '@soybeanjs/headless/button'
-import { useOmitProps } from '@soybeanjs/headless/composables'
+import { Button } from '@vean/aria/button'
+import { useOmitProps } from '@vean/aria/composables'
 import { computed } from 'vue'
 
 import { useButtonGroupContext } from './context'
@@ -38,7 +38,7 @@ const cls = computed(() => {
       variant: props.variant ?? variant?.value,
       shape: props.shape ?? shape?.value,
       shadow: props.shadow ?? shadow?.value,
-      fitContent: props.fitContent ? true : fitContent?.value,
+      fitContent: props.fitContent || fitContent?.value,
     },
     props.class,
   )

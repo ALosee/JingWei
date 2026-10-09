@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { progressVariants } from '#ui/styles/progress'
-import { useForwardListeners, useOmitProps } from '@soybeanjs/headless/composables'
-import { ProgressCompact, provideProgressUi } from '@soybeanjs/headless/progress'
+import { useForwardListeners, useOmitProps } from '@vean/aria/composables'
+import { ProgressCompact, provideProgressUi } from '@vean/aria/progress'
 import { computed } from 'vue'
 
 import type { ProgressProps, ProgressEmits, ProgressSlots } from './types'

@@ -14,7 +14,7 @@ import {
   buildNavigationTree,
   canNestNode,
   defaultExpandedIds,
-  flattenNavigationTree,
+  navigationTreeItems,
   nextSortOrder,
   parentOptionsFor,
   uniqueCode,
@@ -40,7 +40,16 @@ export function useNavigationEditor(
   const readOnly = computed(() => version.value?.status !== 'DRAFT' || busy.value)
 
   const tree = computed(() => buildNavigationTree(version.value?.nodes ?? []))
-  const rows = computed(() => flattenNavigationTree(tree.value, expandedIds.value, search.value))
+  const treeItems = computed(() => navigationTreeItems(tree.value, search.value))
+  const treeExpandedIds = computed({
+    get: () =>
+      search.value.trim() === ''
+        ? [...expandedIds.value]
+        : (version.value?.nodes ?? []).map((node) => node.id),
+    set: (ids: string[]) => {
+      if (search.value.trim() === '') expandedIds.value = new Set(ids)
+    },
+  })
   const parentOptions = computed(() =>
     selected.value === undefined
       ? []
@@ -198,12 +207,6 @@ export function useNavigationEditor(
     if (parentId !== null) expandedIds.value.add(parentId)
     dirty.value = true
   }
-  function toggleExpanded(id: string) {
-    const next = new Set(expandedIds.value)
-    if (next.has(id)) next.delete(id)
-    else next.add(id)
-    expandedIds.value = next
-  }
   function expandAll() {
     const ids = new Set<string>()
     for (const node of version.value?.nodes ?? []) {
@@ -249,7 +252,8 @@ export function useNavigationEditor(
     highlightId,
     readOnly,
     tree,
-    rows,
+    treeItems,
+    treeExpandedIds,
     parentOptions,
     selectNode,
     applyJson,
@@ -261,7 +265,6 @@ export function useNavigationEditor(
     removeNode,
     moveNode,
     moveNodeToParent,
-    toggleExpanded,
     expandAll,
     collapseAll,
     revealNode,

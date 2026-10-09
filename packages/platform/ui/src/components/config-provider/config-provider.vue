@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { useOmitProps } from '@soybeanjs/headless/composables'
-import { ConfigProvider } from '@soybeanjs/headless/config-provider'
-import { transformPropsToContext } from '@soybeanjs/headless/shared'
-import { isServerRuntime } from '@soybeanjs/theme/ssr'
-import { h } from 'vue'
+import { useOmitProps } from '@vean/aria/composables'
+import { ConfigProvider } from '@vean/aria/config-provider'
+import { isServerRuntime } from '@vean/theme/ssr'
+import { h, shallowReadonly } from 'vue'
 
 import DialogProvider from '../dialog/dialog-provider.vue'
 import IconComponent from '../icon/icon.vue'
@@ -46,34 +45,20 @@ const forwardedProps = useOmitProps(props, [
 const iconRender =
   props.iconRender ?? ((icon: IconValue) => h(IconComponent, { icon, ssr: props.isServer }))
 
-// 主题相关逻辑（存储缓存 / 有效主题合并 / preset 解析 / CSS 派生）统一收敛到 hooks.ts
-const { themeCss, ThemeStyle, commitThemeConfig } = useConfigProviderTheme(props)
+// 主题相关逻辑（存储缓存 / 有效主题合并 / preset 解析 / CSS 派生 / 运行时样式元素）
+// 统一收敛到 hooks.ts；样式元素挂在 <head>（#vean-theme），不渲染进组件树，
+// 因此不存在服务端/客户端样式内容不一致的问题。
+const { commitThemeConfig } = useConfigProviderTheme(props)
 
-// 新持久化属性仅在组件内部消费，不进入 context（避免 transformPropsToContext
-// 对函数型 prop 执行调用）；显式列出原有键，行为与改造前一致。
-provideConfigProviderContext({
-  ...transformPropsToContext(props, [
-    'dir',
-    'locale',
-    'nonce',
-    'tooltip',
-    'messages',
-    'theme',
-    'size',
-    'iconify',
-    'progress',
-    'toast',
-    'customToast',
-  ]),
-  iconRender,
-})
+// 直接以 shallowReadonly 快照注入 props：保持响应式追踪，同时避免深层 readonly 将
+// 嵌套对象（如 `tooltip`、`theme`）冻结为不兼容的 DeepReadonly 形态。
+provideConfigProviderContext(shallowReadonly(props))
 
 defineExpose({ commitThemeConfig })
 </script>
 
 <template>
   <ConfigProvider v-bind="forwardedProps" :icon-render="iconRender">
-    <ThemeStyle :css="themeCss" :nonce="nonce" />
     <slot />
     <ToastProvider v-if="!customToast" v-bind="toast" />
     <DialogProvider />
