@@ -6,7 +6,7 @@ import ManagementListToolbar from './management-list-toolbar.vue'
 import ManagementWorkspace from './management-workspace.vue'
 
 describe('ManagementListToolbar', () => {
-  it('expands search, keeps the keyword on close, and clears it independently', async () => {
+  it('uses one action to clear or close search while Escape preserves the keyword', async () => {
     const wrapper = mount(ManagementListToolbar, {
       attachTo: document.body,
       props: {
@@ -27,21 +27,33 @@ describe('ManagementListToolbar', () => {
       await wrapper.get('button[aria-label="搜索角色"]').trigger('click')
       const input = wrapper.get('input[aria-label="搜索角色"]')
       expect(document.activeElement).toBe(input.element)
+      expect(wrapper.get('[data-vean-input-root]').findAll('button')).toHaveLength(1)
+      expect(wrapper.find('button[aria-label="关闭搜索"]').exists()).toBe(true)
       await input.setValue('管理员')
       expect(wrapper.emitted('update:modelValue')).toEqual([['管理员']])
+      await wrapper.setProps({ modelValue: '管理员' })
+      expect(wrapper.get('[data-vean-input-root]').findAll('button')).toHaveLength(1)
+      expect(wrapper.find('button[aria-label="关闭搜索"]').exists()).toBe(false)
 
       await input.trigger('keydown', { key: 'Escape' })
       expect(wrapper.emitted('update:modelValue')).toEqual([['管理员']])
       expect(wrapper.get('button[aria-label="搜索角色"]').element).toBe(document.activeElement)
 
-      await wrapper.setProps({ modelValue: '管理员' })
       await wrapper.get('button[aria-label="搜索角色"]').trigger('click')
       expect(wrapper.get<HTMLInputElement>('input[aria-label="搜索角色"]').element.value).toBe(
         '管理员',
       )
-      await wrapper.get('button[data-vean-input-clearable]').trigger('click')
+      await wrapper.get('button[aria-label="清空搜索"]').trigger('click')
       expect(wrapper.emitted('update:modelValue')).toEqual([['管理员'], ['']])
       expect(wrapper.find('input[aria-label="搜索角色"]').exists()).toBe(true)
+      expect(document.activeElement).toBe(wrapper.get('input[aria-label="搜索角色"]').element)
+
+      await wrapper.setProps({ modelValue: '' })
+      expect(wrapper.get('[data-vean-input-root]').findAll('button')).toHaveLength(1)
+      await wrapper.get('button[aria-label="关闭搜索"]').trigger('click')
+      expect(wrapper.find('input[aria-label="搜索角色"]').exists()).toBe(false)
+      expect(wrapper.get('button[aria-label="搜索角色"]').element).toBe(document.activeElement)
+      expect(wrapper.emitted('update:modelValue')).toEqual([['管理员'], ['']])
     } finally {
       wrapper.unmount()
     }

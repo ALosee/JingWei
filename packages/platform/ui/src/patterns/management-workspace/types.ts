@@ -12,6 +12,8 @@ export interface ManagementListToolbarProps {
   searchLabel: string
   /** Placeholder for the search field. */
   searchPlaceholder: string
+  /** Accessible name for the search action while a keyword is present. */
+  clearSearchLabel?: string
   /** Accessible name for the close-search control. */
   closeSearchLabel?: string
   /** Accessible name for the create control. */

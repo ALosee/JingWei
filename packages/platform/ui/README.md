@@ -48,7 +48,7 @@ src/
 亮/暗 CSS，用于 Branding 草稿预览且不改变应用级主题状态。设置入口、非模态容器和工作区文案由 Web
 壳拥有。新增公开组件时同步更新显式 export、README 和相应契约测试。
 `ManagementWorkspace` 将列表与详情放在无外框的同一工作区，组合本包从 vean 导入的 Splitter 源码组件，提供可拖拽、可键盘调整的竖向分割线；页面名称仅保留给无障碍语义，并处理窄屏列表/详情切换；
-`ManagementListToolbar` 统一列表头部高度、展开搜索与新增图标入口。收起搜索只收起控件并保留关键词，清空由输入框 clearable 完成；关闭、返回与分割线的文案/无障碍名称可通过 prop 覆盖。
+`ManagementListToolbar` 统一列表头部高度、展开搜索与新增图标入口。搜索框只保留一个尾部 ×：有关键词时清空并保持输入焦点，空白时收起搜索；Escape 可随时收起并保留关键词。清空、关闭、返回与分割线的文案/无障碍名称可通过 prop 覆盖。
 这些组合不包含模块数据或业务操作；普通筛选框直接使用 `Input`。
 Branding 的 V2 配置由模块自有的纯适配器转换为 Vean 的原生 token overrides；自定义主色色阶通过
 受控 `primaryRamp` 供 `bg-primary-50` 等 recipe 消费。预览和全局 Provider 使用同一 CSS 生成路径，

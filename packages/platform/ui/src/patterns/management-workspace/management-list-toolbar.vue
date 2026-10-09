@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
 import { SButtonIcon } from '../../components/button/index.js'
 import { SIcon } from '../../components/icon/index.js'
@@ -7,6 +7,7 @@ import { SInput } from '../../components/input/index.js'
 import type { ManagementListToolbarEmits, ManagementListToolbarProps } from './types'
 
 const props = withDefaults(defineProps<ManagementListToolbarProps>(), {
+  clearSearchLabel: '清空搜索',
   closeSearchLabel: '关闭搜索',
   createLabel: '',
   canCreate: false,
@@ -18,6 +19,7 @@ const emit = defineEmits<ManagementListToolbarEmits>()
 const searchOpen = ref(false)
 const searchInput = ref<HTMLInputElement | null>(null)
 const toolbar = ref<HTMLElement | null>(null)
+const hasSearchValue = computed(() => props.modelValue.length > 0)
 
 function setSearchInput(element: HTMLInputElement) {
   searchInput.value = element
@@ -33,6 +35,13 @@ async function closeSearch() {
   searchOpen.value = false
   await nextTick()
   toolbar.value?.querySelector<HTMLButtonElement>('[data-search-trigger]')?.focus()
+}
+
+async function activateSearchAction(clear: () => void) {
+  if (!hasSearchValue.value) return closeSearch()
+  clear()
+  await nextTick()
+  searchInput.value?.focus()
 }
 </script>
 
@@ -100,7 +109,6 @@ async function closeSearch() {
         :placeholder="props.searchPlaceholder"
         :model-value="props.modelValue"
         autocomplete="off"
-        clearable
         @update:model-value="emit('update:modelValue', $event)"
         @keydown.esc="closeSearch"
       >
@@ -111,14 +119,15 @@ async function closeSearch() {
             :aria-hidden="true"
           />
         </template>
-        <template #trailing>
+        <template #trailing="{ clear }">
           <SButtonIcon
             icon="lucide:x"
             variant="ghost"
             size="xs"
             :fit-content="false"
-            :aria-label="props.closeSearchLabel"
-            @click="closeSearch"
+            :aria-label="hasSearchValue ? props.clearSearchLabel : props.closeSearchLabel"
+            :title="hasSearchValue ? props.clearSearchLabel : props.closeSearchLabel"
+            @click="activateSearchAction(clear)"
           />
         </template>
       </SInput>
