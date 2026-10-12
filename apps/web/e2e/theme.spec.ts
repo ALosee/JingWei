@@ -74,6 +74,7 @@ const publishedBrand = (overrides: Partial<EffectiveBrand> = {}): EffectiveBrand
 })
 
 test.beforeEach(async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'light' })
   await page.route('**/api/v1/navigation/bootstrap', (route) =>
     route.fulfill({ json: response([login]) }),
   )
@@ -115,64 +116,89 @@ test.beforeEach(async ({ page }) => {
   )
 })
 
-test('appearance settings use a non-modal popover and persist across reloads', async ({ page }) => {
+test('workspace settings combine density and layout and persist across reloads', async ({
+  page,
+}) => {
   await page.goto('/account/me')
+  const mode = page.getByRole('button', { name: /^明暗模式：/ })
+  await expect(mode).toHaveAccessibleName('明暗模式：跟随系统，点击切换到白天模式')
+  await mode.click()
+  await mode.click()
+  await expect(page.locator('html')).toHaveClass(/dark/)
   await page.getByRole('button', { name: '工作区设置', exact: true }).click()
   const panel = page.getByRole('dialog', { name: '工作区设置' })
   await expect(panel).toBeVisible()
   await expect(page.locator('[data-vean-dialog-overlay]')).toHaveCount(0)
-  await expectSettingsHeader(panel)
-  await expect(panel.getByRole('separator')).toHaveCount(0)
-  await expect(panel.locator('p')).toHaveCount(0)
-  await expect(panel.getByRole('tablist', { name: '明暗模式' })).toBeVisible()
-  await expect(panel.getByRole('tab', { name: '浅色', exact: true })).toHaveAttribute(
-    'aria-selected',
-    'true',
-  )
-  await page.getByRole('tab', { name: '深色', exact: true }).click()
-  await expect(page.locator('html')).toHaveClass(/dark/)
+  await expectWorkspaceSettings(panel)
+  await panel.getByRole('combobox', { name: '界面密度' }).click()
+  await page.getByRole('option', { name: '偏小', exact: true }).click()
+  await expect(panel.getByRole('combobox', { name: '界面密度' })).toContainText('偏小')
+  await panel.screenshot({ path: '/tmp/jingwei-workspace-settings-desktop.png' })
   await page.mouse.click(8, 8)
   await page.keyboard.press('Escape')
   await expect(panel).not.toBeVisible()
   await page.reload()
   await expect(page.locator('html')).toHaveClass(/dark/)
+  await expect(mode).toHaveAccessibleName('明暗模式：黑夜模式，点击切换到跟随系统')
   await expect(page.locator('#vean-theme')).toHaveCount(1)
+  await page.getByRole('button', { name: '工作区设置', exact: true }).click()
+  await expect(panel.getByRole('combobox', { name: '界面密度' })).toContainText('偏小')
 })
 
-async function expectSettingsHeader(panel: ReturnType<Page['getByRole']>): Promise<void> {
-  const title = await panel.getByRole('heading', { name: '工作区设置' }).boundingBox()
-  const tabs = await panel.getByRole('tablist').first().boundingBox()
-  const bounds = await panel.boundingBox()
-  if (!title || !tabs || !bounds) throw new Error('Settings header has no visible bounds')
-  expect(Math.abs(title.y + title.height / 2 - (tabs.y + tabs.height / 2))).toBeLessThan(2)
-  expect(title.x + title.width).toBeLessThan(tabs.x)
-  expect(bounds.x + bounds.width - (tabs.x + tabs.width)).toBeLessThan(24)
+async function expectWorkspaceSettings(panel: ReturnType<Page['getByRole']>): Promise<void> {
+  await expect(panel.getByRole('heading', { name: '工作区设置' })).toBeVisible()
+  await expect(panel.getByRole('tab', { name: '外观设置', exact: true })).toHaveCount(0)
+  await expect(panel.getByRole('tab', { name: '布局设置', exact: true })).toHaveCount(0)
+  await expect(panel.getByRole('tablist', { name: '明暗模式' })).toHaveCount(0)
+  await expect(panel.getByRole('combobox', { name: '界面密度' })).toBeVisible()
+  const modes = panel.getByRole('radiogroup', { name: '布局模式' }).getByRole('radio')
+  await expect(modes).toHaveCount(6)
+  const bounds = await modes.evaluateAll((elements) =>
+    elements.map((element) => {
+      const { x, y } = element.getBoundingClientRect()
+      return { x, y }
+    }),
+  )
+  const [first, second, third, fourth, fifth, sixth] = bounds
+  if (!first || !second || !third || !fourth || !fifth || !sixth)
+    throw new Error('Layout choices have no visible bounds')
+  expect(first.y).toBe(second.y)
+  expect(second.y).toBe(third.y)
+  expect(first.x).toBeLessThan(second.x)
+  expect(second.x).toBeLessThan(third.x)
+  expect(fourth.y).toBeGreaterThan(first.y)
+  expect(fourth.y).toBe(fifth.y)
+  expect(fifth.y).toBe(sixth.y)
+  expect(fourth.x).toBe(first.x)
 }
 
-test('theme mode segment follows system changes and persists the auto preference', async ({
+test('header theme button cycles modes, follows system changes and persists the preference', async ({
   page,
 }) => {
-  await page.emulateMedia({ colorScheme: 'light' })
   await page.goto('/account/me')
-  await page.getByRole('button', { name: '工作区设置', exact: true }).click()
-  const modes = page.getByRole('tablist', { name: '明暗模式' })
-  await modes.getByRole('tab', { name: '自动', exact: true }).focus()
-  await page.keyboard.press('Space')
-  await expect(modes.getByRole('tab', { name: '自动', exact: true })).toHaveAttribute(
-    'aria-selected',
-    'true',
-  )
+  const mode = page.getByRole('button', { name: /^明暗模式：/ })
+  await expect(mode).toHaveAccessibleName('明暗模式：跟随系统，点击切换到白天模式')
   await page.emulateMedia({ colorScheme: 'dark' })
   await expect(page.locator('html')).toHaveClass(/dark/)
-  await page.reload()
+  await mode.focus()
+  await page.keyboard.press('Space')
+  await expect(mode).toHaveAccessibleName('明暗模式：白天模式，点击切换到黑夜模式')
+  await expect(page.locator('html')).not.toHaveClass(/dark/)
+  await page.keyboard.press('Enter')
+  await expect(mode).toHaveAccessibleName('明暗模式：黑夜模式，点击切换到跟随系统')
   await expect(page.locator('html')).toHaveClass(/dark/)
   await page.emulateMedia({ colorScheme: 'light' })
+  await expect(page.locator('html')).toHaveClass(/dark/)
+  await mode.click()
+  await expect(mode).toHaveAccessibleName('明暗模式：跟随系统，点击切换到白天模式')
   await expect(page.locator('html')).not.toHaveClass(/dark/)
-  await page.getByRole('button', { name: '工作区设置', exact: true }).click()
-  await expect(page.getByRole('tab', { name: '自动', exact: true })).toHaveAttribute(
-    'aria-selected',
-    'true',
-  )
+  await page.reload()
+  await expect(mode).toHaveAccessibleName('明暗模式：跟随系统，点击切换到白天模式')
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await expect(page.locator('html')).toHaveClass(/dark/)
+  await mode.click()
+  await expect(mode).toHaveAccessibleName('明暗模式：白天模式，点击切换到黑夜模式')
+  await expect(page.locator('html')).not.toHaveClass(/dark/)
 })
 
 test('tenant theme ignores unscoped legacy colors, size and mode', async ({ page }) => {
@@ -192,13 +218,13 @@ test('tenant theme ignores unscoped legacy colors, size and mode', async ({ page
     ({ key }) => {
       localStorage.setItem(
         key,
-        JSON.stringify({ base: 'gray', primary: 'blue', radius: '2xs', size: 'lg', mode: 'auto' }),
+        JSON.stringify({ base: 'gray', primary: 'blue', radius: '2xs', size: 'lg', mode: 'light' }),
       )
     },
     { key: storageKey },
   )
   await page.goto('/account/me')
-  await expect(page.locator('html')).not.toHaveClass(/dark/)
+  await expect(page.locator('html')).toHaveClass(/dark/)
   await expect(page.locator('html')).toHaveCSS('font-size', '16px')
   await expect
     .poll(() =>
@@ -267,8 +293,8 @@ test('published tenant ramps drive independent light and dark page and card surf
   await expect.poll(() => colorVariable('--primary-50')).toBe(channels(primaryColors[50].hsl))
   await expect.poll(() => colorVariable('--primary-950')).toBe(channels(primaryColors[950].hsl))
 
-  await page.getByRole('button', { name: '工作区设置', exact: true }).click()
-  await page.getByRole('tab', { name: '深色', exact: true }).click()
+  await page.getByRole('button', { name: /^明暗模式：/ }).click()
+  await page.getByRole('button', { name: /^明暗模式：/ }).click()
   await expect(page.locator('html')).toHaveClass(/dark/)
   await expect.poll(() => colorVariable('--background')).toBe(channels(colors[950].hsl))
   await expect.poll(() => colorVariable('--card')).toBe(channels(colors[900].hsl))
@@ -341,13 +367,13 @@ test('published transparent cards render in light mode and honor an opaque dark 
     .locator('xpath=ancestor::*[@data-vean-input-root]')
   await expect(surface).toHaveCSS('background-color', transparentColor)
   await expect(page.locator('body')).toHaveCSS('background-color', transparentColor)
-  await page.getByRole('button', { name: '工作区设置', exact: true }).click()
-  await page.getByRole('tab', { name: '深色', exact: true }).click()
+  await page.getByRole('button', { name: /^明暗模式：/ }).click()
+  await page.getByRole('button', { name: /^明暗模式：/ }).click()
   await expect(surface).toHaveCSS('background-color', 'rgb(255, 255, 255)')
   await page.reload()
   await expect(surface).toHaveCSS('background-color', 'rgb(255, 255, 255)')
-  await page.getByRole('button', { name: '工作区设置', exact: true }).click()
-  await page.getByRole('tab', { name: '浅色', exact: true }).click()
+  await page.getByRole('button', { name: /^明暗模式：/ }).click()
+  await page.getByRole('button', { name: /^明暗模式：/ }).click()
   await expect(surface).toHaveCSS('background-color', transparentColor)
 })
 
@@ -634,26 +660,46 @@ test('invalid scoped appearance preference falls back to a usable settings panel
   await expect(page.locator('html')).toHaveCSS('font-size', '16px')
 })
 
-test('mobile settings stay within viewport and reset persisted preferences', async ({ page }) => {
+test('mobile settings stay within viewport and reset density and layout independently of theme', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 390, height: 844 })
   await page.goto('/account/me')
-  await page.getByRole('button', { name: '工作区设置', exact: true }).click()
-  await expectSettingsHeader(page.getByRole('dialog', { name: '工作区设置' }))
-  await page.getByRole('tab', { name: '深色', exact: true }).click()
+  const mode = page.getByRole('button', { name: /^明暗模式：/ })
+  await mode.click()
+  await mode.click()
   await expect(page.locator('html')).toHaveClass(/dark/)
-  const resetButton = page.getByRole('button', { name: '恢复外观默认值', exact: true })
+  await page.getByRole('button', { name: '工作区设置', exact: true }).click()
+  const settings = page.getByRole('dialog', { name: '工作区设置' })
+  await expectWorkspaceSettings(settings)
+  const resetButton = settings.getByRole('button', { name: '恢复默认设置', exact: true })
+  await expect(resetButton).toBeDisabled()
+  await settings.getByRole('combobox', { name: '界面密度' }).click()
+  await page.getByRole('option', { name: '偏小', exact: true }).click()
+  await expect(resetButton).toBeEnabled()
+  await settings.getByRole('radio', { name: '顶部菜单模式' }).click()
   await resetButton.scrollIntoViewIfNeeded()
   await resetButton.click()
-  await expect(page.locator('html')).not.toHaveClass(/dark/)
-  const panel = await page.getByRole('dialog', { name: '工作区设置' }).boundingBox()
+  await expect(page.locator('[data-vean-app-shell]')).toHaveAttribute('data-mode', 'sidebar')
+  await expect(page.locator('html')).toHaveCSS('font-size', '16px')
+  await expect(page.locator('html')).toHaveClass(/dark/)
+  await expect(resetButton).toBeDisabled()
+  await expect(settings.getByRole('combobox', { name: '界面密度' })).toContainText('标准')
+  await settings.evaluate((element) => {
+    element.scrollTop = 0
+  })
+  await settings.screenshot({ path: '/tmp/jingwei-workspace-settings-mobile.png' })
+  const panel = await settings.boundingBox()
   if (!panel) throw new Error('Settings panel has no visible bounds')
   expect(panel.x).toBeGreaterThanOrEqual(0)
   expect(panel.x + panel.width).toBeLessThanOrEqual(390)
   await page.mouse.click(8, 8)
   await page.keyboard.press('Escape')
-  await expect(page.getByRole('dialog', { name: '工作区设置' })).not.toBeVisible()
+  await expect(settings).not.toBeVisible()
   await page.reload()
-  await expect(page.locator('html')).not.toHaveClass(/dark/)
+  await expect(page.locator('html')).toHaveClass(/dark/)
+  await expect(page.locator('html')).toHaveCSS('font-size', '16px')
+  await expect(page.locator('[data-vean-app-shell]')).toHaveAttribute('data-mode', 'sidebar')
 })
 
 test('layout mode, dimensions and tab visibility persist', async ({ page }) => {
@@ -674,7 +720,6 @@ test('layout mode, dimensions and tab visibility persist', async ({ page }) => {
   await expect(layoutRoot).toHaveAttribute('data-state', 'expanded')
 
   await page.getByRole('button', { name: '工作区设置', exact: true }).click()
-  await page.getByRole('tab', { name: '布局设置' }).click()
   const headerHeight = page.getByRole('spinbutton', { name: 'Header 高度' })
   const siderWidth = page.getByRole('spinbutton', { name: 'Sider 宽度' })
   await headerHeight.fill('80')
@@ -686,7 +731,12 @@ test('layout mode, dimensions and tab visibility persist', async ({ page }) => {
     'width',
     '288px',
   )
+  await page.getByRole('tab', { name: '侧栏底部', exact: true }).click()
   await page.getByRole('radio', { name: '顶部菜单模式' }).click()
+  await expect(siderWidth).toHaveCount(0)
+  await expect(page.getByText('侧边栏宽度')).toHaveCount(0)
+  await expect(page.getByText('品牌位置')).toHaveCount(0)
+  await expect(page.getByRole('tab', { name: '侧栏底部', exact: true })).toHaveCount(0)
   await page.getByRole('switch', { name: /显示页面标签/u }).click()
   await expect(page.locator('[data-vean-app-shell-header] [data-vean-tree-nav]')).toBeVisible()
   await expect(page.getByRole('tree', { name: '主导航' })).toHaveCount(0)
@@ -696,6 +746,17 @@ test('layout mode, dimensions and tab visibility persist', async ({ page }) => {
   await page.reload()
   await expect(page.locator('[data-vean-app-shell-header] [data-vean-tree-nav]')).toBeVisible()
   await expect(page.locator('[data-vean-app-shell-tab]')).toHaveCount(0)
+  await page.getByRole('button', { name: '工作区设置', exact: true }).click()
+  await expect(siderWidth).toHaveCount(0)
+  await expect(page.getByText('品牌位置')).toHaveCount(0)
+  await page.getByRole('radio', { name: '左侧菜单模式' }).click()
+  await expect(siderWidth).toHaveValue('288')
+  await expect(page.getByText('侧边栏宽度')).toBeVisible()
+  await expect(page.getByText('品牌位置')).toBeVisible()
+  await expect(page.getByRole('tab', { name: '侧栏底部', exact: true })).toHaveAttribute(
+    'aria-selected',
+    'true',
+  )
 })
 
 test('user layout overrides stay sparse and continue following tenant defaults', async ({
@@ -720,7 +781,6 @@ test('user layout overrides stay sparse and continue following tenant defaults',
   await expect(page.locator('[data-vean-layout-header]')).toHaveCSS('height', '72px')
 
   await page.getByRole('button', { name: '工作区设置', exact: true }).click()
-  await page.getByRole('tab', { name: '布局设置' }).click()
   await page.getByRole('radio', { name: '左侧菜单模式' }).click()
   await expect(page.getByRole('tree', { name: '主导航' })).toBeVisible()
 
@@ -837,7 +897,6 @@ test('native shell keeps a header brand expanded and folds a sidebar brand', asy
   await page.locator('[data-vean-layout-trigger]').click()
   await expect(headerBrand.locator('[data-global-brand-wordmark]')).toBeVisible()
   await page.getByRole('button', { name: '工作区设置', exact: true }).click()
-  await page.getByRole('tab', { name: '布局设置' }).click()
   await page.getByRole('tab', { name: '侧栏顶部', exact: true }).click()
   const sidebarBrand = page.locator('[data-vean-app-shell-logo][data-placement="sidebar"]')
   await expect(sidebarBrand).toBeVisible()
@@ -927,7 +986,6 @@ test('native sidebar occupies full height with either brand placement', async ({
   expect(siderBox.y).toBeLessThan(1)
   expect(headerBox.x).toBeGreaterThanOrEqual(siderBox.x + siderBox.width - 1)
   await page.getByRole('button', { name: '工作区设置', exact: true }).click()
-  await page.getByRole('tab', { name: '布局设置' }).click()
   await page.getByRole('tab', { name: '侧栏顶部', exact: true }).click()
   await expect(root).toHaveAttribute('data-orientation', 'horizontal')
 })
@@ -1243,7 +1301,6 @@ for (const mode of [
     expect(content.width).toBeGreaterThan(400)
     await page.screenshot({ path: `/tmp/jingwei-shell-${mode}.png` })
     await page.getByRole('button', { name: '工作区设置', exact: true }).click()
-    await page.getByRole('tab', { name: '布局设置' }).click()
     await expect(page.getByRole('spinbutton', { name: 'Sider 宽度' })).toBeDisabled()
     await page.reload()
     await expect(page.locator('[data-vean-app-shell]')).toHaveAttribute('data-mode', mode)
@@ -1313,7 +1370,6 @@ test('native tab close preserves the final tab and hiding tabs keeps visited loc
   const tabs = page.locator('[data-vean-app-shell-tab]')
   await expect(tabs.locator('[data-vean-page-tabs-item]')).toHaveCount(2)
   await page.getByRole('button', { name: '工作区设置', exact: true }).click()
-  await page.getByRole('tab', { name: '布局设置' }).click()
   await page.getByRole('switch', { name: /显示页面标签/u }).click()
   await expect(tabs).toHaveCount(0)
   await page.getByRole('switch', { name: /显示页面标签/u }).click()
@@ -1426,7 +1482,6 @@ test('collapsed sidebar keeps the complete brand mark centered and unclipped', a
 test('layout choices show six distinct region thumbnails', async ({ page }) => {
   await page.goto('/account/me')
   await page.getByRole('button', { name: '工作区设置', exact: true }).click()
-  await page.getByRole('tab', { name: '布局设置' }).click()
   const thumbnails = page.locator('[data-layout-mode-preview]')
   await expect(thumbnails).toHaveCount(6)
   const drawings = await thumbnails.evaluateAll((elements) =>
@@ -1511,7 +1566,6 @@ for (const variant of ['sidebar', 'floating', 'inset'] as const) {
     const root = page.locator('[data-vean-app-shell]')
     await expect(page.locator('[data-vean-app-shell-logo][data-placement="sidebar"]')).toBeVisible()
     await page.getByRole('button', { name: '工作区设置', exact: true }).click()
-    await page.getByRole('tab', { name: '布局设置' }).click()
     const label = variant === 'sidebar' ? '标准' : variant === 'floating' ? '悬浮' : '内嵌'
     await page.getByRole('tab', { name: label, exact: true }).click()
     await page.getByRole('tab', { name: '侧栏底部', exact: true }).click()
@@ -1537,8 +1591,7 @@ for (const variant of ['sidebar', 'floating', 'inset'] as const) {
     await expect(brand).toBeVisible()
     await expect(root).toHaveAttribute('data-state', 'collapsed')
     await page.getByRole('button', { name: '工作区设置', exact: true }).click()
-    await page.getByRole('tab', { name: '布局设置' }).click()
-    await page.getByRole('button', { name: '恢复租户默认' }).click()
+    await page.getByRole('button', { name: '恢复默认设置' }).click()
     await expect(root).toHaveAttribute('data-variant', 'sidebar')
     await expect(page.locator('[data-vean-app-shell-logo][data-placement="sidebar"]')).toBeVisible()
   })

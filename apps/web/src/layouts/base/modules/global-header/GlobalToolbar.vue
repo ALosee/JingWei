@@ -9,6 +9,7 @@ import { resolveHomeTarget } from '../../../../navigation/workspace-targets.js'
 import { useShellStore } from '../../../../stores/shell.js'
 import GlobalSettingsPopover from '../global-settings/GlobalSettingsPopover.vue'
 import MenuSearchPopover from './MenuSearchPopover.vue'
+import ThemeModeButton from './ThemeModeButton.vue'
 import UserAccountMenu from './UserAccountMenu.vue'
 
 const { isFullscreen, isSupported, toggle: toggleFullscreen } = useFullscreen()
@@ -32,6 +33,7 @@ function goHome(): void {
       :aria-label="isFullscreen ? '退出全屏' : '进入全屏'"
       @click="toggleFullscreen"
     />
+    <ThemeModeButton />
     <GlobalSettingsPopover />
     <UserAccountMenu />
   </div>

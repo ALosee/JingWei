@@ -12,14 +12,48 @@ import {
   supportsWorkspaceBrandPlacement,
   type WorkspaceSidebarVariant,
 } from '@jingwei/module-branding/shared'
-import { Button, InputNumber, Segment, Separator, Switch } from '@jingwei/ui'
-import type { SegmentOptionData } from '@jingwei/ui'
+import { Button, InputNumber, Segment, Select, Separator, Switch } from '@jingwei/ui'
+import type { SegmentOptionData, SelectSingleOptionData } from '@jingwei/ui'
 
 import LayoutModePreview from '../../../../components/layout-mode-preview.vue'
+import {
+  defaultAppearancePreferences,
+  themeSizePreferences,
+  useAppearanceStore,
+  type ThemeSizePreference,
+} from '../../../../stores/appearance.js'
 import { useLayoutStore, type BrandPlacement, type LayoutMode } from '../../../../stores/layout.js'
 
+const appearance = useAppearanceStore()
+const { preferences: appearancePreferences } = storeToRefs(appearance)
 const layout = useLayoutStore()
-const { preferences, tenantDefaults, userOverrides, hasOverrides } = storeToRefs(layout)
+const { preferences, userOverrides, hasOverrides } = storeToRefs(layout)
+const hasCustomSettings = computed(
+  () =>
+    hasOverrides.value || appearancePreferences.value.size !== defaultAppearancePreferences.size,
+)
+
+const sizeLabels: Record<ThemeSizePreference, string> = {
+  xs: '紧凑',
+  sm: '偏小',
+  md: '标准',
+  lg: '偏大',
+  xl: '大',
+  '2xl': '特大',
+}
+const sizeOptions: SelectSingleOptionData<ThemeSizePreference>[] = themeSizePreferences.map(
+  (value) => ({ value, label: sizeLabels[value] }),
+)
+
+function setSize(value: unknown): void {
+  const size = themeSizePreferences.find((size) => size === value)
+  if (size !== undefined) appearance.patch({ size })
+}
+
+function resetSettings(): void {
+  layout.reset()
+  appearance.patch({ size: defaultAppearancePreferences.size })
+}
 
 const headerLimits = { min: 48, max: 96, step: 4 }
 const siderLimits = { min: 192, max: 360, step: 8 }
@@ -72,15 +106,24 @@ function setShowTabs(value: boolean): void {
 </script>
 
 <template>
-  <form class="grid gap-6 pt-2" @submit.prevent>
-    <p class="m-0 text-xs text-muted-foreground">
-      当前租户默认使用{{ workspaceLayoutModeLabels[tenantDefaults.mode] }}、{{
-        tenantDefaults.showTabs ? '显示' : '隐藏'
-      }}标签栏。未单独调整的项目会继续跟随租户默认值。
-    </p>
+  <form class="grid gap-6" @submit.prevent>
+    <section class="grid gap-3">
+      <Separator align="center">界面设置</Separator>
+      <div class="flex items-center justify-between gap-4 px-1">
+        <label for="workspace-size" class="text-sm text-foreground">界面密度</label>
+        <Select
+          id="workspace-size"
+          :model-value="appearancePreferences.size"
+          :items="sizeOptions"
+          size="sm"
+          class="w-28"
+          @update:model-value="setSize"
+        />
+      </div>
+    </section>
     <section class="grid gap-5">
       <Separator align="center">布局模式</Separator>
-      <div class="grid grid-cols-2 gap-x-4 gap-y-3" role="radiogroup" aria-label="布局模式">
+      <div class="grid grid-cols-3 gap-x-3 gap-y-3" role="radiogroup" aria-label="布局模式">
         <button
           v-for="option in modeOptions"
           :key="option.value"
@@ -102,7 +145,7 @@ function setShowTabs(value: boolean): void {
             <LayoutModePreview :mode="option.value" />
           </span>
           <span
-            class="text-xs font-medium"
+            class="text-center text-xs font-medium"
             :class="preferences.mode === option.value ? 'text-primary' : 'text-foreground'"
           >
             {{ option.label }}
@@ -164,7 +207,7 @@ function setShowTabs(value: boolean): void {
           @update:model-value="setSidebarVariant"
         />
       </div>
-      <div class="flex items-center justify-between gap-4 px-1">
+      <div v-if="preferences.mode !== 'top'" class="flex items-center justify-between gap-4 px-1">
         <span class="text-sm text-foreground">
           侧边栏宽度
           <small v-if="'siderWidth' in userOverrides" class="ml-1 text-primary">已自定义</small>
@@ -183,10 +226,10 @@ function setShowTabs(value: boolean): void {
           @update:model-value="setSiderWidth"
         />
       </div>
-      <p v-if="preferences.mode !== 'left'" class="m-0 text-xs text-muted-foreground">
-        当前布局自动分配导航宽度；切回左侧菜单后恢复自定义宽度。
-      </p>
-      <div class="flex flex-wrap items-center justify-between gap-4 px-1">
+      <div
+        v-if="preferences.mode !== 'top'"
+        class="flex flex-wrap items-center justify-between gap-4 px-1"
+      >
         <span class="text-sm text-foreground">
           品牌位置
           <small v-if="'brandPlacement' in userOverrides" class="ml-1 text-primary">已自定义</small>
@@ -198,12 +241,6 @@ function setShowTabs(value: boolean): void {
           @update:model-value="setBrandPlacement"
         />
       </div>
-      <p
-        v-if="preferences.mode !== 'left' && preferences.mode !== 'dual-vertical'"
-        class="m-0 text-xs text-muted-foreground"
-      >
-        侧栏底部适用于左侧菜单和双列侧栏；其他模式按原生布局显示品牌，切回后恢复此位置。
-      </p>
     </section>
 
     <div class="flex justify-start border-t border-border pt-4">
@@ -211,10 +248,10 @@ function setShowTabs(value: boolean): void {
         type="button"
         variant="outline"
         size="sm"
-        :disabled="!hasOverrides"
-        @click="layout.reset"
+        :disabled="!hasCustomSettings"
+        @click="resetSettings"
       >
-        恢复租户默认
+        恢复默认设置
       </Button>
     </div>
   </form>

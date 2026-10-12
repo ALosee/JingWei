@@ -16,7 +16,7 @@ export interface AppearancePreferences {
 }
 
 export const defaultAppearancePreferences: AppearancePreferences = {
-  mode: 'light',
+  mode: 'auto',
   size: 'md',
 }
 
