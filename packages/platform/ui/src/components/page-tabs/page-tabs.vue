@@ -4,7 +4,7 @@ import { useForwardListeners, useOmitProps } from '@vean/aria/composables'
 import { PageTabsCompact, providePageTabsUi } from '@vean/aria/page-tabs'
 import type { PageTabsOptionData } from '@vean/aria/page-tabs'
 import { keysOf } from '@vean/aria/shared'
-import { computed } from 'vue'
+import { computed, nextTick } from 'vue'
 
 import { provideMenuUi } from '../menu/context'
 import type { PageTabsProps, PageTabsEmits, PageTabsSlots } from './types'
@@ -51,10 +51,29 @@ provideMenuUi(() => ({
   size: props.size,
 }))
 providePageTabsUi(ui)
+
+/** Vue's keyed DOM moves can blur the dragged item, preventing the next keyboard drop. */
+function restoreDragFocus(): void {
+  const focused = document.activeElement
+  if (
+    !(focused instanceof HTMLElement) ||
+    !focused.matches('[data-vean-page-tabs-item][data-dragging="true"]')
+  )
+    return
+  void nextTick(() => {
+    const owner = focused.ownerDocument
+    if (
+      focused.isConnected &&
+      (owner.activeElement === owner.body || owner.activeElement === null)
+    ) {
+      focused.focus({ preventScroll: true })
+    }
+  })
+}
 </script>
 
 <template>
-  <PageTabsCompact v-bind="forwardedProps" v-on="listeners">
+  <PageTabsCompact v-bind="forwardedProps" v-on="listeners" @tab-drag-reorder="restoreDragFocus">
     <template v-for="slotName in slotNames" #[slotName]="slotProps">
       <!-- @vue-expect-error ignore slot type -->
       <slot :name="slotName" v-bind="slotProps" />

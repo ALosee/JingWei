@@ -81,6 +81,7 @@ Vean 引擎自身采用 `__VEAN_THEME` envelope；租户 Provider 不读取未�
 - 本地 `primaryRamp` 是 styled layer 对完整自定义主色色阶的显式接入；不复制 aria 内部实现。
 - Tree 已重新通过 `ui:inspect`、`ui:add tree --overwrite` 和 `ui:diff` 对照完整 0.50.0 模板；公共入口补齐 TreeVirtualizer/TreeVirtualizerItem 和节点事件类型。保留 slot 返回 `unknown`、安全索引和 slot 局部变量命名的类型适配。
 - Tree styled 层通过节点的 `data-vean-tree-value` 和 Vue 更新钩子恢复动画重新挂载后的键盘焦点，修复连续展开多层时焦点落到 body 的回归；原生 aria 的选择、展开和动画状态机保持上游实现。导航、组织与字典三页均使用 Tree/TreeItem，行选择与箭头展开分离。
+- PageTabs styled 层通过原生 `tabDragReorder` 事件，在 Vue 移动 DOM 后恢复丢失的页签焦点，避免键盘拖拽移动后无法放下或开始下一次拖拽；不覆盖用户主动移动的焦点，排序和固定分组仍由 Aria 拥有。
 
 升级时同时更新包、生成组件、消费者 Skill 快照与本页来源；先看版本跨度内的 release/migration guide，
 保留上述差异，并运行根 `pnpm check` 与 `pnpm test:e2e`。Skill 的组件指南推荐直接引入 `@vean/ui`；

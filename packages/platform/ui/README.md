@@ -106,6 +106,8 @@ SplitNav、Breadcrumb 和 PageTabs，提供六种原生骨架、菜单/面包屑
 @jingwei/ui/layout-unocss 入口生成对应原生 recipe safelist，该入口保留独立类型门面。公开组件与类型同时维护 src/index.ts 和 public.d.ts。
 `Layout` 仍提供独立区域布局与受控 Sider；Tabs、TreeMenu、TreeNav、Menubar、Breadcrumb、Popover 与
 PageTabs 保留各自的 Vean ARIA、键盘、焦点和受控状态，可以独立消费。
+PageTabs styled 层在原生拖拽排序后恢复因 Vue DOM 移动丢失的页签焦点，确保键盘拖拽可连续移动、放下；
+用户主动移到其他控件时不抢回焦点。排序、固定分组和锁定页签边界仍由原生 Aria 管理。
 inset 隐藏页脚时由 Content 承担底部圆角，避免其背景覆盖 Main 的圆角；fullContent 继续通栏。
 AppShell 的内层 Content 透传 Layout.Content 的可用高度，管理页可用 `h-full` 撑满并在列表/详情内独立滚动；
 普通长页面仍由外层 Layout.Content 滚动，页面无需计算顶栏、页签或 viewport 高度。

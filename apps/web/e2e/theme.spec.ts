@@ -1346,7 +1346,7 @@ test('hidden PAGE keeps the native breadcrumb and ancestor links', async ({ page
   await expect(page).toHaveURL(/\/account\/me\?tab=security#details$/)
 })
 
-test('native tab close preserves the final tab and hiding tabs keeps visited locations', async ({
+test('native tab close preserves the home tab and hiding tabs keeps visited locations', async ({
   page,
 }) => {
   const roles = {
@@ -1382,7 +1382,7 @@ test('native tab close preserves the final tab and hiding tabs keeps visited loc
     .click()
   await expect(page).toHaveURL(/\/account\/me\?tab=security$/)
   await expect(tabs.locator('[data-vean-page-tabs-item]')).toHaveCount(1)
-  await tabs.locator('[data-vean-page-tabs-close]').click()
+  await expect(tabs.locator('[data-vean-page-tabs-close]')).toHaveCount(0)
   await expect(tabs.locator('[data-vean-page-tabs-item]')).toHaveCount(1)
 })
 

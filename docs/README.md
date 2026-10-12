@@ -141,3 +141,4 @@
 - [0019](./adr/0019-layer-tenant-presentation-defaults-and-user-preferences.md)：租户展示默认值与用户稀疏偏好分层
 - [0020](./adr/0020-model-tenant-themes-as-palettes-and-semantic-overrides.md)：租户色阶与语义主题覆盖模型
 - [0021](./adr/0021-avoid-unscoped-appearance-preference-migration.md)：不将旧版全局主题偏好隐式迁入账号作用域
+- [0024](./adr/0024-restore-workspace-tabs-per-browser-session.md)：按浏览器页面会话与租户/用户隔离恢复页签，按当前导航校验缓存

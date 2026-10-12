@@ -168,9 +168,22 @@ PAGE 路由通过 TreeMenu 公开的受控展开 API 保持可见祖先展开，
 菜单搜索、全屏、用户账号和非模态设置通过 Header trailing slot 组合。
 
 `use-workspace-tabs` 拥有稳定的响应式页签数组，以具体 route.path 为身份，并记录最后的 query/hash。
-原生 PageTabs 负责选择、关闭和中键交互，最后一个页签不可关闭；隐藏标签栏不销毁集合。
-刷新只恢复当前页，本期不做 KeepAlive、页面缓存或跨窗口同步。租户主题在 blank 页面仍由
-ConfigProvider 应用，设置入口只属于 BaseLayout。设计取舍见 [ADR 0023](../../docs/adr/0023-use-native-app-shell.md)。
+当前导航版本的首页通过 `homeCode`（含默认 params/query）解析，始终在最左侧固定且不可关闭、拖动。
+原生 PageTabs 负责选择、关闭、中键与键盘交互，以及固定分组内的拖拽排序。右键提供关闭、关闭其他、
+关闭左侧、关闭右侧、关闭所有和固定/取消固定；批量关闭保留首页和固定页签，首页不能取消固定。
+`modules/workspace-tabs/WorkspaceTabs.vue` 通过 AppShell 的 tabs slot 组合原生 PageTabs、溢出时的左右
+滚动按钮和页面操作。原生页签视口负责自动滚动到当前项及滚轮横向滚动，按钮不随页签溢出。
+标签栏右侧刷新按钮重新挂载当前页面，重新执行页面加载且保留 URL、页签顺序和固定状态。
+页面全屏使用 Layout 的 `fullContent`，隐藏侧栏与 Header，仅显示标签栏和 Content；退出恢复原布局偏好，
+切换时不重新挂载页面，也不调用浏览器全屏 API。隐藏标签栏不销毁集合。
+浏览器刷新通过 `workspace-tab-session.ts` 恢复同一浏览器标签页内的工作区。版本化 `sessionStorage`
+按 tenantId/userId 隔离，保存打开顺序、用户固定状态及各页最后的具体 URL（含 query/hash），不保存页面组件或表单数据。
+恢复时用当前已授权导航与已安装的 base 路由重新校验，过滤失效、无权限、身份变更、不安全和重复的标签；
+标题从当前导航读取，首页仍按当前版本重新生成。导航新版保留仍然有效的标签，浏览器当前 URL 决定选中项，
+不会被历史缓存跳转覆盖。关闭、固定和拖拽变更即时保存；缓存损坏或浏览器禁止存储时回退到内存状态。
+不做 KeepAlive、页面缓存或跨窗口同步；结束浏览器页面会话后不保证在新窗口恢复。
+租户主题在 blank 页面仍由 ConfigProvider 应用，设置入口只属于 BaseLayout。
+设计取舍见 [ADR 0023](../../docs/adr/0023-use-native-app-shell.md) 和 [ADR 0024](../../docs/adr/0024-restore-workspace-tabs-per-browser-session.md)。
 
 动态安装按 layout 分组；parentId 不决定 RouterView 嵌套。每次安装替换全部旧动态路由，而不是持续追加。布局由数据库配置，但必须处于 Manifest.allowedLayouts 中；省略列表时只允许默认值。
 

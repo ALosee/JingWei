@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useMediaQuery } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import { workspaceLogoPlacement } from '@jingwei/module-branding/shared'
 import { AppShell } from '@jingwei/ui'
@@ -9,13 +9,16 @@ import { AppShell } from '@jingwei/ui'
 import { useLayoutStore } from '../stores/layout.js'
 import GlobalBrand from './base/modules/global-brand/GlobalBrand.vue'
 import GlobalToolbar from './base/modules/global-header/GlobalToolbar.vue'
+import WorkspaceTabs from './base/modules/workspace-tabs/WorkspaceTabs.vue'
 import { useWorkspaceNavigation } from './base/use-workspace-navigation.js'
 import { useWorkspaceTabs } from './base/use-workspace-tabs.js'
 
 const layout = useLayoutStore()
 const { preferences, siderOpen } = storeToRefs(layout)
 const isMobile = useMediaQuery('(max-width: 767.9px)')
-const { items: tabs, activeValue: tabValue, beforeClose, onClose } = useWorkspaceTabs()
+const { items: tabs, activeValue: tabValue, beforeClose, menuFactory } = useWorkspaceTabs()
+const pageRevision = ref(0)
+const pageFullscreen = ref(false)
 const mode = computed(() =>
   preferences.value.mode === 'left' ? 'sidebar' : preferences.value.mode,
 )
@@ -28,7 +31,9 @@ const layoutProps = computed(() => ({
     : {}),
   mobileSidebarWidth: Math.min(preferences.value.siderWidth, 320),
   headerHeight: preferences.value.headerHeight,
-  tabVisible: preferences.value.showTabs,
+  tabVisible: pageFullscreen.value || preferences.value.showTabs,
+  headerVisible: !pageFullscreen.value,
+  fullContent: pageFullscreen.value,
   tabHeight: 40,
   footerVisible: false,
   scrollBehavior: 'content' as const,
@@ -41,8 +46,6 @@ const layoutProps = computed(() => ({
   <AppShell
     v-model:open="siderOpen"
     v-model:mobile-open="mobileOpen"
-    v-model:tabs="tabs"
-    v-model:tab-value="tabValue"
     :mode="mode"
     :model-value="activeValue"
     :items="items"
@@ -55,17 +58,28 @@ const layoutProps = computed(() => ({
       header: 'border-b border-border bg-card',
       tab: 'border-b border-border bg-card',
       content: 'min-w-0 overscroll-contain p-4',
+      sidebarRoot: pageFullscreen ? '!hidden' : '',
     }"
-    :ui="{ root: 'h-dvh min-h-0 overflow-hidden bg-background', tab: 'overflow-x-auto' }"
+    :ui="{ root: 'h-dvh min-h-0 overflow-hidden bg-background', tab: 'min-w-0 overflow-hidden' }"
     :menu-ui="{ treeNav: { overflow: 'min-w-0 w-full' } }"
-    :tab-props="{ beforeClose, middleClickClose: true }"
-    :tab-ui="{ root: 'h-full min-w-max items-end px-2', item: 'h-8' }"
-    @tab-close="onClose"
     @select="onSelect"
   >
     <template #logo><GlobalBrand part="mark" /></template>
     <template #title><GlobalBrand part="title" /></template>
     <template #header-end><GlobalToolbar /></template>
-    <RouterView />
+    <template #tabs>
+      <WorkspaceTabs
+        v-model="tabValue"
+        v-model:items="tabs"
+        :before-close="beforeClose"
+        :menu-factory="menuFactory"
+        :fullscreen="pageFullscreen"
+        @refresh="pageRevision++"
+        @toggle-fullscreen="pageFullscreen = !pageFullscreen"
+      />
+    </template>
+    <RouterView v-slot="{ Component }">
+      <component :is="Component" :key="pageRevision" />
+    </RouterView>
   </AppShell>
 </template>
