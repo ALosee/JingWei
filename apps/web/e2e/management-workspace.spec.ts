@@ -371,6 +371,88 @@ test('user management separates profile, roles, and security', async ({ page }) 
   await expect(page.getByText('tenant-administrator')).toBeVisible()
 })
 
+test('inset management workspace fills the content region and follows viewport resizing', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await page.route('**/api/v1/branding/bootstrap*', (route) =>
+    route.fulfill({
+      json: {
+        ...defaultEffectiveBrand,
+        workspaceDefaults: { ...defaultEffectiveBrand.workspaceDefaults, sidebarVariant: 'inset' },
+      },
+    }),
+  )
+  await page.goto('/iam/users')
+  const workspace = page.getByRole('heading', { name: '用户管理', exact: true }).locator('..')
+  await expect(page.getByRole('heading', { name: '用户列表' })).toBeVisible()
+
+  for (const viewport of [
+    { width: 1600, height: 900 },
+    { width: 1600, height: 1200 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(viewport)
+    await expect
+      .poll(() =>
+        workspace.evaluate((element) => {
+          const content = document.getElementById('workspace-content')
+          if (!content) throw new Error('工作区内容区域缺失')
+          const style = getComputedStyle(content)
+          const availableHeight =
+            content.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom)
+          return Math.abs(element.getBoundingClientRect().height - availableHeight)
+        }),
+      )
+      .toBeLessThan(2)
+  }
+})
+
+test('long user lists scroll inside the workspace without moving the page header', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1600, height: 900 })
+  await page.route('**/api/v1/iam/users', (route) =>
+    route.fulfill({
+      json: {
+        users: Array.from({ length: 60 }, (_, index) => ({
+          id: id(300 + index),
+          username: `user${index}`,
+          displayName: `用户 ${index}`,
+          email: null,
+          phone: null,
+          status: 'ACTIVE',
+          lastLoginAt: now,
+          createdAt: now,
+          roleCount: 1,
+        })),
+      },
+    }),
+  )
+  await page.goto('/iam/users')
+  const workspace = page.getByRole('heading', { name: '用户管理', exact: true }).locator('..')
+  const list = workspace.locator('aside ul')
+  await expect(list.getByRole('button')).toHaveCount(60)
+  await expect
+    .poll(() => list.evaluate((element) => element.scrollHeight - element.clientHeight))
+    .toBeGreaterThan(0)
+  await list.evaluate((element) => {
+    element.scrollTop = element.scrollHeight
+  })
+  await expect(
+    list.getByRole('button', { name: '用户 59 user59 正常', exact: true }),
+  ).toBeInViewport()
+  await expect(page.getByRole('heading', { name: '用户列表' })).toBeInViewport()
+  await expect
+    .poll(() =>
+      page.locator('#workspace-content').evaluate((element) => ({
+        scrollTop: element.scrollTop,
+        overflow: element.scrollHeight - element.clientHeight,
+      })),
+    )
+    .toEqual({ scrollTop: 0, overflow: 0 })
+})
+
 test('organization management keeps the tree and detail in one workspace', async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 900 })
   await page.goto('/organization/units')

@@ -62,7 +62,9 @@ export const appShellVariants = scv({
     breadcrumbTrigger: 'inline-flex min-w-0 items-center [&>span]:truncate',
     breadcrumbTriggerIcon: 'shrink-0 opacity-70',
     tab: 'flex justify-between h-full',
-    content: 'w-full',
+    // Preserve Layout.Content's available height for pages with their own
+    // scrolling panes; the outer Layout still owns ordinary page scrolling.
+    content: 'w-full h-full min-h-0',
     footer: 'flex items-center h-full w-full px-[--sl-spacing]',
     layoutHeader: 'border-b border-border',
     layoutTab: 'border-b border-border',

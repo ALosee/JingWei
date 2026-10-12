@@ -107,6 +107,8 @@ SplitNav、Breadcrumb 和 PageTabs，提供六种原生骨架、菜单/面包屑
 `Layout` 仍提供独立区域布局与受控 Sider；Tabs、TreeMenu、TreeNav、Menubar、Breadcrumb、Popover 与
 PageTabs 保留各自的 Vean ARIA、键盘、焦点和受控状态，可以独立消费。
 inset 隐藏页脚时由 Content 承担底部圆角，避免其背景覆盖 Main 的圆角；fullContent 继续通栏。
+AppShell 的内层 Content 透传 Layout.Content 的可用高度，管理页可用 `h-full` 撑满并在列表/详情内独立滚动；
+普通长页面仍由外层 Layout.Content 滚动，页面无需计算顶栏、页签或 viewport 高度。
 `Segment` 通过公开 Aria Root/List/Trigger/Indicator 组合保留 recipe、槽位和键盘行为；整个控件与单项
 `disabled` 均传递禁用状态和 `aria-disabled`，不复制 headless 状态机。
 `Tree` 完整组件族来自 vean 0.50.0 模板，包含状态驱动的展开/折叠动画、普通与动画虚拟列表。

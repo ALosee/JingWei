@@ -963,10 +963,12 @@ test('content scroll does not move the header', async ({ page }) => {
   const header = page.locator('[data-vean-layout-header]')
   const content = page.locator('[data-vean-layout-content]')
   const before = await header.boundingBox()
-  await content.evaluate((element) => {
+  await page.locator('[data-vean-app-shell-content]').evaluate((element) => {
     const spacer = document.createElement('div')
     spacer.style.height = '2000px'
     element.append(spacer)
+  })
+  await content.evaluate((element) => {
     element.scrollTop = 900
   })
   const after = await header.boundingBox()
