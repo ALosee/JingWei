@@ -3,88 +3,69 @@ import { useMediaQuery } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 
-import { Layout } from '@jingwei/ui'
+import { workspaceLogoPlacement } from '@jingwei/module-branding/shared'
+import { AppShell } from '@jingwei/ui'
 
 import { useLayoutStore } from '../stores/layout.js'
-import { getLayoutModeDefinition, type LayoutModeContext } from './base/layout-mode-registry.js'
-import { layoutTargetIds } from './base/layout-targets.js'
 import GlobalBrand from './base/modules/global-brand/GlobalBrand.vue'
-import GlobalHeader from './base/modules/global-header/GlobalHeader.vue'
-import GlobalPageTabs from './base/modules/global-tab/GlobalPageTabs.vue'
+import GlobalToolbar from './base/modules/global-header/GlobalToolbar.vue'
+import { useWorkspaceNavigation } from './base/use-workspace-navigation.js'
+import { useWorkspaceTabs } from './base/use-workspace-tabs.js'
 
 const layout = useLayoutStore()
 const { preferences, siderOpen } = storeToRefs(layout)
-const isMobile = useMediaQuery('(max-width: 767px)')
-const modeDefinition = computed(() => getLayoutModeDefinition(preferences.value.mode))
-const modeContext = computed<LayoutModeContext>(() => ({
-  preferences: preferences.value,
-  isMobile: isMobile.value,
-}))
-const orientation = computed(() => modeDefinition.value.orientation(modeContext.value))
-const showHeaderBrand = computed(() => modeDefinition.value.showHeaderBrand(modeContext.value))
-const showSiderBrand = computed(() => modeDefinition.value.showSiderBrand(modeContext.value))
-const reserveHeaderBrandSpace = computed(
-  () => showHeaderBrand.value && modeDefinition.value.sidebarVisible && !isMobile.value,
+const isMobile = useMediaQuery('(max-width: 767.9px)')
+const { items: tabs, activeValue: tabValue, beforeClose, onClose } = useWorkspaceTabs()
+const mode = computed(() =>
+  preferences.value.mode === 'left' ? 'sidebar' : preferences.value.mode,
 )
-const compactHeaderBrand = computed(() => isMobile.value)
-const layoutUi = {
-  root: 'h-dvh min-h-0 overflow-hidden bg-background data-[mobile=true]:[--sl-main-gap:0px]',
-  sidebarWrapper: 'border-sidebar-border',
-  sidebar: 'text-sidebar-foreground',
-  rail: 'hidden',
-  header: 'border-b border-border bg-card',
-  tab: 'bg-card',
-  content: 'min-w-0 overscroll-contain p-4',
-} as const
+const { items, activeValue, mobileOpen, menuProps, onSelect } = useWorkspaceNavigation()
+const logoPlacement = computed(() => workspaceLogoPlacement(preferences.value.brandPlacement))
+const layoutProps = computed(() => ({
+  variant: preferences.value.sidebarVariant,
+  ...(preferences.value.mode === 'left'
+    ? { sidebarWidth: preferences.value.siderWidth, collapsedSidebarWidth: 64 }
+    : {}),
+  mobileSidebarWidth: Math.min(preferences.value.siderWidth, 320),
+  headerHeight: preferences.value.headerHeight,
+  tabVisible: preferences.value.showTabs,
+  tabHeight: 40,
+  footerVisible: false,
+  scrollBehavior: 'content' as const,
+  scrollId: 'workspace-content',
+  fixedTop: true,
+}))
 </script>
 
 <template>
-  <Layout
+  <AppShell
     v-model:open="siderOpen"
-    :ui="layoutUi"
-    :orientation="orientation"
-    :sidebar-visible="modeDefinition.sidebarVisible"
-    :sidebar-width="preferences.siderWidth"
-    :collapsed-sidebar-width="64"
+    v-model:mobile-open="mobileOpen"
+    v-model:tabs="tabs"
+    v-model:tab-value="tabValue"
+    :mode="mode"
+    :model-value="activeValue"
+    :items="items"
+    :logo-placement="logoPlacement"
     :is-mobile="isMobile"
-    :mobile-sidebar-width="Math.min(preferences.siderWidth, 320)"
-    :header-height="preferences.headerHeight"
-    :tab-visible="preferences.showTabs"
-    :tab-height="40"
-    :footer-visible="false"
-    scroll-behavior="content"
-    scroll-id="workspace-content"
-    collapsible="icon"
-    fixed-top
+    :layout-props="layoutProps"
+    :menu-props="menuProps"
+    :layout-ui="{
+      rail: 'hidden',
+      header: 'border-b border-border bg-card',
+      tab: 'border-b border-border bg-card',
+      content: 'min-w-0 overscroll-contain p-4',
+    }"
+    :ui="{ root: 'h-dvh min-h-0 overflow-hidden bg-background', tab: 'overflow-x-auto' }"
+    :menu-ui="{ treeNav: { overflow: 'min-w-0 w-full' } }"
+    :tab-props="{ beforeClose, middleClickClose: true }"
+    :tab-ui="{ root: 'h-full min-w-max items-end px-2', item: 'h-8' }"
+    @tab-close="onClose"
+    @select="onSelect"
   >
-    <template #sidebar>
-      <div class="min-h-0 flex flex-1 flex-col">
-        <div
-          v-if="showSiderBrand"
-          data-global-brand-region="sider"
-          class="h-[var(--vean-layout-header-height)] flex shrink-0 items-center overflow-hidden pl-4"
-        >
-          <GlobalBrand :compact="preferences.siderCollapsed" />
-        </div>
-        <div :id="layoutTargetIds.siderMenu" class="min-h-0 flex-1" />
-      </div>
-    </template>
-
-    <template #header>
-      <GlobalHeader
-        :definition="modeDefinition"
-        :show-brand="showHeaderBrand"
-        :reserve-brand-space="reserveHeaderBrandSpace"
-        :brand-compact="compactHeaderBrand"
-      />
-    </template>
-
-    <template #tab>
-      <GlobalPageTabs />
-    </template>
-
+    <template #logo><GlobalBrand part="mark" /></template>
+    <template #title><GlobalBrand part="title" /></template>
+    <template #header-end><GlobalToolbar /></template>
     <RouterView />
-  </Layout>
-
-  <component :is="modeDefinition.menuComponent" />
+  </AppShell>
 </template>

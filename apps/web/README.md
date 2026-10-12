@@ -51,10 +51,11 @@ src/
 ├── appearance/                # Branding 到主题的适配与首屏明暗模式脚本
 ├── branding/document-brand.ts # 生效品牌到浏览器文档 metadata 的投影
 ├── layouts/
-│   ├── BaseLayout.vue         # 只组合 Headless Layout 与当前模式定义
+│   ├── BaseLayout.vue         # 组合源码拥有的 AppShell 与工作区状态
 │   └── base/
-│       ├── layout-mode-registry.ts # 模式到菜单、Header 内容与几何策略的注册表
-│       └── modules/           # global-brand/header/menu/settings/tab 分模块实现
+│       ├── use-workspace-navigation.ts # 导航树、当前 PAGE 与手机抽屉状态
+│       ├── use-workspace-tabs.ts # 页签集合、具体 URL 与关闭策略
+│       └── modules/           # global-brand/header/settings 分模块实现
 ├── navigation/
 │   ├── initialize-navigation.ts # 导航启动流程与失败恢复
 │   └── initial-location.ts   # 纯首屏目标选择
@@ -123,7 +124,7 @@ e2e/                           # Playwright 关键路径测试
 也不会覆盖租户品牌。
 
 `useLayoutStore` 接收 Branding 发布的 `base` 工作区默认值，并按 tenantId/userId 只保存用户实际
-覆盖的模式、品牌位置、区域尺寸、页签可见性和 Sider 收缩状态。有效值按“平台回退值 -> 租户默认值
+覆盖的模式、侧栏样式、品牌位置、区域尺寸、页签可见性和 Sider 收缩状态。有效值按“平台回退值 -> 租户默认值
 -> 用户稀疏覆盖”合并；恢复默认会删除覆盖，因此租户后续发布的新默认值能作用于未自定义字段。
 持久化读取会校验枚举、修复缺失字段和限制尺寸范围。
 
@@ -133,36 +134,40 @@ e2e/                           # Playwright 关键路径测试
 
 Route Definition 只允许两种页面外部结构：
 
-| Layout                  | 结构                                                                                | 适合页面                                                   |
-| ----------------------- | ----------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| `base` / `BaseLayout`   | 标准企业工作区；内部可切换左侧菜单或顶部菜单，并提供 Header、页签与独立滚动 Content | 组织、字典、导航管理、个人账号和普通业务页面               |
-| `blank` / `BlankLayout` | 只有 `RouterView`，页面完全拥有 DOM、尺寸和视觉结构                                 | 登录、密码重置、MFA、SSO、错误页、大屏、地图和沉浸式编辑器 |
+| Layout                  | 结构                                                                            | 适合页面                                                   |
+| ----------------------- | ------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `base` / `BaseLayout`   | 标准企业工作区；内部支持六种原生菜单模式，并提供 Header、页签与独立滚动 Content | 组织、字典、导航管理、个人账号和普通业务页面               |
+| `blank` / `BlankLayout` | 只有 `RouterView`，页面完全拥有 DOM、尺寸和视觉结构                             | 登录、密码重置、MFA、SSO、错误页、大屏、地图和沉浸式编辑器 |
 
 应用和浏览器 viewport 本身已经占满屏幕，是否隐藏工作区 chrome 才是布局的实际差异。因此不再为 `fullscreen` 建立一个仅增加 `min-height: 100vh` 的独立概念。认证页面也使用 `blank`；多个认证页面若需要共享品牌或表单结构，应抽取普通 Vue 组件，而不是扩展 Router Layout 种类。
 
-`base` 内部的左侧/顶部菜单由租户提供默认值，用户可在自己的浏览器中覆盖；它不扩展 Navigation
-或 Manifest 的 layout 枚举。
-工作区基于 `@jingwei/ui` 的 Vean Headless Layout 包装，使用 `scrollBehavior=content` 保证页面
-滚动不带动 Header 和 Sider。左侧模式且品牌位于 Header 时使用纵向外层布局，使 Header 横跨
-Sider 与 Content；品牌位于 Sider 时切换为横向外层布局。顶部模式不渲染 Sider。
+`base` 使用 `@jingwei/ui` 源码拥有的 AppShell。六种桌面菜单模式为左侧完整树、顶部完整树、
+双列侧栏、侧栏一级与顶部子菜单、顶部一级与侧栏子菜单，以及顶部一级与双列侧栏。
+历史配置 `left` 映射到 AppShell 的 `sidebar`，其余模式使用原生名称；这些模式不扩展 Router Layout。
+骨架、区域挂载、侧栏收缩和菜单渲染器由 AppShell 管理，应用不再维护菜单模式组件注册表或 Teleport 挂载点。
+左侧模式使用原生的全高侧栏；品牌移入顶栏也不改变骨架。混合模式宽度随原生导航栏位计算，
+只有单侧栏模式使用用户或租户配置的侧栏宽度。品牌的 mark/title 分别通过原生槽位注入，收缩后保留完整标志并居中。
+工作区设置沿用分区缩略图卡片，六种模式各自绘制不同的导航区域。
+侧栏样式直接使用原生 `sidebar`、`floating`、`inset` variant，个人设置、租户默认和品牌实时预览同步支持。
+平台默认品牌位置为侧栏顶部，也可选择顶栏或侧栏底部。底部位置仅在左侧菜单和双列侧栏中可选；
+其他桌面模式使用原生回退位置，同时保留偏好以便切回原模式恢复。已有租户发布版本和个人覆盖保留原值。
 
-布局模式由 `layout-mode-registry.ts` 注册菜单组件、Header 上下文组件、Sider 可见性和几何策略，
-`BaseLayout` 只通过动态组件消费定义。新增混合模式时增加定义与对应模块，不扩展 `v-if/else`
-分支链。各菜单区域提供稳定挂载点；`SiderGlobalMenu` 和 `HeaderGlobalMenu` 分别通过 Teleport
-投放 Vean Headless TreeMenu 与 TreeNav，布局骨架不拥有菜单实现。
+`navigation/app-shell-items.ts` 将当前用户已获授权的投影转换为一棵完整输入树：DIRECTORY/GROUP 保留
+层级，MENU 使用 `navigationTarget` 生成默认参数跳转，外链保留 HTTPS、target 和安全链接语义；
+PAGE 保留在原父子位置并标记 `hidden`。父节点未获授的 PAGE 以隐藏根节点保留，不补造未授权祖先。
+当前路由的 navigation code 直接绑定 AppShell 的 modelValue，原生面包屑因而能显示隐藏 PAGE；
+菜单和祖先下拉过滤 hidden 项。原生祖先下拉的目标投影补齐 to/href 等链接字段，避免重复手工路由跳转。
+PAGE 路由通过 TreeMenu 公开的受控展开 API 保持可见祖先展开，不改变面包屑生成或菜单实现。
+面包屑可见区域遵循原生模式规则：顶部及部分混合模式的 Header 用于菜单，不另外增加面包屑区域。
 
-顶部 TreeNav 由当前路由的 navigation code 驱动选中项与祖先高亮；hover 仅展开菜单，不修改选中值。
-控件融入 Header，保留 150 ms 打开延迟、300 ms 快速重入、键盘与溢出“更多”，窄屏按可用宽度折叠。
+手机视图统一使用 AppShell 的完整树菜单抽屉，品牌位于抽屉内；桌面收缩偏好与临时 mobileOpen 分开。
+内部导航成功后关闭抽屉，刷新默认关闭；顶部菜单在桌面保留 hover、键盘与溢出“更多”。
+菜单搜索、全屏、用户账号和非模态设置通过 Header trailing slot 组合。
 
-菜单数据转换层显示 DIRECTORY、GROUP、MENU 与 EXTERNAL_LINK，PAGE 不显示；当前 PAGE 会向上
-解析到最近的可见 MENU，以保持 TreeMenu 展开和选中状态。MENU 使用 `navigationTarget` 生成默认
-参数跳转，刷新时保留浏览器实际 URL；外链由共享 Link 语义补齐安全属性。Header 在左侧模式使用
-Vean Headless Breadcrumb，在顶部模式承载 TreeNav；页签使用 PageTabs；菜单搜索和设置使用
-非模态 Popover；全屏能力使用 VueUse。
-
-页签记录当前 BaseLayout 生命周期内访问过的具体 fullPath，支持切换和关闭；刷新只恢复当前页，
-本期不做 KeepAlive、页面状态缓存和跨窗口页签同步。租户主题在 blank 页面仍由 ConfigProvider 应用，
-但设置入口只属于 BaseLayout，避免破坏 blank 页面完全拥有结构的约定。
+`use-workspace-tabs` 拥有稳定的响应式页签数组，以具体 route.path 为身份，并记录最后的 query/hash。
+原生 PageTabs 负责选择、关闭和中键交互，最后一个页签不可关闭；隐藏标签栏不销毁集合。
+刷新只恢复当前页，本期不做 KeepAlive、页面缓存或跨窗口同步。租户主题在 blank 页面仍由
+ConfigProvider 应用，设置入口只属于 BaseLayout。设计取舍见 [ADR 0023](../../docs/adr/0023-use-native-app-shell.md)。
 
 动态安装按 layout 分组；parentId 不决定 RouterView 嵌套。每次安装替换全部旧动态路由，而不是持续追加。布局由数据库配置，但必须处于 Manifest.allowedLayouts 中；省略列表时只允许默认值。
 

@@ -13,6 +13,8 @@ import type { AcceptableValue, ClassValue } from '@vean/aria/types'
  * Properties for the Segment component.
  */
 export interface SegmentProps<T extends SegmentOptionData> extends SegmentCompactProps<T> {
+  /** Disable every choice while preserving per-item disabled state. */
+  disabled?: boolean
   /**
    * Additional class names applied to the root element.
    */

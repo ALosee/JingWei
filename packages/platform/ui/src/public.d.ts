@@ -20,6 +20,17 @@ import type { ColorValue as ThemeColorValue } from '@vean/theme'
 import type { DefineComponent } from 'vue'
 
 import type {
+  AppShellProps,
+  AppShellEmits,
+  AppShellSlots,
+  AppShellMode,
+  AppShellMenuItem,
+  AppShellMenuProps,
+  AppShellMenuUi,
+  AppShellUi,
+  AppShellLogoPlacement,
+} from './components/app-shell/types'
+import type {
   BreadcrumbEmits,
   BreadcrumbOptionData,
   BreadcrumbProps,
@@ -93,6 +104,7 @@ import type {
 } from './components/select/types'
 import type { SeparatorProps } from './components/separator/types'
 import type { SliderEmits, SliderProps } from './components/slider/types'
+import type { SplitNavProps, SplitNavEmits, SplitNavSlots } from './components/split-nav/types'
 import type {
   SplitterGroupEmits,
   SplitterGroupProps,
@@ -131,6 +143,8 @@ import type { ThemeColorTokens } from './theme/types'
 
 type UiComponent<Props = object> = DefineComponent<Props>
 
+export declare const AppShell: UiComponent<AppShellProps>
+export declare const SplitNav: UiComponent<SplitNavProps>
 export declare const Button: UiComponent<ButtonProps>
 export declare const ButtonGroup: UiComponent<ButtonGroupProps>
 export declare const ButtonIcon: UiComponent<ButtonIconProps>
@@ -324,4 +338,19 @@ export type {
   TreeVirtualizerItemProps,
   TreeVirtualizerItemEmits,
   FlattenedItem,
+}
+
+export type {
+  AppShellProps,
+  AppShellEmits,
+  AppShellSlots,
+  AppShellMode,
+  AppShellMenuItem,
+  AppShellMenuProps,
+  AppShellMenuUi,
+  AppShellUi,
+  AppShellLogoPlacement,
+  SplitNavProps,
+  SplitNavEmits,
+  SplitNavSlots,
 }

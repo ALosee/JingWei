@@ -4,6 +4,7 @@ import { presetSoybean } from '@soybeanjs/unocss-preset'
 import { buildSemanticColors, presetVean } from '@vean/unocss'
 import { defineConfig } from 'unocss'
 
+import { layoutPreviewSafelist } from '@jingwei/ui/layout-unocss'
 import { buildThemeBodyCss, withThemeColorAlpha } from '@jingwei/ui/theme-unocss'
 
 const uiRoot = fileURLToPath(new URL('../../packages/platform/ui/', import.meta.url))
@@ -12,7 +13,13 @@ export default defineConfig({
   // Explicit native mappings replace any previous dev configuration; alpha is
   // composed only after UnoCSS has resolved its <alpha-value> placeholder.
   theme: { colors: buildSemanticColors() },
-  configDeps: [`${uiRoot}src/theme/semantic-colors.ts`],
+  configDeps: [
+    `${uiRoot}src/theme/semantic-colors.ts`,
+    `${uiRoot}src/styles/layout-scope.ts`,
+    `${uiRoot}src/styles/layout.ts`,
+    `${uiRoot}src/styles/app-shell.ts`,
+  ],
+  safelist: layoutPreviewSafelist(),
   preflights: [{ getCSS: () => buildThemeBodyCss() }],
   postprocess: (utility) => {
     for (const entry of utility.entries) {

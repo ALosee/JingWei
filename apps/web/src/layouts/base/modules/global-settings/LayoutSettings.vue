@@ -1,9 +1,21 @@
 <script setup lang="ts">
 import { storeToRefs } from 'pinia'
+import { computed } from 'vue'
 
+import {
+  workspaceLayoutModes,
+  workspaceLayoutModeLabels,
+  workspaceSidebarVariants,
+  workspaceSidebarVariantLabels,
+  workspaceBrandPlacements,
+  workspaceBrandPlacementLabels,
+  supportsWorkspaceBrandPlacement,
+  type WorkspaceSidebarVariant,
+} from '@jingwei/module-branding/shared'
 import { Button, InputNumber, Segment, Separator, Switch } from '@jingwei/ui'
 import type { SegmentOptionData } from '@jingwei/ui'
 
+import LayoutModePreview from '../../../../components/layout-mode-preview.vue'
 import { useLayoutStore, type BrandPlacement, type LayoutMode } from '../../../../stores/layout.js'
 
 const layout = useLayoutStore()
@@ -12,15 +24,28 @@ const { preferences, tenantDefaults, userOverrides, hasOverrides } = storeToRefs
 const headerLimits = { min: 48, max: 96, step: 4 }
 const siderLimits = { min: 192, max: 360, step: 8 }
 
-const modeOptions: { value: LayoutMode; label: string }[] = [
-  { value: 'left', label: '左侧菜单模式' },
-  { value: 'top', label: '顶部菜单模式' },
-]
+const modeOptions = workspaceLayoutModes.map((value) => ({
+  value,
+  label: `${workspaceLayoutModeLabels[value]}模式`,
+}))
 
-const brandOptions: SegmentOptionData<BrandPlacement>[] = [
-  { value: 'header', label: '顶栏' },
-  { value: 'sider', label: '侧栏' },
-]
+const brandOptions = computed<SegmentOptionData<BrandPlacement>[]>(() =>
+  workspaceBrandPlacements.map((value) => ({
+    value,
+    label: workspaceBrandPlacementLabels[value],
+    disabled: !supportsWorkspaceBrandPlacement(preferences.value.mode, value),
+  })),
+)
+const displayedBrandPlacement = computed(() =>
+  supportsWorkspaceBrandPlacement(preferences.value.mode, preferences.value.brandPlacement)
+    ? preferences.value.brandPlacement
+    : 'header',
+)
+const sidebarVariantOptions: SegmentOptionData<WorkspaceSidebarVariant>[] =
+  workspaceSidebarVariants.map((value) => ({ value, label: workspaceSidebarVariantLabels[value] }))
+function setSidebarVariant(value: WorkspaceSidebarVariant | null): void {
+  if (value !== null) layout.patch({ sidebarVariant: value })
+}
 
 function setMode(mode: LayoutMode): void {
   layout.patch({ mode })
@@ -49,7 +74,7 @@ function setShowTabs(value: boolean): void {
 <template>
   <form class="grid gap-6 pt-2" @submit.prevent>
     <p class="m-0 text-xs text-muted-foreground">
-      当前租户默认使用{{ tenantDefaults.mode === 'left' ? '左侧' : '顶部' }}菜单、{{
+      当前租户默认使用{{ workspaceLayoutModeLabels[tenantDefaults.mode] }}、{{
         tenantDefaults.showTabs ? '显示' : '隐藏'
       }}标签栏。未单独调整的项目会继续跟随租户默认值。
     </p>
@@ -74,19 +99,7 @@ function setShowTabs(value: boolean): void {
             "
             aria-hidden="true"
           >
-            <template v-if="option.value === 'left'">
-              <span class="w-1/3 rounded-sm bg-primary/80" />
-              <span class="flex flex-1 flex-col gap-1">
-                <span class="h-1/3 rounded-sm bg-primary/80" />
-                <span class="flex-1 rounded-sm bg-primary/30" />
-              </span>
-            </template>
-            <template v-else>
-              <span class="flex h-full w-full flex-col gap-1">
-                <span class="h-1/3 rounded-sm bg-primary/80" />
-                <span class="flex-1 rounded-sm bg-primary/30" />
-              </span>
-            </template>
+            <LayoutModePreview :mode="option.value" />
           </span>
           <span
             class="text-xs font-medium"
@@ -138,6 +151,20 @@ function setShowTabs(value: boolean): void {
     <section class="grid gap-3">
       <Separator align="center">侧边栏设置</Separator>
       <div class="flex items-center justify-between gap-4 px-1">
+        <span class="text-sm text-foreground"
+          >侧栏样式<small v-if="'sidebarVariant' in userOverrides" class="ml-1 text-primary"
+            >已自定义</small
+          ></span
+        >
+        <Segment
+          :model-value="preferences.sidebarVariant"
+          :items="sidebarVariantOptions"
+          size="sm"
+          aria-label="侧栏样式"
+          @update:model-value="setSidebarVariant"
+        />
+      </div>
+      <div class="flex items-center justify-between gap-4 px-1">
         <span class="text-sm text-foreground">
           侧边栏宽度
           <small v-if="'siderWidth' in userOverrides" class="ml-1 text-primary">已自定义</small>
@@ -146,6 +173,7 @@ function setShowTabs(value: boolean): void {
           :model-value="preferences.siderWidth"
           :min="siderLimits.min"
           :max="siderLimits.max"
+          :disabled="preferences.mode !== 'left'"
           :step="siderLimits.step"
           :step-snapping="false"
           center
@@ -155,18 +183,27 @@ function setShowTabs(value: boolean): void {
           @update:model-value="setSiderWidth"
         />
       </div>
-      <div v-if="preferences.mode === 'left'" class="flex items-center justify-between gap-4 px-1">
+      <p v-if="preferences.mode !== 'left'" class="m-0 text-xs text-muted-foreground">
+        当前布局自动分配导航宽度；切回左侧菜单后恢复自定义宽度。
+      </p>
+      <div class="flex flex-wrap items-center justify-between gap-4 px-1">
         <span class="text-sm text-foreground">
           品牌位置
           <small v-if="'brandPlacement' in userOverrides" class="ml-1 text-primary">已自定义</small>
         </span>
         <Segment
-          :model-value="preferences.brandPlacement"
+          :model-value="displayedBrandPlacement"
           :items="brandOptions"
           size="sm"
           @update:model-value="setBrandPlacement"
         />
       </div>
+      <p
+        v-if="preferences.mode !== 'left' && preferences.mode !== 'dual-vertical'"
+        class="m-0 text-xs text-muted-foreground"
+      >
+        侧栏底部适用于左侧菜单和双列侧栏；其他模式按原生布局显示品牌，切回后恢复此位置。
+      </p>
     </section>
 
     <div class="flex justify-start border-t border-border pt-4">

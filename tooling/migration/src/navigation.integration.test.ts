@@ -248,6 +248,7 @@ describe.skipIf(databaseUrl === undefined)('real PostgreSQL navigation/API', () 
       theme_custom_base_palette: unknown
       theme_custom_primary_palette: unknown
       workspace_layout_mode: string
+      workspace_sidebar_variant: string
       workspace_brand_placement: string
       workspace_header_height: number
       workspace_sider_width: number
@@ -257,7 +258,7 @@ describe.skipIf(databaseUrl === undefined)('real PostgreSQL navigation/API', () 
         theme_radius, theme_sidebar_scheme, theme_feedback_scheme, theme_chart_scheme,
         theme_light_level, theme_dark_level, theme_border_opacity, theme_overrides,
         theme_custom_base_palette, theme_custom_primary_palette,
-        workspace_layout_mode, workspace_brand_placement,
+        workspace_layout_mode, workspace_sidebar_variant, workspace_brand_placement,
         workspace_header_height, workspace_sider_width, workspace_show_tabs
       FROM branding.brand_version
       WHERE id = ${legacyBrandVersion}`.execute(db)
@@ -277,6 +278,7 @@ describe.skipIf(databaseUrl === undefined)('real PostgreSQL navigation/API', () 
       theme_custom_base_palette: null,
       theme_custom_primary_palette: null,
       workspace_layout_mode: 'left',
+      workspace_sidebar_variant: 'sidebar',
       workspace_brand_placement: 'header',
       workspace_header_height: 56,
       workspace_sider_width: 220,
@@ -287,6 +289,98 @@ describe.skipIf(databaseUrl === undefined)('real PostgreSQL navigation/API', () 
         WHERE id = ${legacyBrandVersion}`.execute(db),
     ).rejects.toThrow('Published brand version is immutable')
   })
+
+  it('stores all shell modes and rejects unknown modes while preserving published history', async () => {
+    const db = runtime.database.view()
+    const modes = [
+      'left',
+      'top',
+      'dual-vertical',
+      'vertical-horizontal',
+      'horizontal-vertical',
+      'horizontal-dual-vertical',
+    ]
+    for (const [index, mode] of modes.entries()) {
+      const id = newEntityId()
+      await sql`INSERT INTO branding.brand_version
+        (id, tenant_id, profile_id, version, status, system_name, short_name, login_title,
+         login_tagline, title_mode, horizontal_brand_mode, logo_color_mode, created_at, created_by, workspace_layout_mode)
+        SELECT ${id}, tenant_id, profile_id, ${index + 2}, 'DRAFT', system_name, short_name,
+          login_title, login_tagline, title_mode, horizontal_brand_mode, logo_color_mode, now(), created_by, ${mode}
+        FROM branding.brand_version WHERE id = ${legacyBrandVersion}`.execute(db)
+      const result = await sql<{ workspace_layout_mode: string }>`SELECT workspace_layout_mode
+        FROM branding.brand_version WHERE id = ${id}`.execute(db)
+      expect(result.rows[0]?.workspace_layout_mode).toBe(mode)
+      await expect(
+        sql`UPDATE branding.brand_version SET workspace_layout_mode = 'invalid'
+        WHERE id = ${id}`.execute(db),
+      ).rejects.toMatchObject({
+        code: '23514',
+        constraint: 'brand_version_workspace_layout_mode_ck',
+      })
+    }
+    const published = await sql<{ workspace_layout_mode: string }>`SELECT workspace_layout_mode
+      FROM branding.brand_version WHERE id = ${legacyBrandVersion}`.execute(db)
+    expect(published.rows[0]?.workspace_layout_mode).toBe('left')
+  })
+
+  it.each(['sidebar', 'floating', 'inset'] as const)(
+    'projects persisted %s sidebar and bottom branding through the public API',
+    async (variant) => {
+      const db = runtime.database.view()
+      const tenantId = newTenantId(),
+        profileId = newEntityId(),
+        versionId = newEntityId(),
+        authorId = newUserId()
+      const code = 'brand-' + tenantId
+      await sql`INSERT INTO platform.tenant (id, code, name, status, default_locale, default_timezone, default_currency, settings, created_at, updated_at)
+      VALUES (${tenantId}, ${code}, 'Brand Presentation', 'ACTIVE', 'zh-CN', 'UTC', 'CNY', '{}', now(), now())`.execute(
+        db,
+      )
+      await sql`INSERT INTO branding.brand_profile (id, tenant_id, created_at, created_by, updated_at, updated_by)
+      VALUES (${profileId}, ${tenantId}, now(), ${authorId}, now(), ${authorId})`.execute(db)
+      await sql`INSERT INTO branding.brand_version
+      (id, tenant_id, profile_id, version, status, system_name, short_name, login_title, login_tagline,
+       title_mode, horizontal_brand_mode, logo_color_mode, created_at, created_by, workspace_sidebar_variant, workspace_brand_placement)
+      VALUES (${versionId}, ${tenantId}, ${profileId}, 1, 'DRAFT', 'Brand', 'Brand', 'Login', '',
+        'SYSTEM_ONLY', 'SHORT_NAME', 'ORIGINAL', now(), ${authorId}, ${variant}, 'sider-bottom')`.execute(
+        db,
+      )
+      await expect(
+        sql`UPDATE branding.brand_version SET workspace_sidebar_variant = 'invalid' WHERE id = ${versionId}`.execute(
+          db,
+        ),
+      ).rejects.toMatchObject({
+        code: '23514',
+        constraint: 'brand_version_workspace_sidebar_variant_ck',
+      })
+      await expect(
+        sql`UPDATE branding.brand_version SET workspace_brand_placement = 'invalid' WHERE id = ${versionId}`.execute(
+          db,
+        ),
+      ).rejects.toMatchObject({
+        code: '23514',
+        constraint: 'brand_version_workspace_brand_placement_ck',
+      })
+      await sql`UPDATE branding.brand_version SET status = 'PUBLISHED', published_at = now(), published_by = ${authorId} WHERE id = ${versionId}`.execute(
+        db,
+      )
+      await sql`UPDATE branding.brand_profile SET published_version_id = ${versionId} WHERE id = ${profileId}`.execute(
+        db,
+      )
+      const response = await app.request('/api/v1/branding/bootstrap?tenantCode=' + code)
+      expect(response.status).toBe(200)
+      const body: unknown = await response.json()
+      expect(body).toMatchObject({
+        workspaceDefaults: { sidebarVariant: variant, brandPlacement: 'sider-bottom' },
+      })
+      await expect(
+        sql`UPDATE branding.brand_version SET workspace_sidebar_variant = 'sidebar' WHERE id = ${versionId}`.execute(
+          db,
+        ),
+      ).rejects.toThrow('Published brand version is immutable')
+    },
+  )
 
   it('locks repeated password failures and rotates real HTTP authentication cookies', async () => {
     const db = runtime.database.view()

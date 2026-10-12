@@ -1,3 +1,4 @@
+import type { LayoutStyleScope } from '#ui/styles/layout-scope-types'
 import type { ThemeSize } from '#ui/theme'
 import type {
   LayoutCompactProps,
@@ -15,6 +16,8 @@ import type { ClassValue } from '@vean/aria/types'
  * Properties for the Layout component.
  */
 export interface LayoutProps extends LayoutCompactProps {
+  /** Isolate named layout-state selectors when rendering inside a workspace. */
+  layoutScope?: LayoutStyleScope
   /**
    * Additional class names applied to the root element.
    */

@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
 import type {
+  AppShellProps,
+  AppShellMenuItem,
+  SplitNavProps,
   BreadcrumbOptionData,
   ButtonProps,
   ConfigProviderProps,
@@ -83,8 +86,15 @@ const contracts: [
   false,
 ]
 
+const shellContracts: [
+  IsErased<AppShellProps>,
+  IsErased<AppShellMenuItem>,
+  IsErased<SplitNavProps>,
+  IsErased<AppShellProps['layoutScope']>,
+] = [false, false, false, false]
+
 describe('public UI consumer types', () => {
   it('preserves concrete contracts through the declaration facade', () => {
-    expect(contracts).not.toContain(true)
+    expect([...contracts, ...shellContracts]).not.toContain(true)
   })
 })

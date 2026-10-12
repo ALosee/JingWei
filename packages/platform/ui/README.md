@@ -35,7 +35,7 @@ src/
 
 `components` 内保留 vean 生成的 `SButton`、`SInput` 等上游命名，以便升级时直接比较；
 `src/index.ts` 在包边界导出 `Button`、`Input`、`InputNumber`、`Textarea`、`Switch`、`Segment`、`Select`、
-`Slider`、`Separator`、`SplitterGroup`、`SplitterPanel`、`SplitterResizeHandle`、`Dialog`、`Layout`、`Tabs`、`Tree`、`TreeItem`、`TreeVirtualizer`、`TreeVirtualizerItem`、`TreeMenu`、`TreeNav`、`Menubar`、`Breadcrumb`、`Popover`、
+`Slider`、`Separator`、`SplitterGroup`、`SplitterPanel`、`SplitterResizeHandle`、`Dialog`、`AppShell`、`SplitNav`、`Layout`、`Tabs`、`Tree`、`TreeItem`、`TreeVirtualizer`、`TreeVirtualizerItem`、`TreeMenu`、`TreeNav`、`Menubar`、`Breadcrumb`、`Popover`、
 `PageTabs`、`ConfigProvider`、`ThemeModeSegment` 等简洁名称。不要为了改名去修改生成文件，也不要在业务代码中使用内部 `S*` 名称。
 
 `ThemeModeSegment` 使用 Provider 的明暗模式上下文，提供系统、浅色和深色图标选项；
@@ -93,11 +93,22 @@ UI 实现；每个新增公共组件都必须同步补齐该门面，防止运�
 - `@vean/unocss` 在 Web 构建时生成默认 token 和 reset；
 - `@vean/ui` 是禁止依赖，`pnpm architecture:check` 会拦截 package dependency 和源码 import。
 
-`Layout` 基于 headless LayoutCompact，公开受控 Sider、区域尺寸、独立 Content 滚动、移动端和
-Header/Tab/Content slots；`LayoutTrigger` 复用同一个上下文。`Tabs`、`TreeMenu`、`TreeNav`、`Menubar`、
-`Breadcrumb`、`Popover` 与 `PageTabs` 分别包装对应的 Vean Headless Compact/primitive，保留
-其 WAI-ARIA、键盘、焦点、受控状态和浮层定位语义，本包只负责公共 API 与 UnoCSS recipe。
-应用只从本包公共入口使用它们。
+`AppShell` 与 `SplitNav` 完整源码族通过 vean 0.50.0 CLI 生成。AppShell 聚合 Layout、TreeMenu、TreeNav、
+SplitNav、Breadcrumb 和 PageTabs，提供六种原生骨架、菜单/面包屑/页签数据绑定、品牌与工具栏槽位，以及
+独立的桌面收缩和移动抽屉状态。输入项可用 hidden 隐藏菜单，同时参与原生面包屑查找。
+基础组件不依赖 Router、Navigation、Branding 或应用 store；路由目标作为数据由消费者提供。
+`layoutProps.variant` 保留原生 `sidebar`、`floating`、`inset`，`logoPlacement` 默认 `sidebar`，支持
+`header`、`sidebar-bottom` 和原生 `auto`；位置可用性和回退仍由原生骨架计算。
+祖先下拉投影保留 to/href/external/target，复用现有安全 Link 语义。源码仅进行严格类型适配和此通用修复，
+不自定义骨架或面包屑呈现。品牌行保留实际 Logo 尺寸，不继承折叠菜单图标单元的宽度和裁切。
+单侧栏标题容器用 flex 居中，避免 SVG 外的 inline-flex 链接产生基线空隙；品牌标志和标题保持同一垂直中心。
+嵌套预览可使用 layoutScope=preview，隔离 named group 的外层状态；Web UnoCSS 通过显式
+@jingwei/ui/layout-unocss 入口生成对应原生 recipe safelist，该入口保留独立类型门面。公开组件与类型同时维护 src/index.ts 和 public.d.ts。
+`Layout` 仍提供独立区域布局与受控 Sider；Tabs、TreeMenu、TreeNav、Menubar、Breadcrumb、Popover 与
+PageTabs 保留各自的 Vean ARIA、键盘、焦点和受控状态，可以独立消费。
+inset 隐藏页脚时由 Content 承担底部圆角，避免其背景覆盖 Main 的圆角；fullContent 继续通栏。
+`Segment` 通过公开 Aria Root/List/Trigger/Indicator 组合保留 recipe、槽位和键盘行为；整个控件与单项
+`disabled` 均传递禁用状态和 `aria-disabled`，不复制 headless 状态机。
 `Tree` 完整组件族来自 vean 0.50.0 模板，包含状态驱动的展开/折叠动画、普通与动画虚拟列表。
 `item` slot 由消费者组合 `TreeItem`，传入 `value`、`level`；管理树显式启用 `allowParentSelect`，
 并通过 `modelValue` / `expanded` 受控状态将选择和展开交给 Vean。节点保留

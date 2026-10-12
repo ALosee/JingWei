@@ -61,6 +61,7 @@ interface VersionRow {
   theme_overrides: unknown
   workspace_layout_mode: BrandConfiguration['workspaceDefaults']['layoutMode']
   workspace_brand_placement: BrandConfiguration['workspaceDefaults']['brandPlacement']
+  workspace_sidebar_variant: BrandConfiguration['workspaceDefaults']['sidebarVariant']
   workspace_header_height: number
   workspace_sider_width: number
   workspace_show_tabs: boolean
@@ -212,6 +213,7 @@ export class PostgresBrandingStore implements BrandingStore {
       workspaceDefaults: {
         layoutMode: row.workspace_layout_mode,
         brandPlacement: row.workspace_brand_placement,
+        sidebarVariant: row.workspace_sidebar_variant,
         headerHeight: row.workspace_header_height,
         siderWidth: row.workspace_sider_width,
         showTabs: row.workspace_show_tabs,
@@ -270,6 +272,7 @@ export class PostgresBrandingStore implements BrandingStore {
         theme_overrides: version.visualTheme.overrides,
         workspace_layout_mode: version.workspaceDefaults.layoutMode,
         workspace_brand_placement: version.workspaceDefaults.brandPlacement,
+        workspace_sidebar_variant: version.workspaceDefaults.sidebarVariant,
         workspace_header_height: version.workspaceDefaults.headerHeight,
         workspace_sider_width: version.workspaceDefaults.siderWidth,
         workspace_show_tabs: version.workspaceDefaults.showTabs,
@@ -314,6 +317,7 @@ export class PostgresBrandingStore implements BrandingStore {
         theme_overrides: configuration.visualTheme.overrides,
         workspace_layout_mode: configuration.workspaceDefaults.layoutMode,
         workspace_brand_placement: configuration.workspaceDefaults.brandPlacement,
+        workspace_sidebar_variant: configuration.workspaceDefaults.sidebarVariant,
         workspace_header_height: configuration.workspaceDefaults.headerHeight,
         workspace_sider_width: configuration.workspaceDefaults.siderWidth,
         workspace_show_tabs: configuration.workspaceDefaults.showTabs,

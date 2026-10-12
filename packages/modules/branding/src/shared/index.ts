@@ -68,13 +68,57 @@ export const brandMarkContentTypes = ['image/png', 'image/svg+xml'] as const
 export const brandFaviconContentTypes = ['image/png', 'image/x-icon'] as const
 export const horizontalBrandModes = ['PLATFORM_WORDMARK', 'SHORT_NAME', 'CUSTOM_LOGO'] as const
 export const logoColorModes = ['ORIGINAL', 'FOLLOW_THEME'] as const
-export const workspaceLayoutModes = ['left', 'top'] as const
-export const workspaceBrandPlacements = ['header', 'sider'] as const
+export const workspaceLayoutModes = [
+  'left',
+  'top',
+  'dual-vertical',
+  'vertical-horizontal',
+  'horizontal-vertical',
+  'horizontal-dual-vertical',
+] as const
+export const workspaceLayoutModeLabels: Record<WorkspaceLayoutMode, string> = {
+  left: '左侧菜单',
+  top: '顶部菜单',
+  'dual-vertical': '双列侧栏',
+  'vertical-horizontal': '侧栏一级与顶部子菜单',
+  'horizontal-vertical': '顶部一级与侧栏子菜单',
+  'horizontal-dual-vertical': '顶部一级与双列侧栏',
+}
+export const workspaceBrandPlacements = ['header', 'sider', 'sider-bottom'] as const
+export const workspaceSidebarVariants = ['sidebar', 'floating', 'inset'] as const
+export const workspaceSidebarVariantLabels: Record<WorkspaceSidebarVariant, string> = {
+  sidebar: '标准',
+  floating: '悬浮',
+  inset: '内嵌',
+}
+export const workspaceBrandPlacementLabels: Record<WorkspaceBrandPlacement, string> = {
+  header: '顶栏',
+  sider: '侧栏顶部',
+  'sider-bottom': '侧栏底部',
+}
+
+export function workspaceLogoPlacement(
+  value: WorkspaceBrandPlacement,
+): 'header' | 'sidebar' | 'sidebar-bottom' {
+  return value === 'header' ? 'header' : value === 'sider-bottom' ? 'sidebar-bottom' : 'sidebar'
+}
+
+/** Desktop skeleton availability; native mobile drawers always have a stable sidebar. */
+export function supportsWorkspaceBrandPlacement(
+  mode: WorkspaceLayoutMode,
+  placement: WorkspaceBrandPlacement,
+): boolean {
+  return (
+    placement === 'header' ||
+    (placement === 'sider' ? mode !== 'top' : mode === 'left' || mode === 'dual-vertical')
+  )
+}
 
 export const workspaceDefaultsSchema = z
   .object({
     layoutMode: z.enum(workspaceLayoutModes),
     brandPlacement: z.enum(workspaceBrandPlacements),
+    sidebarVariant: z.enum(workspaceSidebarVariants).default('sidebar'),
     headerHeight: z.number().int().min(48).max(96),
     siderWidth: z.number().int().min(192).max(360),
     showTabs: z.boolean(),
@@ -349,7 +393,8 @@ export const defaultBrandConfiguration: BrandConfiguration = Object.freeze({
   }),
   workspaceDefaults: Object.freeze({
     layoutMode: 'left',
-    brandPlacement: 'header',
+    brandPlacement: 'sider',
+    sidebarVariant: 'sidebar',
     headerHeight: 56,
     siderWidth: 220,
     showTabs: true,
@@ -395,6 +440,7 @@ export type HorizontalBrandMode = (typeof horizontalBrandModes)[number]
 export type LogoColorMode = (typeof logoColorModes)[number]
 export type WorkspaceLayoutMode = (typeof workspaceLayoutModes)[number]
 export type WorkspaceBrandPlacement = (typeof workspaceBrandPlacements)[number]
+export type WorkspaceSidebarVariant = (typeof workspaceSidebarVariants)[number]
 export type BrandWorkspaceDefaults = z.infer<typeof workspaceDefaultsSchema>
 export type BrandAsset = z.infer<typeof brandAssetSchema>
 export type BrandLogoAsset = z.infer<typeof brandLogoAssetSchema>

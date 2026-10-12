@@ -720,11 +720,16 @@ export type components = {
         };
         BrandWorkspaceDefaults: {
             /** @enum {string} */
-            brandPlacement: "header" | "sider";
+            brandPlacement: "header" | "sider" | "sider-bottom";
             headerHeight: number;
             /** @enum {string} */
-            layoutMode: "left" | "top";
+            layoutMode: "left" | "top" | "dual-vertical" | "vertical-horizontal" | "horizontal-vertical" | "horizontal-dual-vertical";
             showTabs: boolean;
+            /**
+             * @default sidebar
+             * @enum {string}
+             */
+            sidebarVariant: "sidebar" | "floating" | "inset";
             siderWidth: number;
         };
         EffectiveBrand: {

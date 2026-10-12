@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { layoutVariants } from '#ui/styles/layout'
+import { scopeLayoutUi } from '#ui/styles/layout-scope'
 import { themeSizeMap, themeSizeRatio } from '#ui/theme'
 import { useOmitProps } from '@vean/aria/composables'
 import { LayoutCompact, provideLayoutUi } from '@vean/aria/layout'
@@ -20,6 +21,7 @@ const props = withDefaults(defineProps<LayoutProps>(), {
   // would turn the drawer into a controlled state that never opens.
   mobileOpen: undefined,
   size: 'md',
+  layoutScope: 'default',
   defaultOpen: true,
   sidebarVisible: true,
   headerVisible: true,
@@ -32,7 +34,7 @@ const emit = defineEmits<LayoutEmits>()
 
 const slots = defineSlots<LayoutSlots>()
 
-const forwardedProps = useOmitProps(props, ['class', 'size', 'ui', 'pxToRem'])
+const forwardedProps = useOmitProps(props, ['class', 'size', 'ui', 'pxToRem', 'layoutScope'])
 
 const slotNames = computed(() => keysOf(slots).filter((name) => name !== 'sidebar'))
 
@@ -45,16 +47,19 @@ const pxToRem = (px: number) => {
 }
 
 const ui = computed(() =>
-  layoutVariants(
-    {
-      size: props.size,
-      variant: props.variant,
-      side: props.side,
-      collapsible: props.collapsible,
-      fullContent: props.fullContent,
-    },
-    props.ui,
-    { root: props.class },
+  scopeLayoutUi(
+    layoutVariants(
+      {
+        size: props.size,
+        variant: props.variant,
+        side: props.side,
+        collapsible: props.collapsible,
+        fullContent: props.fullContent,
+      },
+      props.ui,
+      { root: props.class },
+    ),
+    props.layoutScope,
   ),
 )
 

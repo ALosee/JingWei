@@ -197,6 +197,10 @@ export const layoutVariants = scv({
         sidebarGapHandler: `w-[calc(var(--vean-sidebar-width)+var(--sl-spacing))] group-data-[collapsible=icon]/layout:group-data-[state=collapsed]/layout:w-[calc(var(--vean-collapsed-sidebar-width)+var(--sl-spacing))]`,
         sidebarWrapper: `p-[--sl-half-spacing] w-[calc(var(--vean-sidebar-width)+var(--sl-spacing))] group-data-[collapsible=icon]/layout:group-data-[state=collapsed]/layout:w-[calc(var(--vean-collapsed-sidebar-width)+var(--sl-spacing))] border-e-0`,
         main: `rounded-xl shadow`,
+        // With no footer, content paints the bottom edge itself; the main radius
+        // does not clip its children's backgrounds. Full-content stays full-bleed.
+        content:
+          'group-data-[full-content=false]/layout:group-data-[footer-visible=false]/layout:rounded-b-xl',
         header: [
           `top-[--sl-half-spacing] rounded-t-xl`,
           `group-data-[orientation=vertical]/layout:border-0`,

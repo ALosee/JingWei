@@ -12,7 +12,7 @@ import {
 import { resolveHomeTarget } from '../../../../navigation/workspace-targets.js'
 import { useShellStore } from '../../../../stores/shell.js'
 
-withDefaults(defineProps<{ compact?: boolean }>(), { compact: false })
+defineProps<{ part: 'mark' | 'title' }>()
 
 const shell = useShellStore()
 const brand = useActiveBrand()
@@ -26,9 +26,11 @@ const horizontalMode = computed(() =>
   <RouterLink
     :to="homePath"
     class="group/brand inline-flex min-w-0 items-center gap-5 rounded-md text-foreground decoration-none outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-3"
-    :aria-label="`${brand.systemName}首页`"
+    :aria-label="part === 'mark' ? `${brand.systemName}首页` : undefined"
+    :tabindex="part === 'title' ? -1 : undefined"
   >
     <span
+      v-if="part === 'mark'"
       aria-hidden="true"
       data-global-brand-mark
       :data-brand-mark-source="brand.markUrl ? 'custom' : 'platform-default'"
@@ -43,19 +45,19 @@ const horizontalMode = computed(() =>
       <DefaultBrandMark v-else class="size-7" />
     </span>
     <BrandLogoAsset
-      v-if="!compact && horizontalMode === 'CUSTOM_LOGO' && brand.logoUrl"
+      v-if="part === 'title' && horizontalMode === 'CUSTOM_LOGO' && brand.logoUrl"
       :src="brand.logoUrl"
       :color-mode="brand.logoColorMode"
       data-global-brand-wordmark
       class="h-7 w-40 shrink-0 object-contain"
     />
     <DefaultBrandWordmark
-      v-else-if="!compact && horizontalMode === 'PLATFORM_WORDMARK'"
+      v-else-if="part === 'title' && horizontalMode === 'PLATFORM_WORDMARK'"
       data-global-brand-wordmark
       class="h-[1.125rem] w-[6.625rem] shrink-0 overflow-visible text-primary"
     />
     <span
-      v-else-if="!compact"
+      v-else-if="part === 'title'"
       data-global-brand-wordmark
       class="max-w-44 truncate text-lg text-primary font-700 tracking-wide"
     >

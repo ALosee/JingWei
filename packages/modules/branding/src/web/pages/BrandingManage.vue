@@ -183,7 +183,7 @@ function updateWorkspaceDefaults(value: BrandWorkspaceDefaults): void {
     />
 
     <div
-      class="grid min-h-0 flex-1 grid-cols-1 overflow-hidden xl:grid-cols-[minmax(11rem,0.7fr)_minmax(20rem,1.5fr)_minmax(18rem,1fr)]"
+      class="grid min-h-0 flex-1 grid-cols-1 overflow-hidden xl:grid-cols-[9rem_minmax(20rem,1fr)_minmax(22rem,1.2fr)]"
     >
       <nav
         aria-label="品牌配置分区"

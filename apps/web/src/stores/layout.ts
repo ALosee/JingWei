@@ -1,16 +1,25 @@
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import type { BrandWorkspaceDefaults } from '@jingwei/module-branding/shared'
+import {
+  workspaceLayoutModes,
+  workspaceSidebarVariants,
+  workspaceBrandPlacements,
+  type WorkspaceSidebarVariant,
+  type WorkspaceBrandPlacement,
+  type WorkspaceLayoutMode,
+  type BrandWorkspaceDefaults,
+} from '@jingwei/module-branding/shared'
 
 export const LAYOUT_STORAGE_KEY = 'jingwei:layout:v2'
 
-export type LayoutMode = 'left' | 'top'
-export type BrandPlacement = 'header' | 'sider'
+export type LayoutMode = WorkspaceLayoutMode
+export type BrandPlacement = WorkspaceBrandPlacement
 
 export interface LayoutPreferences {
   readonly mode: LayoutMode
   readonly brandPlacement: BrandPlacement
+  readonly sidebarVariant: WorkspaceSidebarVariant
   readonly headerHeight: number
   readonly siderWidth: number
   readonly showTabs: boolean
@@ -21,7 +30,8 @@ export type LayoutPreferenceOverrides = Partial<LayoutPreferences>
 
 export const defaultLayoutPreferences: LayoutPreferences = {
   mode: 'left',
-  brandPlacement: 'header',
+  brandPlacement: 'sider',
+  sidebarVariant: 'sidebar',
   headerHeight: 56,
   siderWidth: 220,
   showTabs: true,
@@ -41,6 +51,7 @@ export function tenantLayoutDefaults(value: BrandWorkspaceDefaults): LayoutPrefe
   return normalizeLayoutPreferences({
     mode: value.layoutMode,
     brandPlacement: value.brandPlacement,
+    sidebarVariant: value.sidebarVariant,
     headerHeight: value.headerHeight,
     siderWidth: value.siderWidth,
     showTabs: value.showTabs,
@@ -55,13 +66,13 @@ export function normalizeLayoutPreferences(
   if (!isRecord(value)) return { ...fallback }
 
   return {
-    mode: value.mode === 'top' ? 'top' : value.mode === 'left' ? 'left' : fallback.mode,
-    brandPlacement:
-      value.brandPlacement === 'sider'
-        ? 'sider'
-        : value.brandPlacement === 'header'
-          ? 'header'
-          : fallback.brandPlacement,
+    mode: isLayoutMode(value.mode) ? value.mode : fallback.mode,
+    brandPlacement: isBrandPlacement(value.brandPlacement)
+      ? value.brandPlacement
+      : fallback.brandPlacement,
+    sidebarVariant: isSidebarVariant(value.sidebarVariant)
+      ? value.sidebarVariant
+      : fallback.sidebarVariant,
     headerHeight: boundedNumber(
       value.headerHeight,
       numericLimits.headerHeight,
@@ -158,6 +169,7 @@ export const useLayoutStore = defineStore('layout', () => {
 const layoutPreferenceKeys = [
   'mode',
   'brandPlacement',
+  'sidebarVariant',
   'headerHeight',
   'siderWidth',
   'showTabs',
@@ -206,4 +218,16 @@ function browserStorage(): Storage | null {
     typeof localStorage.removeItem === 'function'
     ? localStorage
     : null
+}
+
+function isLayoutMode(value: unknown): value is LayoutMode {
+  return workspaceLayoutModes.some((mode) => mode === value)
+}
+
+function isSidebarVariant(value: unknown): value is WorkspaceSidebarVariant {
+  return workspaceSidebarVariants.some((variant) => variant === value)
+}
+
+function isBrandPlacement(value: unknown): value is BrandPlacement {
+  return workspaceBrandPlacements.some((placement) => placement === value)
 }

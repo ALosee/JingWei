@@ -175,7 +175,7 @@ test('groups, directories, hidden dynamic pages and safe links remain distinct o
   await page.goto('/account/123?tab=security')
   await expect(page.getByRole('heading', { name: 'Admin' })).toBeVisible()
   await expect(page).toHaveURL(/\/account\/123\?tab=security$/u)
-  const menu = page.getByRole('navigation', { name: '主导航' })
+  const menu = page.getByRole('tree', { name: '主导航' })
   await expect(menu.getByText('工作区', { exact: true })).toBeVisible()
   const directoryTrigger = menu.getByRole('button', { name: '系统管理' })
   await expect(directoryTrigger).toHaveAttribute('aria-expanded', 'true')

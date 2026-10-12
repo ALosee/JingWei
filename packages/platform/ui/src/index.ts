@@ -1,3 +1,17 @@
+export { SAppShell as AppShell } from './components/app-shell/index.js'
+export type {
+  AppShellProps,
+  AppShellEmits,
+  AppShellSlots,
+  AppShellMode,
+  AppShellMenuItem,
+  AppShellMenuProps,
+  AppShellMenuUi,
+  AppShellUi,
+  AppShellLogoPlacement,
+} from './components/app-shell/types.js'
+export { SSplitNav as SplitNav } from './components/split-nav/index.js'
+export type { SplitNavProps, SplitNavEmits, SplitNavSlots } from './components/split-nav/types.js'
 export {
   SButton as Button,
   SButtonGroup as ButtonGroup,

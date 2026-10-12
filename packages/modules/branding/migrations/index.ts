@@ -6,6 +6,8 @@ import * as brandingMarkSvgFaviconIco from './20260918150000_branding_mark_svg_f
 import * as brandingAssetValidationV2 from './20260919130000_branding_asset_validation_v2.js'
 import * as brandingTenantPresentation from './20260922100000_branding_tenant_presentation.js'
 import * as brandingSemanticTheme from './20260922110000_branding_semantic_theme.js'
+import * as workspaceShellModes from './20261010170000_branding_workspace_shell_modes.js'
+import * as sidebarPresentation from './20261012120000_branding_sidebar_presentation.js'
 
 export const migrations = {
   '20260917090000_branding_foundation': brandingFoundation,
@@ -16,4 +18,6 @@ export const migrations = {
   '20260919130000_branding_asset_validation_v2': brandingAssetValidationV2,
   '20260922100000_branding_tenant_presentation': brandingTenantPresentation,
   '20260922110000_branding_semantic_theme': brandingSemanticTheme,
+  '20261010170000_branding_workspace_shell_modes': workspaceShellModes,
+  '20261012120000_branding_sidebar_presentation': sidebarPresentation,
 } as const

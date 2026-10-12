@@ -10,6 +10,34 @@ import {
 } from './layout.js'
 
 describe('layout preferences', () => {
+  it('defaults to the standard sidebar with its brand at the top', () => {
+    expect(defaultLayoutPreferences).toMatchObject({
+      sidebarVariant: 'sidebar',
+      brandPlacement: 'sider',
+    })
+  })
+  it.each(['sidebar', 'floating', 'inset'])(
+    'restores %s and bottom branding while preserving sparse overrides',
+    (sidebarVariant) => {
+      expect(
+        normalizeLayoutPreferences({ sidebarVariant, brandPlacement: 'sider-bottom' }),
+      ).toMatchObject({ sidebarVariant, brandPlacement: 'sider-bottom' })
+      expect(
+        normalizeLayoutOverrides(
+          { sidebarVariant, brandPlacement: 'sider-bottom' },
+          defaultLayoutPreferences,
+        ),
+      ).toMatchObject({ brandPlacement: 'sider-bottom' })
+    },
+  )
+  it.each([
+    'dual-vertical',
+    'vertical-horizontal',
+    'horizontal-vertical',
+    'horizontal-dual-vertical',
+  ])('restores %s from scoped preferences', (mode) => {
+    expect(normalizeLayoutPreferences({ mode }).mode).toBe(mode)
+  })
   it('falls back when persisted data is not an object', () => {
     expect(normalizeLayoutPreferences('{broken')).toEqual(defaultLayoutPreferences)
   })
@@ -26,6 +54,7 @@ describe('layout preferences', () => {
       }),
     ).toEqual({
       mode: 'top',
+      sidebarVariant: 'sidebar',
       brandPlacement: 'sider',
       headerHeight: 96,
       siderWidth: 192,
@@ -45,6 +74,7 @@ describe('layout preferences', () => {
       }),
     ).toEqual({
       ...defaultLayoutPreferences,
+      brandPlacement: 'header',
       siderWidth: 280,
     })
   })
@@ -52,6 +82,7 @@ describe('layout preferences', () => {
   it('stores only values that differ from the tenant defaults', () => {
     const defaults = tenantLayoutDefaults({
       layoutMode: 'top',
+      sidebarVariant: 'sidebar',
       brandPlacement: 'header',
       headerHeight: 64,
       siderWidth: 240,

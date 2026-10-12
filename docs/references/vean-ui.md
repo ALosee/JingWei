@@ -35,7 +35,7 @@ CLI 仍可能提示 `ui/theme` registry 项不存在；已生成的 theme 目录
 | 操作与展示 | Button、Icon、Link、Breadcrumb、Separator、Collapsible                                                                                        | 安全 button type、disabled、异步等待、链接目标、语义 DOM               |
 | 表单控件   | Input、InputNumber、Textarea、Switch、Select、Segment、Slider、ColorPicker                                                                    | 模型更新、键盘、禁用状态、控制元素标签、完整色阶编辑                   |
 | 浮层与反馈 | Dialog、DropdownMenu、Popover、Tooltip、Toast、Progress                                                                                       | Provider 装配、打开/关闭、非模态设置、嵌套色阶编辑器、ARIA progress    |
-| 导航与布局 | Layout、Tabs、Tree、TreeMenu、TreeNav、Menubar、PageTabs、Splitter                                                                            | 桌面/移动端、侧栏收缩、菜单目标、页签选中/关闭、树交互、分栏键盘/拖动  |
+| 导航与布局 | AppShell、SplitNav、Layout、Tabs、Tree、TreeMenu、TreeNav、Menubar、PageTabs、Splitter                                                        | 桌面/移动端、侧栏收缩、菜单目标、页签选中/关闭、树交互、分栏键盘/拖动  |
 | 主题与组合 | ConfigProvider、ThemeSettingsPanel/ThemeCustomizer、PalettePicker、ThemePaletteSelect、ThemeScope、ManagementWorkspace、ManagementListToolbar | scoped 偏好、系统明暗变化、草稿隔离、品牌发布、受控色阶、列表/详情切换 |
 
 生成组件族保持原生目录与 `S*` 内部名称；Menu、PalettePicker、ThemeModeSegment 和 Tree motion/
@@ -61,6 +61,13 @@ Vean 引擎自身采用 `__VEAN_THEME` envelope；租户 Provider 不读取未�
 上游 breaking changes 不需要迁移仓库中的组件。这里不新增其产品功能。
 
 ## 本地差异与后续升级
+
+- AppShell 的品牌行改为保留完整 Logo 尺寸的普通 flex 行，移除固定菜单图标单元导致的裁切；两种双列品牌标志同样不复用该图标单元。Layout/AppShell 增加 preview 样式作用域以隔离外层 named group 状态，safelist 从完整原生 recipe 生成，保留默认作用域的现有行为。
+- 单侧栏品牌标题容器使用 flex 居中并允许收缩，消除内嵌 inline-flex 链接的基线空隙；字标、系统简称和自定义 Logo 的原始尺寸继续由消费者控制。
+- AppShell 默认 logoPlacement 为 sidebar；sidebar/floating/inset 与 sidebar-bottom 通过品牌合同和用户偏好接入，骨架可用性和回退仍由原生实现决定。Segment 使用公开 Aria Root/List/Trigger/Indicator 组合，补齐控件及单项禁用的 aria-disabled 语义并保留原有 recipe 与槽位。
+- Layout 的 inset 在隐藏 Footer 且未启用 fullContent 时为 Content 补充底部圆角，修复子区域背景盖住 Main 圆角的问题；工作区与 preview 样式作用域使用同一 recipe，保持内容滚动与原生固定区域行为。
+
+- AppShell/SplitNav 在 2026-10-10 通过 ui:inspect、ui:add 与 ui:diff 接入完整原生组件族。骨架和隐藏 PAGE 面包屑保持原生；祖先下拉投影补齐 to/href/external/target，槽位返回值使用 unknown，SplitNav 使用 Vue renderSlot 透传不同 scope 的槽位而不抑制类型检查，选择回调通过值类型检查适配现有 DropdownMenu 泛型。
 
 - ButtonLoading 保留等待异步 handler、阻止重复点击与 `aria-busy` 的 Jingwei 修复。
 - Select 将根属性透传给 trigger；Textarea 将无障碍属性透传给实际 control。

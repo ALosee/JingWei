@@ -1,11 +1,21 @@
 <script setup lang="ts">
-import { InputNumber, Segment, Switch } from '@jingwei/ui'
-import type { SegmentOptionData } from '@jingwei/ui'
+import { computed } from 'vue'
 
-import type {
-  BrandWorkspaceDefaults,
-  WorkspaceBrandPlacement,
-  WorkspaceLayoutMode,
+import { InputNumber, Segment, Select, Switch } from '@jingwei/ui'
+import type { SegmentOptionData, SelectOptionData } from '@jingwei/ui'
+
+import {
+  workspaceLayoutModes,
+  workspaceSidebarVariants,
+  workspaceSidebarVariantLabels,
+  workspaceBrandPlacements,
+  workspaceBrandPlacementLabels,
+  supportsWorkspaceBrandPlacement,
+  type WorkspaceSidebarVariant,
+  workspaceLayoutModeLabels,
+  type BrandWorkspaceDefaults,
+  type WorkspaceBrandPlacement,
+  type WorkspaceLayoutMode,
 } from '../../shared/index.js'
 
 const props = defineProps<{
@@ -16,14 +26,27 @@ const emit = defineEmits<{
   'update:modelValue': [value: BrandWorkspaceDefaults]
 }>()
 
-const layoutOptions: SegmentOptionData<WorkspaceLayoutMode>[] = [
-  { value: 'left', label: '左侧菜单' },
-  { value: 'top', label: '顶部菜单' },
-]
-const brandPlacementOptions: SegmentOptionData<WorkspaceBrandPlacement>[] = [
-  { value: 'header', label: '顶栏' },
-  { value: 'sider', label: '侧栏' },
-]
+const layoutOptions: SelectOptionData<WorkspaceLayoutMode>[] = workspaceLayoutModes.map(
+  (value) => ({ value, label: workspaceLayoutModeLabels[value] }),
+)
+
+const brandPlacementOptions = computed<SegmentOptionData<WorkspaceBrandPlacement>[]>(() =>
+  workspaceBrandPlacements.map((value) => ({
+    value,
+    label: workspaceBrandPlacementLabels[value],
+    disabled: !supportsWorkspaceBrandPlacement(props.modelValue.layoutMode, value),
+  })),
+)
+const displayedBrandPlacement = computed(() =>
+  supportsWorkspaceBrandPlacement(props.modelValue.layoutMode, props.modelValue.brandPlacement)
+    ? props.modelValue.brandPlacement
+    : 'header',
+)
+const sidebarVariantOptions: SegmentOptionData<WorkspaceSidebarVariant>[] =
+  workspaceSidebarVariants.map((value) => ({ value, label: workspaceSidebarVariantLabels[value] }))
+function setSidebarVariant(value: WorkspaceSidebarVariant | null): void {
+  if (value !== null) patch('sidebarVariant', value)
+}
 
 function patch<Key extends keyof BrandWorkspaceDefaults>(
   key: Key,
@@ -64,7 +87,8 @@ function setShowTabs(value: boolean): void {
 
     <div class="grid gap-x-8 gap-y-4 lg:grid-cols-[8rem_minmax(0,1fr)] lg:items-center">
       <span class="text-sm font-500 text-foreground">菜单模式</span>
-      <Segment
+      <Select
+        aria-label="默认菜单模式"
         :model-value="modelValue.layoutMode"
         :items="layoutOptions"
         :disabled="disabled"
@@ -72,17 +96,30 @@ function setShowTabs(value: boolean): void {
         @update:model-value="setLayoutMode"
       />
 
+      <span class="text-sm font-500 text-foreground">侧栏样式</span>
+      <Segment
+        :model-value="modelValue.sidebarVariant"
+        :items="sidebarVariantOptions"
+        :disabled="disabled"
+        aria-label="默认侧栏样式"
+        class="w-fit"
+        @update:model-value="setSidebarVariant"
+      />
+
       <span class="text-sm font-500 text-foreground">品牌位置</span>
       <div class="grid gap-1">
         <Segment
-          :model-value="modelValue.brandPlacement"
+          :model-value="displayedBrandPlacement"
           :items="brandPlacementOptions"
-          :disabled="disabled || modelValue.layoutMode === 'top'"
+          :disabled="disabled"
           class="w-full max-w-md"
           @update:model-value="setBrandPlacement"
         />
-        <small v-if="modelValue.layoutMode === 'top'" class="text-muted-foreground">
-          顶部菜单模式固定在顶栏显示品牌，切回左侧菜单后恢复此设置。
+        <small
+          v-if="modelValue.layoutMode !== 'left' && modelValue.layoutMode !== 'dual-vertical'"
+          class="text-muted-foreground"
+        >
+          侧栏底部适用于左侧菜单和双列侧栏；其他模式按原生布局显示品牌，切回后恢复此位置。
         </small>
       </div>
 
@@ -104,9 +141,9 @@ function setShowTabs(value: boolean): void {
         :model-value="modelValue.siderWidth"
         :min="192"
         :max="360"
+        :disabled="disabled || modelValue.layoutMode !== 'left'"
         :step="8"
         :step-snapping="false"
-        :disabled="disabled"
         center
         class="w-32"
         @update:model-value="setSiderWidth"
