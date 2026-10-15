@@ -20,6 +20,8 @@
 | `./shared`                  | 浏览器安全的 session/CSRF Cookie 与 Header 名常量，不引入 Node/Argon2/PostgreSQL 实现 |
 | `./migrations`              | `platform.auth_session` / `platform.auth_refresh_token` 迁移                          |
 
+`revokeUserSessions(executor, tenantId, userId, revokedAt, reason)` 可将全用户会话撤销加入 Application 拥有的数据库事务，避免身份删除与撤销/审计部分提交。
+
 ## 密码
 
 ```ts

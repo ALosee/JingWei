@@ -1,6 +1,8 @@
 import type { Kysely } from 'kysely'
 
 import { PostgresAuditWriter } from '@jingwei/audit'
+import { revokeUserSessions } from '@jingwei/auth'
+import { createTransactionConnection } from '@jingwei/database'
 import { toUserId, type ApplicationContext, type TenantId } from '@jingwei/kernel'
 
 import type { ManagedUser, UpdateManagedUser, UserRoleAssignment } from '../../shared/index.js'
@@ -10,6 +12,9 @@ import type {
   UserAdminUnitOfWork,
 } from '../application/user-admin-store.js'
 import type { UserStatus } from '../domain/user-status.js'
+import type { UserDeletionReferencesFactory } from '../public/identity-lifecycle.js'
+import { activeManagerQuery } from './active-manager-query.pg.js'
+import { lockIamAdministration } from './administration-lock.pg.js'
 import type { IamDatabase } from './credential-reader.pg.js'
 
 function toManagedUser(row: {
@@ -38,6 +43,29 @@ function toManagedUser(row: {
 
 export class PostgresUserAdminStore implements UserAdminStore {
   constructor(private readonly db: Kysely<IamDatabase>) {}
+
+  lockAdministration(tenantId: TenantId) {
+    return lockIamAdministration(this.db, tenantId)
+  }
+
+  async lockUser(tenantId: TenantId, id: string): Promise<void> {
+    await this.db
+      .selectFrom('iam.user')
+      .select('id')
+      .where('tenant_id', '=', tenantId)
+      .where('id', '=', id)
+      .forUpdate()
+      .executeTakeFirst()
+  }
+
+  async deleteUser(context: ApplicationContext, id: string): Promise<void> {
+    // The credential and user_role foreign keys cascade within IAM; audit/session history remains.
+    await this.db
+      .deleteFrom('iam.user')
+      .where('tenant_id', '=', context.tenantId)
+      .where('id', '=', id)
+      .execute()
+  }
 
   async list(tenantId: TenantId): Promise<ManagedUser[]> {
     const rows = await this.db
@@ -130,17 +158,7 @@ export class PostgresUserAdminStore implements UserAdminStore {
   }
 
   private managerQuery(tenantId: TenantId) {
-    return this.db
-      .selectFrom('iam.user as user')
-      .innerJoin('iam.user_role as userRole', 'userRole.user_id', 'user.id')
-      .innerJoin('iam.role as role', 'role.id', 'userRole.role_id')
-      .innerJoin('iam.role_permission as grant', 'grant.role_id', 'role.id')
-      .where('user.tenant_id', '=', tenantId)
-      .where('user.status', '=', 'ACTIVE')
-      .where('role.tenant_id', '=', tenantId)
-      .where('role.status', '=', 'ACTIVE')
-      .where('grant.tenant_id', '=', tenantId)
-      .where('grant.permission_code', '=', 'iam.user.manage')
+    return activeManagerQuery(this.db, tenantId)
   }
 
   async countOtherActiveManagers(tenantId: TenantId, exceptUserId: string): Promise<number> {
@@ -182,6 +200,8 @@ export class PostgresUserAdminStore implements UserAdminStore {
       .where('tenant_id', '=', tenantId)
       .where('id', 'in', [...roleIds])
       .where('status', '=', 'ACTIVE')
+      .orderBy('id')
+      .forShare()
       .execute()
     return rows.length === roleIds.length
   }
@@ -326,12 +346,26 @@ export class PostgresUserAdminStore implements UserAdminStore {
 }
 
 export class PostgresUserAdminUnitOfWork implements UserAdminUnitOfWork {
-  constructor(private readonly db: Kysely<IamDatabase>) {}
+  constructor(
+    private readonly db: Kysely<IamDatabase>,
+    private readonly references: readonly UserDeletionReferencesFactory[] = [],
+  ) {}
 
   run<T>(work: (transaction: UserAdminTransaction) => Promise<T>): Promise<T> {
     return this.db.transaction().execute(async (transaction) =>
       work({
         store: new PostgresUserAdminStore(transaction),
+        references: this.references.map((create) =>
+          create(createTransactionConnection(transaction)),
+        ),
+        revokeSessions: (context, userId) =>
+          revokeUserSessions(
+            transaction,
+            context.tenantId,
+            userId,
+            new Date(),
+            'USER_SECURITY_CHANGE',
+          ),
         record: async (context, action, entityId, before, after) => {
           await new PostgresAuditWriter(transaction).append({
             context,

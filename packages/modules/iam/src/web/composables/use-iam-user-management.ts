@@ -4,6 +4,8 @@ import { useApiRequestState } from '@jingwei/api-client/vue'
 
 import {
   createIamUser,
+  deleteIamUser,
+  getIamUserDeletionStatus,
   listIamRoles,
   listIamUserRoles,
   listIamUsers,
@@ -11,7 +13,7 @@ import {
   resetIamUserPassword,
   updateIamUser,
 } from '../../client/index.js'
-import { useIamPermission } from '../../session/index.js'
+import { iamSessionUser, useIamPermission } from '../../session/index.js'
 import type {
   CreateManagedUser,
   IamRole,
@@ -23,6 +25,8 @@ import type {
 interface UserManagementDependencies {
   loadUsers: typeof listIamUsers
   loadRoles: typeof listIamRoles
+  removeUser: typeof deleteIamUser
+  deletionStatus: typeof getIamUserDeletionStatus
   createUser: typeof createIamUser
   updateUser: typeof updateIamUser
   resetPassword: typeof resetIamUserPassword
@@ -36,6 +40,8 @@ export function useIamUserManagement(
     loadUsers: listIamUsers,
     loadRoles: listIamRoles,
     createUser: createIamUser,
+    removeUser: deleteIamUser,
+    deletionStatus: getIamUserDeletionStatus,
     updateUser: updateIamUser,
     resetPassword: resetIamUserPassword,
     loadUserRoles: listIamUserRoles,
@@ -46,7 +52,11 @@ export function useIamUserManagement(
   const roles = ref<IamRole[]>([])
   const selectedId = ref('')
   const search = ref('')
-  const busy = ref(false)
+  let running = false
+  const mutationState = useApiRequestState()
+  const detailState = useApiRequestState()
+  const deletionState = useApiRequestState()
+  const deletion = ref<{ allowed: boolean; reason: string | null } | null>(null)
   const error = ref('')
   const creating = ref(false)
   const selectionBeforeCreate = ref('')
@@ -64,8 +74,24 @@ export function useIamUserManagement(
 
   const listState = useApiRequestState()
   const rolesState = useApiRequestState()
+  const busy = computed(
+    () =>
+      listState.loading.value ||
+      rolesState.loading.value ||
+      mutationState.loading.value ||
+      detailState.loading.value ||
+      deletionState.loading.value,
+  )
 
   const selected = computed(() => users.value.find((user) => user.id === selectedId.value))
+  const deleteDisabledReason = computed(() => {
+    const user = selected.value
+    if (user === undefined) return '请先选择用户'
+    if (user.id === iamSessionUser.value?.id) return '不能删除当前登录账号'
+    if (user.status !== 'DISABLED') return '请先禁用账号'
+    if (deletion.value === null) return '尚未完成删除条件检查'
+    return deletion.value.allowed ? '' : (deletion.value.reason ?? '当前账号不能删除')
+  })
   const filteredUsers = computed(() => {
     const keyword = search.value.trim().toLocaleLowerCase()
     if (keyword === '') return users.value
@@ -84,15 +110,17 @@ export function useIamUserManagement(
   }
 
   async function run(action: () => Promise<void>) {
-    if (busy.value) return
-    busy.value = true
+    if (running) return false
+    running = true
     error.value = ''
     try {
       await action()
+      return true
     } catch (cause) {
       error.value = errorMessage(cause)
+      return false
     } finally {
-      busy.value = false
+      running = false
     }
   }
 
@@ -122,8 +150,22 @@ export function useIamUserManagement(
     roles.value = rolesResult.data.roles
   }
 
+  async function loadDeletionStatus(id: string): Promise<void> {
+    deletion.value = null
+    const user = users.value.find((item) => item.id === id)
+    if (!canManage.value || user?.status !== 'DISABLED' || user.id === iamSessionUser.value?.id)
+      return
+    const result = await dependencies.deletionStatus(id, deletionState.options)
+    if (selectedId.value !== id) return
+    if (result.error !== null) {
+      deletion.value = { allowed: false, reason: result.error.message }
+      return
+    }
+    deletion.value = result.data
+  }
+
   async function loadSelectedRoles(id: string): Promise<void> {
-    const result = await dependencies.loadUserRoles(id)
+    const result = await dependencies.loadUserRoles(id, detailState.options)
     if (result.error !== null) throw result.error
     resetRoleDraft(result.data.roles.map((role) => role.id))
   }
@@ -133,7 +175,10 @@ export function useIamUserManagement(
     creating.value = false
     const user = users.value.find((item) => item.id === id)
     if (user !== undefined) applyUserDraft(user)
-    void run(() => loadSelectedRoles(id))
+    deletion.value = null
+    void run(async () => {
+      await Promise.all([loadSelectedRoles(id), loadDeletionStatus(id)])
+    })
   }
 
   function beginCreate() {
@@ -161,7 +206,7 @@ export function useIamUserManagement(
 
   async function createUser(input: CreateManagedUser) {
     await run(async () => {
-      const result = await dependencies.createUser(input)
+      const result = await dependencies.createUser(input, mutationState.options)
       if (result.error !== null) throw result.error
       users.value = [...users.value, result.data].toSorted((a, b) =>
         a.username.localeCompare(b.username),
@@ -183,10 +228,11 @@ export function useIamUserManagement(
         phone: draftPhone.value.trim() === '' ? null : draftPhone.value.trim(),
         status: draftStatus.value,
       }
-      const result = await dependencies.updateUser(user.id, input)
+      const result = await dependencies.updateUser(user.id, input, mutationState.options)
       if (result.error !== null) throw result.error
       users.value = users.value.map((item) => (item.id === user.id ? result.data : item))
       applyUserDraft(result.data)
+      await loadDeletionStatus(user.id)
     })
   }
 
@@ -195,9 +241,35 @@ export function useIamUserManagement(
     if (user === undefined) return
     await run(async () => {
       const input: ResetManagedUserPassword = { newPassword: newPassword.value }
-      const result = await dependencies.resetPassword(user.id, input)
+      const result = await dependencies.resetPassword(user.id, input, mutationState.options)
       if (result.error !== null) throw result.error
       newPassword.value = ''
+    })
+  }
+
+  async function removeSelected(): Promise<boolean> {
+    const user = selected.value
+    if (user === undefined || deleteDisabledReason.value !== '') return false
+    return run(async () => {
+      const index = filteredUsers.value.findIndex((item) => item.id === user.id)
+      const candidates = filteredUsers.value.filter((item) => item.id !== user.id)
+      const nextId = candidates[Math.min(index, candidates.length - 1)]?.id
+      const result = await dependencies.removeUser(user.id, mutationState.options)
+      if (result.error !== null) {
+        await loadDeletionStatus(user.id)
+        throw result.error
+      }
+      users.value = users.value.filter((item) => item.id !== user.id)
+      selectedId.value = ''
+      resetRoleDraft([])
+      newPassword.value = ''
+      deletion.value = null
+      await load()
+      const next = users.value.find((item) => item.id === nextId)
+      if (next === undefined) return
+      selectedId.value = next.id
+      applyUserDraft(next)
+      await Promise.all([loadSelectedRoles(next.id), loadDeletionStatus(next.id)])
     })
   }
 
@@ -213,9 +285,13 @@ export function useIamUserManagement(
     const user = selected.value
     if (user === undefined) return
     await run(async () => {
-      const result = await dependencies.replaceRoles(user.id, {
-        roleIds: [...selectedRoleIds.value],
-      })
+      const result = await dependencies.replaceRoles(
+        user.id,
+        {
+          roleIds: [...selectedRoleIds.value],
+        },
+        mutationState.options,
+      )
       if (result.error !== null) throw result.error
       resetRoleDraft(result.data.roles.map((role) => role.id))
       users.value = users.value.map((item) =>
@@ -232,7 +308,7 @@ export function useIamUserManagement(
       selectedId.value = first.id
       creating.value = false
       applyUserDraft(first)
-      await loadSelectedRoles(first.id)
+      await Promise.all([loadSelectedRoles(first.id), loadDeletionStatus(first.id)])
     })
   })
 
@@ -241,6 +317,8 @@ export function useIamUserManagement(
     filteredUsers,
     activeRoles,
     canManage,
+    deleteDisabledReason,
+    removeSelected,
     selected,
     selectedId,
     search,

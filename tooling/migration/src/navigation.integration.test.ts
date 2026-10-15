@@ -9,9 +9,18 @@ import {
   csrfHeaderName,
   refreshTokenCookieName,
 } from '@jingwei/auth/shared'
-import { StaticMigrationProvider } from '@jingwei/database'
+import { createTransactionConnection, StaticMigrationProvider } from '@jingwei/database'
 import { newEntityId, newRequestId, newTenantId, newUserId } from '@jingwei/kernel'
-import { createAuthorizationEvaluator } from '@jingwei/module-iam/server/public'
+import {
+  createAuthorizationEvaluator,
+  createIamIdentityReferences,
+} from '@jingwei/module-iam/server/public'
+import {
+  iamRoleSchema,
+  roleMemberPageSchema,
+  roleMemberChangeResultSchema,
+  sessionStatusSchema,
+} from '@jingwei/module-iam/shared'
 import {
   navigationResponseSchema,
   versionSchema,
@@ -124,6 +133,7 @@ describe.skipIf(databaseUrl === undefined)('real PostgreSQL navigation/API', () 
     method = 'GET',
     body?: unknown,
     csrf = true,
+    module = 'navigation',
   ) {
     const headers = new Headers({ origin: 'http://localhost:5173' })
     if (session) {
@@ -140,7 +150,7 @@ describe.skipIf(databaseUrl === undefined)('real PostgreSQL navigation/API', () 
       if (csrf) headers.set(csrfHeaderName, session.csrfToken)
     }
     if (body !== undefined) headers.set('content-type', 'application/json')
-    return app.request('/api/v1/navigation' + path, {
+    return app.request('/api/v1/' + module + path, {
       method,
       headers,
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
@@ -828,6 +838,757 @@ describe.skipIf(databaseUrl === undefined)('real PostgreSQL navigation/API', () 
       await (await request('/bootstrap?tenantCode=' + a.tenantCode, b.admin.session)).json(),
     )
     expect(nav.versionId).toBe(b.published.id)
+  })
+
+  it('deletes only disabled tenant users, enforces permission/CSRF and retains safe audit identity', async () => {
+    const f = await fixture()
+    const target = await f.makeUser(false)
+    const path = '/users/' + target.userId
+    const iam = (method = 'GET', body?: unknown, session = f.admin.session, csrf = true) =>
+      request(path, session, method, body, csrf, 'iam')
+    expect((await iam('DELETE', undefined, f.reader.session)).status).toBe(403)
+    expect((await iam('DELETE', undefined, f.admin.session, false)).status).toBe(403)
+    expect((await iam('DELETE')).status).toBe(409)
+    expect(
+      (await request('/users/' + f.admin.userId, f.admin.session, 'DELETE', undefined, true, 'iam'))
+        .status,
+    ).toBe(409)
+    const other = await fixture()
+    expect((await iam('DELETE', undefined, other.admin.session)).status).toBe(404)
+    expect((await iam('PATCH', { status: 'DISABLED' })).status).toBe(200)
+    const db = runtime.database.view()
+    await sql`INSERT INTO iam.user_credential (user_id, password_hash, password_changed_at, created_at, updated_at)
+      VALUES (${target.userId}, 'test-not-a-password', now(), now(), now())`.execute(db)
+    const preflight = await request(
+      path + '/deletion',
+      f.admin.session,
+      'GET',
+      undefined,
+      true,
+      'iam',
+    )
+    expect(await preflight.json()).toEqual({ allowed: true, reason: null })
+    expect((await iam('DELETE')).status).toBe(200)
+    const rows = await sql<{
+      users: number
+      credentials: number
+      assignments: number
+      active_sessions: number
+    }>`SELECT
+      (SELECT count(*)::int FROM iam."user" WHERE id = ${target.userId}) AS users,
+      (SELECT count(*)::int FROM iam.user_credential WHERE user_id = ${target.userId}) AS credentials,
+      (SELECT count(*)::int FROM iam.user_role WHERE user_id = ${target.userId}) AS assignments,
+      (SELECT count(*)::int FROM platform.auth_session WHERE user_id = ${target.userId} AND revoked_at IS NULL) AS active_sessions`.execute(
+      db,
+    )
+    expect(rows.rows[0]).toEqual({ users: 0, credentials: 0, assignments: 0, active_sessions: 0 })
+    const audit = await sql<{
+      before: unknown
+    }>`SELECT before_data as before FROM platform.audit_log WHERE tenant_id = ${f.tenantId} AND entity_id = ${target.userId} AND action = 'user_deleted'`.execute(
+      db,
+    )
+    expect(audit.rows[0]?.before).toEqual({
+      username: target.userId,
+      displayName: 'Test User',
+      status: 'DISABLED',
+    })
+  })
+
+  it('blocks user deletion while organization references are added under the public identity lock', async () => {
+    const f = await fixture()
+    const target = await f.makeUser(false)
+    const path = '/users/' + target.userId
+    expect(
+      (await request(path, f.admin.session, 'PATCH', { status: 'DISABLED' }, true, 'iam')).status,
+    ).toBe(200)
+    const unitResponse = await request(
+      '/org-units',
+      f.admin.session,
+      'POST',
+      { parentId: null, code: 'member-test', name: 'Members', type: 'DEPARTMENT' },
+      true,
+      'organization',
+    )
+    expect(unitResponse.status).toBe(201)
+    const unit = (await unitResponse.json()) as { id: string }
+    let deletion: Promise<Response> | undefined
+    await runtime.database
+      .view()
+      .transaction()
+      .execute(async (transaction) => {
+        const identities = createIamIdentityReferences(createTransactionConnection(transaction))
+        expect(await identities.lockUser(f.tenantId, target.userId)).toBe(true)
+        const pid = (
+          await sql<{ pid: number }>`select pg_backend_pid() as pid`.execute(transaction)
+        ).rows[0]?.pid
+        deletion = request(path, f.admin.session, 'DELETE', undefined, true, 'iam')
+        await expect
+          .poll(
+            async () =>
+              (
+                await sql<{
+                  blocked: boolean
+                }>`select exists(select 1 from pg_stat_activity where ${pid} = any(pg_blocking_pids(pid))) as blocked`.execute(
+                  runtime.database.view(),
+                )
+              ).rows[0]?.blocked,
+          )
+          .toBe(true)
+        await sql`INSERT INTO organization.user_org (tenant_id, user_id, org_unit_id, is_primary)
+        VALUES (${f.tenantId}, ${target.userId}, ${unit.id}, false)`.execute(transaction)
+      })
+    expect((await deletion)?.status).toBe(409)
+    const preflight = await request(
+      path + '/deletion',
+      f.admin.session,
+      'GET',
+      undefined,
+      true,
+      'iam',
+    )
+    const eligibility = (await preflight.json()) as { allowed: boolean; reason: string | null }
+    expect(eligibility.allowed).toBe(false)
+    expect(eligibility.reason).toContain('组织')
+    expect(
+      (
+        await request(
+          '/org-units/' + unit.id + '/members/' + target.userId,
+          f.admin.session,
+          'DELETE',
+          undefined,
+          true,
+          'organization',
+        )
+      ).status,
+    ).toBe(200)
+    expect((await request(path, f.admin.session, 'DELETE', undefined, true, 'iam')).status).toBe(
+      200,
+    )
+    expect(
+      (
+        await request(
+          '/org-units/' + unit.id + '/members',
+          f.admin.session,
+          'POST',
+          { userId: target.userId },
+          true,
+          'organization',
+        )
+      ).status,
+    ).toBe(404)
+  })
+
+  it('cleans navigation grants atomically with role deletion and rolls back both on audit failure', async () => {
+    const f = await fixture()
+    const response = await request(
+      '/roles',
+      f.admin.session,
+      'POST',
+      { code: 'delete-me', name: 'Delete Me' },
+      true,
+      'iam',
+    )
+    expect(response.status).toBe(201)
+    const role = (await response.json()) as { id: string }
+    const db = runtime.database.view()
+    await sql`INSERT INTO navigation.role_navigation (tenant_id, role_id, navigation_code, created_at, created_by)
+      VALUES (${f.tenantId}, ${role.id}, 'iam.users', now(), ${f.admin.userId})`.execute(db)
+    await sql`CREATE FUNCTION platform.test_reject_role_delete_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+      IF NEW.action = 'role_deleted' THEN RAISE EXCEPTION 'injected role audit failure'; END IF; RETURN NEW; END $$`.execute(
+      db,
+    )
+    await sql`CREATE TRIGGER test_reject_role_delete_audit BEFORE INSERT ON platform.audit_log FOR EACH ROW EXECUTE FUNCTION platform.test_reject_role_delete_audit()`.execute(
+      db,
+    )
+    try {
+      const failed = await request(
+        '/roles/' + role.id,
+        f.admin.session,
+        'DELETE',
+        undefined,
+        true,
+        'iam',
+      )
+      expect(failed.status).toBe(500)
+      expect(await failed.text()).not.toContain('injected')
+      expect(
+        (await sql`SELECT 1 FROM iam.role WHERE id = ${role.id}`.execute(db)).rows,
+      ).toHaveLength(1)
+      expect(
+        (await sql`SELECT 1 FROM navigation.role_navigation WHERE role_id = ${role.id}`.execute(db))
+          .rows,
+      ).toHaveLength(1)
+      expect(
+        (
+          await sql`SELECT 1 FROM platform.audit_log WHERE tenant_id = ${f.tenantId} AND entity_id = ${role.id} AND action = 'role_grants_deleted'`.execute(
+            db,
+          )
+        ).rows,
+      ).toHaveLength(0)
+    } finally {
+      await sql`DROP TRIGGER test_reject_role_delete_audit ON platform.audit_log`.execute(db)
+      await sql`DROP FUNCTION platform.test_reject_role_delete_audit()`.execute(db)
+    }
+    expect(
+      (await request('/roles/' + role.id, f.admin.session, 'DELETE', undefined, true, 'iam'))
+        .status,
+    ).toBe(200)
+    expect(
+      (await sql`SELECT 1 FROM navigation.role_navigation WHERE role_id = ${role.id}`.execute(db))
+        .rows,
+    ).toHaveLength(0)
+    const grant = await request('/roles/' + role.id + '/grants', f.admin.session, 'PUT', {
+      codes: [],
+      expectedCodes: [],
+    })
+    expect(grant.status).toBe(404)
+  })
+
+  it('rolls back user deletion, credential cleanup and session revocation if audit fails', async () => {
+    const f = await fixture()
+    const target = await f.makeUser(false)
+    const path = '/users/' + target.userId
+    expect(
+      (await request(path, f.admin.session, 'PATCH', { status: 'DISABLED' }, true, 'iam')).status,
+    ).toBe(200)
+    const evidence = await runtime.sessionService.create({
+      tenantId: f.tenantId,
+      userId: target.userId,
+    })
+    const db = runtime.database.view()
+    await sql`INSERT INTO iam.user_credential (user_id, password_hash, password_changed_at, created_at, updated_at)
+      VALUES (${target.userId}, 'rollback-test', now(), now(), now())`.execute(db)
+    await sql`CREATE FUNCTION platform.test_reject_user_delete_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN
+      IF NEW.action = 'user_deleted' THEN RAISE EXCEPTION 'injected user audit failure'; END IF; RETURN NEW; END $$`.execute(
+      db,
+    )
+    await sql`CREATE TRIGGER test_reject_user_delete_audit BEFORE INSERT ON platform.audit_log FOR EACH ROW EXECUTE FUNCTION platform.test_reject_user_delete_audit()`.execute(
+      db,
+    )
+    try {
+      const failed = await request(path, f.admin.session, 'DELETE', undefined, true, 'iam')
+      expect(failed.status).toBe(500)
+      expect(await failed.text()).not.toContain('injected')
+      expect(
+        (await sql`SELECT 1 FROM iam."user" WHERE id = ${target.userId}`.execute(db)).rows,
+      ).toHaveLength(1)
+      expect(
+        (await sql`SELECT 1 FROM iam.user_credential WHERE user_id = ${target.userId}`.execute(db))
+          .rows,
+      ).toHaveLength(1)
+      expect(
+        (await sql`SELECT 1 FROM iam.user_role WHERE user_id = ${target.userId}`.execute(db)).rows,
+      ).toHaveLength(1)
+      expect(
+        (
+          await sql`SELECT 1 FROM platform.auth_session WHERE id = ${evidence.id} AND revoked_at IS NULL`.execute(
+            db,
+          )
+        ).rows,
+      ).toHaveLength(1)
+    } finally {
+      await sql`DROP TRIGGER test_reject_user_delete_audit ON platform.audit_log`.execute(db)
+      await sql`DROP FUNCTION platform.test_reject_user_delete_audit()`.execute(db)
+    }
+    expect((await request(path, f.admin.session, 'DELETE', undefined, true, 'iam')).status).toBe(
+      200,
+    )
+    expect(
+      (
+        await sql`SELECT 1 FROM platform.auth_session WHERE id = ${evidence.id} AND revoked_at IS NOT NULL`.execute(
+          db,
+        )
+      ).rows,
+    ).toHaveLength(1)
+  })
+
+  it('serializes role deletion against navigation grants and user assignments', async () => {
+    const f = await fixture()
+    const created = await request(
+      '/roles',
+      f.admin.session,
+      'POST',
+      { code: 'concurrent-delete', name: 'Concurrent Role' },
+      true,
+      'iam',
+    )
+    const role = (await created.json()) as { id: string }
+    let deletion: Promise<Response> | undefined
+    await runtime.database
+      .view()
+      .transaction()
+      .execute(async (transaction) => {
+        const identities = createIamIdentityReferences(createTransactionConnection(transaction))
+        expect(await identities.lockActiveRole(f.tenantId, role.id)).toBe(true)
+        const pid = (
+          await sql<{ pid: number }>`select pg_backend_pid() as pid`.execute(transaction)
+        ).rows[0]?.pid
+        deletion = request('/roles/' + role.id, f.admin.session, 'DELETE', undefined, true, 'iam')
+        await expect
+          .poll(
+            async () =>
+              (
+                await sql<{
+                  blocked: boolean
+                }>`select exists(select 1 from pg_stat_activity where ${pid} = any(pg_blocking_pids(pid))) as blocked`.execute(
+                  runtime.database.view(),
+                )
+              ).rows[0]?.blocked,
+          )
+          .toBe(true)
+        await sql`INSERT INTO navigation.role_navigation (tenant_id, role_id, navigation_code, created_at, created_by)
+        VALUES (${f.tenantId}, ${role.id}, 'iam.users', now(), ${f.admin.userId})`.execute(
+          transaction,
+        )
+        await sql`INSERT INTO iam.user_role (tenant_id, user_id, role_id, created_at)
+        VALUES (${f.tenantId}, ${f.reader.userId}, ${role.id}, now())`.execute(transaction)
+      })
+    expect((await deletion)?.status).toBe(409)
+    expect(
+      (
+        await request(
+          '/users/' + f.reader.userId + '/roles',
+          f.admin.session,
+          'PUT',
+          { roleIds: [] },
+          true,
+          'iam',
+        )
+      ).status,
+    ).toBe(200)
+    expect(
+      (await request('/roles/' + role.id, f.admin.session, 'DELETE', undefined, true, 'iam'))
+        .status,
+    ).toBe(200)
+    const db = runtime.database.view()
+    expect(
+      (await sql`SELECT 1 FROM navigation.role_navigation WHERE role_id = ${role.id}`.execute(db))
+        .rows,
+    ).toHaveLength(0)
+    expect(
+      (
+        await request(
+          '/users/' + f.reader.userId + '/roles',
+          f.admin.session,
+          'PUT',
+          { roleIds: [role.id] },
+          true,
+          'iam',
+        )
+      ).status,
+    ).toBe(400)
+  })
+
+  it('keeps an active manager when two administrators concurrently disable each other', async () => {
+    const f = await fixture()
+    const second = await f.makeUser(true)
+    const responses = await Promise.all([
+      request(
+        '/users/' + second.userId,
+        f.admin.session,
+        'PATCH',
+        { status: 'DISABLED' },
+        true,
+        'iam',
+      ),
+      request(
+        '/users/' + f.admin.userId,
+        second.session,
+        'PATCH',
+        { status: 'DISABLED' },
+        true,
+        'iam',
+      ),
+    ])
+    expect(responses.filter((response) => response.status === 200)).toHaveLength(1)
+    expect(responses.filter((response) => [401, 403, 409].includes(response.status))).toHaveLength(
+      1,
+    )
+    const active = await sql<{
+      count: number
+    }>`SELECT count(*)::int as count FROM iam."user" WHERE tenant_id = ${f.tenantId} AND id IN (${f.admin.userId}, ${second.userId}) AND status = 'ACTIVE'`.execute(
+      runtime.database.view(),
+    )
+    expect(active.rows[0]?.count).toBe(1)
+  })
+
+  it('manages role users across pages, checks both permissions and preserves other assignments and grants', async () => {
+    const f = await fixture(),
+      other = await fixture()
+    const created = await request(
+      '/roles',
+      f.admin.session,
+      'POST',
+      { code: 'members', name: 'Members' },
+      true,
+      'iam',
+    )
+    const role = iamRoleSchema.parse(await created.json())
+    const base = '/roles/' + role.id
+    const load = async (query = 'page=1') =>
+      roleMemberPageSchema.parse(
+        await (
+          await request(base + '/users?' + query, f.admin.session, 'GET', undefined, true, 'iam')
+        ).json(),
+      )
+    const before = await load()
+    expect(before.assignmentCount).toBe(0)
+    expect(
+      (await request(base + '/users?page=0', f.admin.session, 'GET', undefined, true, 'iam'))
+        .status,
+    ).toBe(400)
+    expect(
+      (await request(base + '/users?page=1', other.admin.session, 'GET', undefined, true, 'iam'))
+        .status,
+    ).toBe(404)
+    const db = runtime.database.view()
+    await sql`INSERT INTO iam.role_permission (tenant_id, role_id, permission_code, scope_type, created_at)
+      VALUES (${f.tenantId}, ${f.reader.roleId}, 'iam.role.view', 'ALL', now())`.execute(db)
+    const readonly = await request(
+      base + '/users?page=1',
+      f.reader.session,
+      'GET',
+      undefined,
+      true,
+      'iam',
+    )
+    expect(readonly.status).toBe(200)
+    expect(
+      (
+        await request(
+          base + '/user-candidates?page=1',
+          f.reader.session,
+          'GET',
+          undefined,
+          true,
+          'iam',
+        )
+      ).status,
+    ).toBe(403)
+    await sql`INSERT INTO iam.role_permission (tenant_id, role_id, permission_code, scope_type, created_at)
+      VALUES (${f.tenantId}, ${f.reader.roleId}, 'iam.role.manage', 'ALL', now())`.execute(db)
+    expect(
+      (
+        await request(
+          base + '/users',
+          f.reader.session,
+          'POST',
+          { userIds: [f.reader.userId], expectedSnapshot: before.snapshot },
+          true,
+          'iam',
+        )
+      ).status,
+    ).toBe(403)
+    await sql`DELETE FROM iam.role_permission WHERE role_id = ${f.reader.roleId} AND permission_code = 'iam.role.manage'`.execute(
+      db,
+    )
+    await sql`INSERT INTO iam.role_permission (tenant_id, role_id, permission_code, scope_type, created_at)
+      VALUES (${f.tenantId}, ${f.reader.roleId}, 'iam.user.manage', 'ALL', now())`.execute(db)
+    expect(
+      (
+        await request(
+          base + '/users',
+          f.reader.session,
+          'POST',
+          { userIds: [f.reader.userId], expectedSnapshot: before.snapshot },
+          true,
+          'iam',
+        )
+      ).status,
+    ).toBe(403)
+    const a = await f.makeUser(false),
+      b = await f.makeUser(false),
+      c = await f.makeUser(false)
+    const body = { userIds: [a.userId, b.userId, c.userId], expectedSnapshot: before.snapshot }
+    expect(
+      (await request(base + '/users', f.admin.session, 'POST', body, false, 'iam')).status,
+    ).toBe(403)
+    expect(
+      (
+        await request(
+          base + '/users',
+          f.admin.session,
+          'POST',
+          { ...body, userIds: [a.userId, other.reader.userId] },
+          true,
+          'iam',
+        )
+      ).status,
+    ).toBe(400)
+    expect((await load()).assignmentCount).toBe(0)
+    expect(
+      (
+        await request(
+          base + '/users',
+          f.admin.session,
+          'POST',
+          { ...body, userIds: [a.userId, a.userId] },
+          true,
+          'iam',
+        )
+      ).status,
+    ).toBe(400)
+    const added = await request(base + '/users', f.admin.session, 'POST', body, true, 'iam')
+    expect(added.status).toBe(200)
+    expect(roleMemberChangeResultSchema.parse(await added.json()).affectedCount).toBe(3)
+    await request(
+      '/users/' + b.userId,
+      f.admin.session,
+      'PATCH',
+      { status: 'DISABLED' },
+      true,
+      'iam',
+    )
+    const disabled = await load('page=1&search=' + b.userId)
+    expect(disabled.total).toBe(1)
+    expect(disabled.members[0]?.status).toBe('DISABLED')
+    expect(Object.keys(disabled.members[0] ?? {}).sort()).toEqual([
+      'displayName',
+      'id',
+      'status',
+      'username',
+    ])
+    expect(disabled.assignmentCount).toBe(3)
+    const firstPage = await load('page=1&pageSize=1')
+    const secondPage = await load('page=2&pageSize=1')
+    expect(firstPage.snapshot).toBe(secondPage.snapshot)
+    expect(firstPage.members[0]?.id).not.toBe(secondPage.members[0]?.id)
+    const candidates = roleMemberPageSchema.parse(
+      await (
+        await request(
+          base + '/user-candidates?page=1&search=' + a.userId,
+          f.admin.session,
+          'GET',
+          undefined,
+          true,
+          'iam',
+        )
+      ).json(),
+    )
+    expect(candidates.total).toBe(0)
+    expect(
+      (
+        await request(
+          '/users/' + f.reader.userId + '/roles',
+          f.admin.session,
+          'PUT',
+          { roleIds: [f.reader.roleId, role.id] },
+          true,
+          'iam',
+        )
+      ).status,
+    ).toBe(200)
+    expect(
+      (
+        await request(
+          base + '/users/clear',
+          f.admin.session,
+          'POST',
+          { expectedSnapshot: firstPage.snapshot },
+          true,
+          'iam',
+        )
+      ).status,
+    ).toBe(409)
+    const current = await load('page=1&search=' + a.userId)
+    expect(current.total).toBe(1)
+    expect(current.assignmentCount).toBe(4)
+    await sql`INSERT INTO iam.role_permission (tenant_id, role_id, permission_code, scope_type, created_at) VALUES (${f.tenantId}, ${role.id}, 'iam.role.view', 'ALL', now())`.execute(
+      db,
+    )
+    await sql`INSERT INTO navigation.role_navigation (tenant_id, role_id, navigation_code, created_at, created_by) VALUES (${f.tenantId}, ${role.id}, 'iam.roles', now(), ${f.admin.userId})`.execute(
+      db,
+    )
+    const cleared = await request(
+      base + '/users/clear',
+      f.admin.session,
+      'POST',
+      { expectedSnapshot: current.snapshot },
+      true,
+      'iam',
+    )
+    expect(cleared.status).toBe(200)
+    expect(roleMemberChangeResultSchema.parse(await cleared.json())).toMatchObject({
+      affectedCount: 4,
+      assignmentCount: 0,
+    })
+    expect((await load()).total).toBe(0)
+    for (const user of [a, b, c, f.reader]) {
+      expect(
+        (
+          await sql`SELECT 1 FROM iam.user_role WHERE tenant_id = ${f.tenantId} AND user_id = ${user.userId} AND role_id = ${user.roleId}`.execute(
+            db,
+          )
+        ).rows,
+      ).toHaveLength(1)
+    }
+    expect((await sql`SELECT 1 FROM iam.role WHERE id = ${role.id}`.execute(db)).rows).toHaveLength(
+      1,
+    )
+    expect(
+      (await sql`SELECT 1 FROM iam.role_permission WHERE role_id = ${role.id}`.execute(db)).rows,
+    ).toHaveLength(1)
+    expect(
+      (await sql`SELECT 1 FROM navigation.role_navigation WHERE role_id = ${role.id}`.execute(db))
+        .rows,
+    ).toHaveLength(1)
+    const empty = await load()
+    await request(base, f.admin.session, 'PATCH', { status: 'DISABLED' }, true, 'iam')
+    expect(
+      (
+        await request(
+          base + '/users',
+          f.admin.session,
+          'POST',
+          { expectedSnapshot: empty.snapshot, userIds: [a.userId] },
+          true,
+          'iam',
+        )
+      ).status,
+    ).toBe(409)
+  })
+
+  it('protects all last managers together and permits self-removal only when another active manager survives', async () => {
+    const f = await fixture()
+    const base = '/roles/' + f.admin.roleId
+    const load = async () =>
+      roleMemberPageSchema.parse(
+        await (
+          await request(base + '/users?page=1', f.admin.session, 'GET', undefined, true, 'iam')
+        ).json(),
+      )
+    expect(
+      (
+        await request(
+          '/users/' + f.admin.userId + '/roles',
+          f.admin.session,
+          'PUT',
+          { roleIds: [] },
+          true,
+          'iam',
+        )
+      ).status,
+    ).toBe(409)
+    const before = await load()
+    await request(
+      base + '/users',
+      f.admin.session,
+      'POST',
+      { expectedSnapshot: before.snapshot, userIds: [f.reader.userId] },
+      true,
+      'iam',
+    )
+    const current = await load()
+    const rejected = await request(
+      base + '/users/clear',
+      f.admin.session,
+      'POST',
+      { expectedSnapshot: current.snapshot },
+      true,
+      'iam',
+    )
+    expect(rejected.status).toBe(409)
+    expect((await load()).assignmentCount).toBe(2)
+    const backup = await f.makeUser(true)
+    expect(
+      (
+        await request(
+          base + '/users/clear',
+          f.admin.session,
+          'POST',
+          { expectedSnapshot: current.snapshot },
+          true,
+          'iam',
+        )
+      ).status,
+    ).toBe(200)
+    const session = sessionStatusSchema.parse(
+      await (await request('/session', f.admin.session, 'GET', undefined, true, 'iam')).json(),
+    )
+    expect(session.authenticated).toBe(true)
+    if (session.authenticated) expect(session.permissions).not.toContain('iam.user.manage')
+    expect(
+      (await request(base + '/users?page=1', backup.session, 'GET', undefined, true, 'iam')).status,
+    ).toBe(200)
+  })
+
+  it('rolls back every role member removal when its audit append fails and serializes competing confirmations', async () => {
+    const f = await fixture()
+    const created = await request(
+      '/roles',
+      f.admin.session,
+      'POST',
+      { code: 'atomic-members', name: 'Atomic Members' },
+      true,
+      'iam',
+    )
+    const role = iamRoleSchema.parse(await created.json()),
+      base = '/roles/' + role.id
+    const load = async () =>
+      roleMemberPageSchema.parse(
+        await (
+          await request(base + '/users?page=1', f.admin.session, 'GET', undefined, true, 'iam')
+        ).json(),
+      )
+    await request(
+      base + '/users',
+      f.admin.session,
+      'POST',
+      { expectedSnapshot: (await load()).snapshot, userIds: [f.reader.userId] },
+      true,
+      'iam',
+    )
+    const current = await load(),
+      db = runtime.database.view()
+    await sql`CREATE FUNCTION platform.test_reject_role_members_audit() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.action = 'role_members_cleared' THEN RAISE EXCEPTION 'injected member audit failure'; END IF; RETURN NEW; END $$`.execute(
+      db,
+    )
+    await sql`CREATE TRIGGER test_reject_role_members_audit BEFORE INSERT ON platform.audit_log FOR EACH ROW EXECUTE FUNCTION platform.test_reject_role_members_audit()`.execute(
+      db,
+    )
+    try {
+      const failed = await request(
+        base + '/users/clear',
+        f.admin.session,
+        'POST',
+        { expectedSnapshot: current.snapshot },
+        true,
+        'iam',
+      )
+      expect(failed.status).toBe(500)
+      expect(await failed.text()).not.toContain('injected')
+      expect((await load()).snapshot).toBe(current.snapshot)
+    } finally {
+      await sql`DROP TRIGGER test_reject_role_members_audit ON platform.audit_log`.execute(db)
+      await sql`DROP FUNCTION platform.test_reject_role_members_audit()`.execute(db)
+    }
+    const responses = await Promise.all([
+      request(
+        base + '/users/clear',
+        f.admin.session,
+        'POST',
+        { expectedSnapshot: current.snapshot },
+        true,
+        'iam',
+      ),
+      request(
+        base + '/users/remove',
+        f.admin.session,
+        'POST',
+        { expectedSnapshot: current.snapshot, userIds: [f.reader.userId] },
+        true,
+        'iam',
+      ),
+    ])
+    expect(responses.map((response) => response.status).sort()).toEqual([200, 409])
+    expect((await load()).assignmentCount).toBe(0)
+    expect(
+      (
+        await sql`SELECT 1 FROM platform.audit_log WHERE tenant_id = ${f.tenantId} AND entity_id = ${role.id} AND action IN ('role_members_removed', 'role_members_cleared')`.execute(
+          db,
+        )
+      ).rows,
+    ).toHaveLength(1)
   })
 
   it('rolls back pointer and snapshot when transactional audit append fails', async () => {

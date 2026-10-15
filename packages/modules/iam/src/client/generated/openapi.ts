@@ -146,6 +146,81 @@ export type paths = {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/iam/roles/{roleId}/user-candidates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 分页查询可添加的正常用户 */
+        get: operations["iamListRoleMemberCandidates"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/iam/roles/{roleId}/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 分页查询角色已分配用户
+         * @description 包含已禁用用户；仅返回 ID、用户名、显示名和状态。snapshot 覆盖整个角色成员集合，不受搜索及分页影响。
+         */
+        get: operations["iamListRoleMembers"];
+        put?: never;
+        /** 批量添加角色用户 */
+        post: operations["iamAddRoleMembers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/iam/roles/{roleId}/users/clear": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 解除角色全部用户分配
+         * @description 作用于整个角色，包含已禁用用户，不受搜索和分页限制。要求确认快照一致，保护最后管理员，保留角色、功能权限、导航授权和用户其他角色。
+         */
+        post: operations["iamClearRoleMembers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/iam/roles/{roleId}/users/remove": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** 批量解除角色分配 */
+        post: operations["iamRemoveRoleMembers"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/iam/session": {
         parameters: {
             query?: never;
@@ -255,7 +330,11 @@ export type paths = {
         get: operations["iamGetUser"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * 永久删除已禁用用户
+         * @description 不能删除自己；仅已禁用且无组织/岗位引用的账号可删除。撤销全部会话并清理 IAM 凭据和角色分配，保留审计。
+         */
+        delete: operations["iamDeleteUser"];
         options?: never;
         head?: never;
         /**
@@ -263,6 +342,23 @@ export type paths = {
          * @description 禁用会撤销该用户全部会话；不能禁用当前登录账号或最后一个管理员。
          */
         patch: operations["iamUpdateUser"];
+        trace?: never;
+    };
+    "/api/v1/iam/users/{userId}/deletion": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** 检查用户是否可以永久删除 */
+        get: operations["iamUserDeletionStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/iam/users/{userId}/password": {
@@ -354,6 +450,13 @@ export type components = {
             currentPassword: string;
             newPassword: string;
         };
+        IamChangeRoleMembers: {
+            expectedSnapshot: string;
+            userIds: string[];
+        };
+        IamClearRoleMembers: {
+            expectedSnapshot: string;
+        };
         IamCreateManagedUserInput: {
             displayName: string;
             /** Format: email */
@@ -403,6 +506,10 @@ export type components = {
         IamManagedUserList: {
             users: components["schemas"]["IamManagedUser"][];
         };
+        IamManagedUserRef: {
+            /** Format: uuid */
+            id: string;
+        };
         IamPermissionCatalog: {
             permissions: components["schemas"]["IamPermissionCatalogItem"][];
         };
@@ -446,6 +553,28 @@ export type components = {
         };
         IamRoleList: {
             roles: components["schemas"]["IamRole"][];
+        };
+        IamRoleMember: {
+            displayName: string;
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            status: "INVITED" | "ACTIVE" | "DISABLED" | "LOCKED";
+            username: string;
+        };
+        IamRoleMemberChangeResult: {
+            affectedCount: number;
+            affectsCurrentUser: boolean;
+            assignmentCount: number;
+            snapshot: string;
+        };
+        IamRoleMemberPage: {
+            assignmentCount: number;
+            members: components["schemas"]["IamRoleMember"][];
+            page: number;
+            pageSize: number;
+            snapshot: string;
+            total: number;
         };
         IamRolePermissionGrant: {
             organizationIds?: string[];
@@ -496,6 +625,10 @@ export type components = {
             name?: string;
             /** @enum {string} */
             status?: "ACTIVE" | "DISABLED";
+        };
+        IamUserDeletionStatus: {
+            allowed: boolean;
+            reason: string | null;
         };
         IamUserRoleAssignment: {
             code: string;
@@ -1280,6 +1413,415 @@ export interface operations {
             };
         };
     };
+    iamListRoleMemberCandidates: {
+        parameters: {
+            query: {
+                page: number;
+                pageSize?: number;
+                search?: string;
+            };
+            header?: never;
+            path: {
+                roleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 未分配此角色的正常用户 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IamRoleMemberPage"];
+                };
+            };
+            /** @description 参数无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 尚未登录 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 同时要求 iam.role.manage 和 iam.user.manage */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 角色不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 服务器内部错误 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    iamListRoleMembers: {
+        parameters: {
+            query: {
+                page: number;
+                pageSize?: number;
+                search?: string;
+            };
+            header?: never;
+            path: {
+                roleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 成员页和全量成员确认快照 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IamRoleMemberPage"];
+                };
+            };
+            /** @description 参数无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 尚未登录 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 缺少 iam.role.view 权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 角色不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 服务器内部错误 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    iamAddRoleMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IamChangeRoleMembers"];
+            };
+        };
+        responses: {
+            /** @description 成员变更结果 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IamRoleMemberChangeResult"];
+                };
+            };
+            /** @description 参数无效、用户不存在或不可用 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 尚未登录 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 同时要求 iam.role.manage 和 iam.user.manage；Origin/CSRF 必须有效 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 角色不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 成员已变化或角色停用 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Content-Type 不受支持 */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 服务器内部错误 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    iamClearRoleMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IamClearRoleMembers"];
+            };
+        };
+        responses: {
+            /** @description 成员变更结果 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IamRoleMemberChangeResult"];
+                };
+            };
+            /** @description 参数无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 尚未登录 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 同时要求 iam.role.manage 和 iam.user.manage；Origin/CSRF 必须有效 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 角色不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 成员已变化或将失去最后管理员 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Content-Type 不受支持 */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 服务器内部错误 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    iamRemoveRoleMembers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                roleId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IamChangeRoleMembers"];
+            };
+        };
+        responses: {
+            /** @description 成员变更结果 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IamRoleMemberChangeResult"];
+                };
+            };
+            /** @description 参数无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 尚未登录 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 同时要求 iam.role.manage 和 iam.user.manage；Origin/CSRF 必须有效 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 角色不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 成员已变化或将失去最后管理员 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description Content-Type 不受支持 */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 服务器内部错误 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     iamGetSession: {
         parameters: {
             query?: never;
@@ -1671,6 +2213,82 @@ export interface operations {
             };
         };
     };
+    iamDeleteUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 已删除的用户 ID */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IamManagedUserRef"];
+                };
+            };
+            /** @description 路径参数无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 尚未登录 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 权限、Origin 或 CSRF 校验失败 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 用户不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 当前账号、账号未禁用或仍有组织/岗位引用 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 服务器内部错误 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
     iamUpdateUser: {
         parameters: {
             query?: never;
@@ -1742,6 +2360,73 @@ export interface operations {
             };
             /** @description Content-Type 不受支持 */
             415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 服务器内部错误 */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+        };
+    };
+    iamUserDeletionStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 删除可用状态及阻止原因 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["IamUserDeletionStatus"];
+                };
+            };
+            /** @description 路径参数无效 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 尚未登录 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 缺少 iam.user.manage 权限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ApiError"];
+                };
+            };
+            /** @description 用户不存在 */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -70,7 +70,7 @@ IAM 的 Public API 返回当前活跃角色并判断功能权限，Navigation �
 | navigation.navigation_node    | 版本内的全部节点                                         |
 | navigation.role_navigation    | tenant + IAM role UUID + navigation code，独立于配置版本 |
 
-模块内复合外键保证 parent、version、根发布指针属于同一 tenant/version/root。role_id 不建立跨 IAM 外键。
+模块内复合外键保证 parent、version、根发布指针属于同一 tenant/version/root。role_id 不建立跨 IAM 外键。角色删除通过 `createNavigationRoleDeletionCleanup(connection)` 同步清理本模块授权，并将 `role_grants_deleted` 审计写入调用方事务；失败整体回滚。角色授权写事务先经 IAM Public API 锁定活跃角色，再锁导航根，避免删除后新增残留授权。
 
 `revision` 是租户内版本序号；`editRevision` 是草稿保存的乐观锁；`schemaVersion: 2` 是响应契约版本。三者不是同一概念。已发布快照由数据库 trigger 保护，不能更新或删除。回滚只原子切换发布指针，并重新校验目标快照，不修改历史记录、不回滚角色授权。
 

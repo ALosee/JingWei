@@ -1,7 +1,9 @@
 import type { Kysely } from 'kysely'
 
 import { PostgresAuditWriter } from '@jingwei/audit'
+import { createTransactionConnection } from '@jingwei/database'
 import type { ApplicationContext, TenantId } from '@jingwei/kernel'
+import { createIamIdentityReferences } from '@jingwei/module-iam/server/public'
 
 import type {
   MembershipStore,
@@ -310,6 +312,7 @@ export class PostgresMembershipUnitOfWork implements MembershipUnitOfWork {
     return this.db.transaction().execute(async (transaction) =>
       work({
         store: new PostgresMembershipStore(transaction),
+        identities: createIamIdentityReferences(createTransactionConnection(transaction)),
         record: async (context, action, entityId, before, after) => {
           await new PostgresAuditWriter(transaction).append({
             context,

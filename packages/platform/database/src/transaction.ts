@@ -1,4 +1,17 @@
-import type { Kysely, Transaction } from 'kysely'
+import { QueryCreator, type Kysely, type QueryExecutorProvider, type Transaction } from 'kysely'
+
+/** Module-owned queries on the caller's connection, without transaction/resource ownership. */
+export interface DatabaseConnection extends QueryExecutorProvider {
+  view<TDatabase>(): QueryCreator<TDatabase>
+}
+
+/** Bind public module participants to the caller's transaction executor. */
+export function createTransactionConnection(executor: QueryExecutorProvider): DatabaseConnection {
+  return {
+    getExecutor: () => executor.getExecutor(),
+    view: <TDatabase>() => new QueryCreator<TDatabase>({ executor: executor.getExecutor() }),
+  }
+}
 
 /** Application-level transaction boundary, kept injectable for use-case tests. */
 export interface TransactionRunner<TDatabase> {

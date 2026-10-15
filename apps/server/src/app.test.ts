@@ -77,10 +77,30 @@ describe('API documentation', () => {
           operationCount += 1
         }
       }
-      expect(operationCount).toBe(83)
+      expect(operationCount).toBe(90)
 
       expect(operationContract(document.paths, '/api/v1/iam/sessions', 'post')).toEqual({
         kind: 'PUBLIC',
+      })
+      for (const [path, method] of [
+        ['/api/v1/iam/users/{userId}', 'delete'],
+        ['/api/v1/iam/users/{userId}/deletion', 'get'],
+      ] as const) {
+        expect(operationContract(document.paths, path, method)).toEqual({
+          kind: 'PERMISSION',
+          requirements: [
+            { permission: 'iam.user.manage', capability: 'iam.authentication', scope: 'UNSCOPED' },
+          ],
+        })
+      }
+      expect(
+        operationContract(document.paths, '/api/v1/iam/roles/{roleId}/users/clear', 'post'),
+      ).toEqual({
+        kind: 'PERMISSION',
+        requirements: [
+          { permission: 'iam.role.manage', capability: 'iam.authorization', scope: 'UNSCOPED' },
+          { permission: 'iam.user.manage', capability: 'iam.authentication', scope: 'UNSCOPED' },
+        ],
       })
       expect(operationContract(document.paths, '/api/v1/iam/account', 'get')).toEqual({
         kind: 'AUTHENTICATED',

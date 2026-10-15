@@ -159,8 +159,9 @@ export class ManageNavigation {
   async grantRole(context: AuthContext, roleId: string, input: SaveRoleGrants) {
     await this.authorize(context, 'manage')
     await this.access.requireUnscopedPermission(context, iamPermissionRequirements.roleManage)
-    await this.assertRole(context, roleId)
     return this.work.run(async (tx) => {
+      if (!(await tx.identities.lockActiveRole(context.tenantId, roleId)))
+        fail('ROLE_NOT_FOUND', '当前租户中不存在此活跃角色', 404)
       const root = await tx.store.root(context.tenantId, true)
       if (root?.publishedVersionId === null || root === null)
         fail('NAVIGATION_NOT_PUBLISHED', '请先发布导航', 422)

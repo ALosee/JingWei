@@ -120,9 +120,11 @@ function serverEditionSource(
 
 export function serverModulesSource(moduleIds: readonly string[]): string {
   const hasOrganization = moduleIds.includes('organization')
+  const hasNavigation = moduleIds.includes('navigation')
+  const hasLifecycle = hasOrganization || hasNavigation
   const imports = moduleIds
     .map((id) => {
-      if (hasOrganization && id === 'iam') {
+      if (hasLifecycle && id === 'iam') {
         return `import { createIamServerModule } from '@jingwei/module-iam/server'`
       }
       if (id === 'organization') {
@@ -131,13 +133,17 @@ export function serverModulesSource(moduleIds: readonly string[]): string {
       return `import { serverModule as ${alias(id, 'ServerModule')} } from '@jingwei/module-${id}/server'`
     })
     .join('\n')
-  const integrationImports = hasOrganization
-    ? `\nimport { createOrganizationalScopeFacts } from '@jingwei/module-organization/server/public'`
-    : ''
+  const integrationImports =
+    (hasOrganization
+      ? `\nimport { createOrganizationalScopeFacts, createOrganizationUserDeletionReferences } from '@jingwei/module-organization/server/public'`
+      : '') +
+    (hasNavigation
+      ? `\nimport { createNavigationRoleDeletionCleanup } from '@jingwei/module-navigation/server/public'`
+      : '')
   const modules = moduleIds
     .map((id) => {
-      if (hasOrganization && id === 'iam') {
-        return `    createIamServerModule({ organizationalScopeFacts }),`
+      if (hasLifecycle && id === 'iam') {
+        return `    createIamServerModule({ ${[hasOrganization ? 'organizationalScopeFacts' : '', hasOrganization ? 'userDeletionReferences: [createOrganizationUserDeletionReferences]' : '', hasNavigation ? 'roleDeletionCleanup: [createNavigationRoleDeletionCleanup]' : ''].filter(Boolean).join(', ')} }),`
       }
       if (id === 'organization') {
         return `    createOrganizationServerModule({ organizationalScopeFacts }),`

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { PasswordHasher, SessionService } from '@jingwei/auth'
 import {
@@ -6,6 +6,7 @@ import {
   newSessionId,
   newTenantId,
   newUserId,
+  toUserId,
   systemClock,
   type ApplicationContext,
   type AuthContext,
@@ -60,6 +61,18 @@ class MemoryUserStore implements UserAdminStore {
       { id: viewerRoleId, code: 'viewer', name: '只读', status: 'ACTIVE', grantsManage: false },
     ],
   ])
+
+  lockAdministration() {
+    return Promise.resolve()
+  }
+  lockUser() {
+    return Promise.resolve()
+  }
+  deleteUser(_context: ApplicationContext, id: string) {
+    this.users.delete(id)
+    this.userRoles.delete(id)
+    return Promise.resolve()
+  }
 
   list() {
     return Promise.resolve([...this.users.values()].map(stripInternal))
@@ -186,7 +199,10 @@ function stripInternal(user: ManagedUser & Record<string, unknown>): ManagedUser
   }
 }
 
-function createManage(store: MemoryUserStore) {
+function createManage(store: MemoryUserStore, referenced = false) {
+  const record = vi.fn(() => Promise.resolve())
+  const references = [{ hasReferences: vi.fn(() => Promise.resolve(referenced)) }]
+  const revoked: string[] = []
   const access: IamAccess = {
     activeRoleIds: () => Promise.resolve([]),
     roles: () => Promise.resolve([]),
@@ -195,14 +211,21 @@ function createManage(store: MemoryUserStore) {
   }
   const work: UserAdminUnitOfWork = {
     run<T>(work: (transaction: UserAdminTransaction) => Promise<T>) {
-      return work({ store, record: () => Promise.resolve() })
+      return work({
+        store,
+        record,
+        references,
+        revokeSessions: (_context, id) => {
+          revoked.push(id)
+          return Promise.resolve()
+        },
+      })
     },
   }
   const passwords: PasswordHasher = {
     hash: (password: string) => Promise.resolve(`hash:${password}`),
     verify: () => Promise.resolve(true),
   }
-  const revoked: string[] = []
   const sessions = {
     revokeUser: (_tenantId: string, userId: string) => {
       revoked.push(userId)
@@ -210,7 +233,7 @@ function createManage(store: MemoryUserStore) {
     },
   } as Pick<SessionService, 'revokeUser'>
   const manage = new ManageIamUsers(store, work, access, passwords, sessions, systemClock)
-  return { manage, revoked }
+  return { manage, revoked, record, references }
 }
 
 describe('ManageIamUsers', () => {
@@ -298,6 +321,20 @@ describe('ManageIamUsers', () => {
     expect(result.roles.map((role) => role.code).sort()).toEqual(['admin', 'viewer'])
   })
 
+  it('protects the last manager when removing the current account roles', async () => {
+    const store = new MemoryUserStore()
+    const { manage } = createManage(store)
+    const admin = await manage.create(context, {
+      username: 'last-admin',
+      displayName: '最后管理员',
+      password: 'password-1',
+      roleIds: [adminRoleId],
+    })
+    await expect(
+      manage.replaceRoles({ ...context, userId: toUserId(admin.id) }, admin.id, { roleIds: [] }),
+    ).rejects.toMatchObject({ code: 'IAM_USER_LAST_MANAGER' })
+  })
+
   it('rejects unknown roles on create', async () => {
     const store = new MemoryUserStore()
     const { manage } = createManage(store)
@@ -309,5 +346,74 @@ describe('ManageIamUsers', () => {
         roleIds: [newUserId()],
       }),
     ).rejects.toMatchObject({ code: 'IAM_ROLE_NOT_FOUND' })
+  })
+})
+
+describe('managed user deletion', () => {
+  it('requires disabling before deletion and protects the current account', async () => {
+    const store = new MemoryUserStore()
+    const { manage } = createManage(store)
+    const user = await manage.create(context, {
+      username: 'cleanup',
+      displayName: '清理账号',
+      password: 'password-1',
+    })
+    await expect(manage.remove(context, user.id)).rejects.toMatchObject({
+      code: 'IAM_USER_MUST_BE_DISABLED',
+    })
+    await expect(
+      manage.remove({ ...context, userId: toUserId(user.id) }, user.id),
+    ).rejects.toMatchObject({
+      code: 'IAM_USER_CANNOT_DELETE_SELF',
+    })
+    expect(store.users.has(user.id)).toBe(true)
+  })
+
+  it('blocks organization references and exposes the same reason in the preflight', async () => {
+    const store = new MemoryUserStore()
+    const { manage } = createManage(store, true)
+    const user = await manage.create(context, {
+      username: 'member',
+      displayName: '组织成员',
+      password: 'password-1',
+    })
+    await manage.update(context, user.id, { status: 'DISABLED' })
+    const eligibility = await manage.deletionStatus(context, user.id)
+    expect(eligibility.allowed).toBe(false)
+    expect(eligibility.reason).toContain('组织')
+    await expect(manage.remove(context, user.id)).rejects.toMatchObject({
+      code: 'IAM_USER_HAS_REFERENCES',
+    })
+    expect(store.users.has(user.id)).toBe(true)
+  })
+
+  it('deletes a disabled account, revokes sessions and audits safe identity fields', async () => {
+    const store = new MemoryUserStore()
+    const { manage, revoked, record } = createManage(store)
+    const user = await manage.create(context, {
+      username: 'cleanup',
+      displayName: '清理账号',
+      password: 'password-1',
+      roleIds: [viewerRoleId],
+    })
+    await manage.update(context, user.id, { status: 'DISABLED' })
+    await expect(manage.deletionStatus(context, user.id)).resolves.toEqual({
+      allowed: true,
+      reason: null,
+    })
+    await expect(manage.remove(context, user.id)).resolves.toEqual({ id: user.id })
+    expect(store.users.has(user.id)).toBe(false)
+    expect(store.userRoles.has(user.id)).toBe(false)
+    expect(revoked).toContain(user.id)
+    expect(record).toHaveBeenCalledWith(
+      context,
+      'user_deleted',
+      user.id,
+      { username: user.username, displayName: user.displayName, status: 'DISABLED' },
+      null,
+    )
+    await expect(manage.remove(context, user.id)).rejects.toMatchObject({
+      code: 'IAM_USER_NOT_FOUND',
+    })
   })
 })

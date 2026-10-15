@@ -5,13 +5,14 @@ import { serverModule as brandingServerModule } from '@jingwei/module-branding/s
 import { serverModule as dictionaryServerModule } from '@jingwei/module-dictionary/server'
 import { serverModule as navigationServerModule } from '@jingwei/module-navigation/server'
 import { createOrganizationServerModule } from '@jingwei/module-organization/server'
-import { createOrganizationalScopeFacts } from '@jingwei/module-organization/server/public'
+import { createOrganizationalScopeFacts, createOrganizationUserDeletionReferences } from '@jingwei/module-organization/server/public'
+import { createNavigationRoleDeletionCleanup } from '@jingwei/module-navigation/server/public'
 import type { ServerModuleContext } from '@jingwei/module-sdk/server'
 
 export function createGeneratedServerModules(context: ServerModuleContext) {
   const organizationalScopeFacts = createOrganizationalScopeFacts(context.database)
   return [
-    createIamServerModule({ organizationalScopeFacts }),
+    createIamServerModule({ organizationalScopeFacts, userDeletionReferences: [createOrganizationUserDeletionReferences], roleDeletionCleanup: [createNavigationRoleDeletionCleanup] }),
     brandingServerModule,
     dictionaryServerModule,
     navigationServerModule,

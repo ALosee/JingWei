@@ -26,3 +26,5 @@ export {
 } from './create-management.js'
 export { createOrganizationalScopeFacts } from './create-organizational-scope-facts.js'
 export { organizationPermissionRequirements } from './permission-requirements.js'
+
+export { createOrganizationUserDeletionReferences } from './create-user-deletion-references.js'

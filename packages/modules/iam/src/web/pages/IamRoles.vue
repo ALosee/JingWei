@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 
 import {
   Button,
+  DropdownMenu,
   ButtonLoading,
   Input,
   ManagementListToolbar,
@@ -15,6 +16,7 @@ import {
 import type { SelectSingleOptionData } from '@jingwei/ui'
 
 import type { CreateIamRole, RoleDataScopeType } from '../../shared/index.js'
+import RoleMembersPanel from '../components/role-members-panel.vue'
 import RolePermissionEditor from '../components/role-permission-editor.vue'
 import { useIamRoleManagement } from '../composables/use-iam-role-management.js'
 
@@ -26,7 +28,8 @@ const {
   selected,
   selectedId,
   search,
-  busy,
+  busy: roleBusy,
+  applyMemberCount,
   error,
   creating,
   draftName,
@@ -39,6 +42,7 @@ const {
   organizationOptions,
   organizationOptionsError,
   canManage,
+  deleteDisabledReason,
   select,
   beginCreate,
   cancelCreate,
@@ -51,8 +55,10 @@ const {
   savePermissions,
 } = management
 
+const memberBusy = ref(false)
+const busy = computed(() => roleBusy.value || memberBusy.value)
 const mobileDetailOpen = ref(false)
-const detailTab = ref<'profile' | 'permissions'>('profile')
+const detailTab = ref<'profile' | 'permissions' | 'members'>('profile')
 const profileDirty = computed(() => {
   const role = selected.value
   return (
@@ -70,6 +76,7 @@ const detailTabs = computed(() => [
           value: 'permissions',
           label: `功能权限${permissionsDirty.value ? ' · 未保存' : ''}`,
         },
+        { value: 'members', label: `已分配用户（${selected.value?.assignmentCount ?? 0}）` },
       ]
     : []),
 ])
@@ -155,15 +162,14 @@ async function onSave() {
 
 function onRemove() {
   const role = selected.value
-  if (role === undefined) return
-  dialog.warning('删除角色', {
-    description: `确认删除角色「${role.name}」？有用户分配时将无法删除。`,
-    confirmText: '删除',
+  if (role === undefined || busy.value || deleteDisabledReason.value !== '') return
+  dialog.warning('永久删除角色', {
+    description: `确认删除角色「${role.name}」？功能权限和导航授权将一并清理。此操作不可恢复。`,
+    confirmText: '永久删除',
     cancelText: '取消',
     onConfirm: () => {
       void (async () => {
-        await removeSelected()
-        if (error.value === '') toast.success('角色已删除')
+        if (await removeSelected()) toast.success('角色已删除')
       })()
     },
   })
@@ -277,13 +283,6 @@ async function onSavePermissions() {
               >
             </template>
             <template v-else-if="detailTab === 'profile'">
-              <Button
-                v-if="!selected?.isSystem && (selected?.assignmentCount ?? 0) === 0"
-                color="destructive"
-                variant="ghost"
-                @click="onRemove"
-                >删除</Button
-              >
               <ButtonLoading
                 :loading="busy"
                 :disabled="!canSaveRole || !profileDirty"
@@ -292,13 +291,36 @@ async function onSavePermissions() {
               >
             </template>
             <ButtonLoading
-              v-else
+              v-else-if="detailTab === 'permissions'"
               :loading="busy"
               :disabled="!permissionsDirty || !canSavePermissions"
               @click="onSavePermissions"
               >保存授权</ButtonLoading
             >
           </template>
+          <DropdownMenu
+            v-if="canManage && !creating && selected"
+            :items="[
+              {
+                value: 'delete',
+                label: deleteDisabledReason
+                  ? '删除角色（' + deleteDisabledReason + '）'
+                  : '删除角色',
+                icon: 'lucide:trash-2',
+                disabled: deleteDisabledReason !== '',
+              },
+            ]"
+            placement="bottom-end"
+            :modal="false"
+            :disabled="busy"
+            @select="onRemove"
+          >
+            <template #trigger
+              ><Button variant="ghost" :disabled="busy" aria-label="更多操作"
+                >更多</Button
+              ></template
+            >
+          </DropdownMenu>
         </header>
         <div class="min-h-0 flex-1 overflow-y-auto px-5 py-4">
           <Tabs v-model="detailTab" :items="detailTabs" fill="auto">
@@ -333,8 +355,15 @@ async function onSavePermissions() {
                   <Select v-model="draftStatus" :items="statusOptions" :disabled="!canManage" />
                 </label>
               </div>
+              <RoleMembersPanel
+                v-else-if="value === 'members' && selected"
+                :key="selected.id"
+                :role="selected"
+                @changed="applyMemberCount"
+                @busy-change="memberBusy = $event"
+              />
               <RolePermissionEditor
-                v-else
+                v-else-if="value === 'permissions'"
                 :catalog="catalog"
                 :selected-permissions="selectedPermissions"
                 :organization-options="organizationOptions"

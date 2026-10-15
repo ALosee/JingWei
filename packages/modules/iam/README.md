@@ -145,7 +145,27 @@ src/
 
 ### `DELETE /api/v1/iam/roles/:roleId`
 
-删除角色。系统角色或仍有用户分配的角色不能删除。要求 `iam.role.manage`。
+删除角色。系统角色或仍有用户分配的角色不能删除。启用 Navigation 时，同事务清理角色导航授权并记录审计。要求 `iam.role.manage`。
+
+### 角色成员管理
+
+所有操作维护同一个 `iam.user_role` 关系，不新增关联表。
+
+| 方法与路径                                      | 权限                                  | 语义                                             |
+| ----------------------------------------------- | ------------------------------------- | ------------------------------------------------ |
+| `GET /api/v1/iam/roles/:roleId/users`           | `iam.role.view`                       | 分页查询全部已分配用户，包含禁用/锁定/待激活账号 |
+| `GET /api/v1/iam/roles/:roleId/user-candidates` | `iam.role.manage` + `iam.user.manage` | 分页查询尚未分配的正常账号                       |
+| `POST /api/v1/iam/roles/:roleId/users`          | 同上                                  | 批量添加正常账号；停用角色禁止新增成员           |
+| `POST /api/v1/iam/roles/:roleId/users/remove`   | 同上                                  | 解除指定用户的此角色分配                         |
+| `POST /api/v1/iam/roles/:roleId/users/clear`    | 同上                                  | 解除整个角色的全部分配，不受搜索或分页影响       |
+
+分页参数 `page` 必填（从 1 开始），`pageSize` 默认 20、最大 100，`search` 为用户名/显示名的字面子串、最长 120。读取仅返回 ID、用户名、显示名、状态，不开放账号联系方式或凭据。响应的 `assignmentCount` 和 `snapshot` 始终覆盖整个角色，`total` 才是搜索匹配人数。
+
+新增/解除选中传 `{ userIds, expectedSnapshot }`，单批最多 500 个不重复 UUID；清空传 `{ expectedSnapshot }`。快照是绑定租户和角色的完整用户集合 SHA-256 标识；它用于确认当前影响范围，不是权限凭据。用户管理页的角色替换、账号删除等操作同样会改变该快照。所有路径复用同租户 IAM 管理事务锁，在检查快照后变更关系并写审计；状态集合不一致返回 `IAM_ROLE_MEMBERS_CONFLICT/409`，要求刷新后重新确认。没有数据库结构变更或 Migration。
+
+批量移除按事务内变更后的整个活跃用户/角色/权限图检查 `iam.user.manage`，必须保留至少一个有效用户管理员，包含当前操作者，多角色取并集；失败返回 `IAM_USER_LAST_MANAGER/409` 并回滚全部关系。原单用户分配也不能移除自己作为最后管理员的角色。系统角色可以维护成员，但仍受该保护。停用角色允许解除已有分配。解除操作保留账号、其他角色、当前角色的功能权限与 Navigation 授权，审计记录影响用户 UUID 与前后快照；审计失败整体回滚。新增重复现有成员是无副作用的操作。
+
+其他错误：`IAM_ROLE_NOT_FOUND/404`（含跨租户目标）、`IAM_USER_NOT_AVAILABLE/400`（用户跨租户/不存在/非正常状态）、`IAM_ROLE_DISABLED/409`、`IAM_ROLE_MEMBERS_INVALID/400`。写入要求 Origin 与 CSRF。成员修改后接口授权实时生效；变更包含当前用户时 Web 重新加载工作区以同步其权限和导航，无需批量撤销其他成员会话。
 
 ### `GET /api/v1/iam/permissions`
 
@@ -174,6 +194,14 @@ src/
 ### `PATCH /api/v1/iam/users/:userId`
 
 更新资料或状态。禁用会撤销全部会话；不能禁用自己或最后一个管理员。要求 `iam.user.manage`。
+
+### `GET /api/v1/iam/users/:userId/deletion`
+
+检查删除条件，返回 `{ allowed, reason }`。要求 `iam.user.manage`。仅用于前端提示；DELETE 必须重新检查。
+
+### `DELETE /api/v1/iam/users/:userId`
+
+仅已禁用、不是当前登录账号且无组织/岗位引用的用户可永久删除。事务内撤销全部会话，级联清理 IAM 凭据和用户角色分配，并写入最小身份快照审计；保留已有审计和撤销会话证据。要求 `iam.user.manage`、Origin 与 CSRF。错误码：`IAM_USER_NOT_FOUND`（404）、`IAM_USER_CANNOT_DELETE_SELF`、`IAM_USER_MUST_BE_DISABLED`、`IAM_USER_HAS_REFERENCES`（409）。
 
 ### `POST /api/v1/iam/users/:userId/password`
 
@@ -224,6 +252,10 @@ Web 登录页只调用 `useSignIn()` 绑定字段和提交事件。租户代码�
 
 授权实现必须合并所有角色授予，不能从菜单推断权限；deny 是默认结果。其他模块只能依赖这个 public 子路径，不能导入 IAM 仓储和表类型。
 
+## 永久删除与同步引用边界
+
+IAM 定义 `UserDeletionReferences` / `RoleDeletionCleanup`，由启用的 Organization / Navigation 在 Edition 组合根显式注入事务绑定工厂。模块只操作自己拥有的表，不形成反向依赖，不发布无交付运行时的事件。`createIamIdentityReferences(connection)` 供其他模块在自己的写事务内锁住用户/角色引用，必须先锁身份、后锁本模块资源；锁定持续至该事务结束。详见 [ADR 0025](../../../docs/adr/0025-compose-transactional-iam-deletion.md)。
+
 ## 当前实现状态
 
 已经实现认证、登录失败计数/临时锁定/成功时间更新、opaque Access/Refresh Token Family 创建/状态恢复/轮换/复用检测/撤销、凭据 PostgreSQL store，以及供 Navigation 使用的真实 IamAccess。IamAccess 每次查询活跃用户/角色，多角色取并集，不使用 is_super 绕过；`requireUnscopedPermission` 先检查 Edition registry/capability，并拒绝 scoped permission。`AuthorizationEvaluator.requireScopedPermission` 只处理带 Data Scope 的权限，成功结果保证包含显式范围；两个入口通过命名和运行时错误共同防止混用。
@@ -234,9 +266,9 @@ Web 登录页只调用 `useSignIn()` 绑定字段和提交事件。租户代码�
 warn。无效 CUSTOM 历史引用继续 fail closed；数据库或事实适配器故障保留内部错误路径，
 不再伪装成普通 403。
 
-角色管理（CRUD、权限目录、整组替换授权）与用户管理（列表、创建、资料/状态更新、重置密码、角色分配）及对应管理页已实现。授权展示与校验以 Module Registry 为 Source of Truth；`iam.permission_definition` 仍可由 seed/运维投影，但服务端安装不再强制写库。Permission 通过 `dataScope.allowedTypes` 精确声明可选范围，Organization 的查看权限不提供 `SELF`。完整 Data Scope evaluator 已实现并被 Organization 读路径使用；CUSTOM ID 在保存时校验，并在求值时按当前租户再次校验，失效、停用或跨租户 ID 会令授权 fail closed。启用 Organization 时，Edition 生成代码显式注入服务端事实适配器和 Web `CustomScopeReferenceDirectory`；IAM-only Edition 不保留组织运行时端口。角色管理员通过专用 scope-options API 读取本租户全部有效组织，不依赖 `organization.view`。邮箱/手机变更与验证码、多设备会话列表仍是后续工作。开发种子会投影当前 Edition 的功能权限并初始化显式管理员 grant，但不能当作生产权限同步服务。
+角色管理（CRUD、权限目录、整组替换授权、成员分页查询及批量分配/解除）与用户管理（列表、创建、资料/状态更新、受限永久删除、重置密码、角色分配）及对应管理页已实现。授权展示与校验以 Module Registry 为 Source of Truth；`iam.permission_definition` 仍可由 seed/运维投影，但服务端安装不再强制写库。Permission 通过 `dataScope.allowedTypes` 精确声明可选范围，Organization 的查看权限不提供 `SELF`。完整 Data Scope evaluator 已实现并被 Organization 读路径使用；CUSTOM ID 在保存时校验，并在求值时按当前租户再次校验，失效、停用或跨租户 ID 会令授权 fail closed。启用 Organization 时，Edition 生成代码显式注入服务端事实适配器和 Web `CustomScopeReferenceDirectory`；IAM-only Edition 不保留组织运行时端口。角色管理员通过专用 scope-options API 读取本租户全部有效组织，不依赖 `organization.view`。邮箱/手机变更与验证码、多设备会话列表仍是后续工作。开发种子会投影当前 Edition 的功能权限并初始化显式管理员 grant，但不能当作生产权限同步服务。
 
-用户与角色管理页使用统一无外框分栏工作区：列表和详情头部直接位于工作区顶部且等高，中间分割线可拖拽调整；左侧提供展开式搜索与新增图标入口，右侧按独立任务展示资料、角色或权限。角色功能权限按 Edition 模块定位，目录同时提供模块显示名；自定义组织范围在独立选择窗口维护。权限草稿跨模块保留，切换角色前提示未保存修改，功能权限与 Navigation 菜单授权仍分开。
+用户与角色详情头部统一提供“更多 → 删除”，入口不随页签变化；不可删除时显示禁用项和原因，确认弹窗明确永久删除影响，成功后刷新列表并选择相邻项。用户与角色管理页使用统一无外框分栏工作区：列表和详情头部直接位于工作区顶部且等高，中间分割线可拖拽调整；左侧提供展开式搜索与新增图标入口，右侧按独立任务展示资料、角色或权限。角色成员列表使用 `@jingwei/ui` 拥有源码的 Vean Table 与 Checkbox；分页由服务端负责，当前页选中事件在独立 composable 内合并为跨页选择。角色详情新增“已分配用户（人数）”独立页签，支持按页勾选、跨页批量选择、添加正常用户、解除选中和确认后清空整个角色；“解除全部分配”与临时停用角色语义不同。角色功能权限按 Edition 模块定位，目录同时提供模块显示名；自定义组织范围在独立选择窗口维护。权限草稿跨模块保留，切换角色前提示未保存修改，功能权限与 Navigation 菜单授权仍分开。
 
 个人账号页已支持资料查看/编辑、修改密码（全会话撤销）和角色只读展示；路由使用 `/account?tab=profile|security|roles`，不引入无意义的 path id。
 

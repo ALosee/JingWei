@@ -1,4 +1,5 @@
 import type { ApplicationContext, TenantId } from '@jingwei/kernel'
+import type { IamIdentityReferences } from '@jingwei/module-iam/server/public'
 
 export interface OrganizationMemberRecord {
   readonly userId: string
@@ -75,6 +76,7 @@ export interface MembershipStore {
 }
 
 export interface MembershipTransaction {
+  identities: IamIdentityReferences
   store: MembershipStore
   record(
     context: ApplicationContext,

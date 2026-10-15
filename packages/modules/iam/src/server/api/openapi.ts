@@ -10,6 +10,11 @@ import {
 } from '@jingwei/module-sdk/server'
 
 import {
+  roleMemberQuerySchema,
+  roleMemberPageSchema,
+  changeRoleMembersSchema,
+  clearRoleMembersSchema,
+  roleMemberChangeResultSchema,
   accountProfileSchema,
   accountRolesSchema,
   changePasswordInputSchema,
@@ -22,6 +27,8 @@ import {
   loginResultSchema,
   managedUserListSchema,
   managedUserSchema,
+  managedUserRefSchema,
+  userDeletionStatusSchema,
   permissionCatalogSchema,
   refreshSessionResultSchema,
   replaceRolePermissionsSchema,
@@ -54,6 +61,10 @@ const roleParam = z.object({ roleId: z.uuid() })
 const userParam = z.object({ userId: z.uuid() })
 const roleViewAccess = permissionApiAccess(iamPermissionRequirements.roleView)
 const roleManageAccess = permissionApiAccess(iamPermissionRequirements.roleManage)
+const roleMemberManageAccess = permissionApiAccess(
+  iamPermissionRequirements.roleManage,
+  iamPermissionRequirements.userManage,
+)
 const userViewAccess = permissionApiAccess(iamPermissionRequirements.userView)
 const userManageAccess = permissionApiAccess(iamPermissionRequirements.userManage)
 
@@ -295,6 +306,107 @@ export const iamApiRoutes = {
       500: error('服务器内部错误'),
     },
   }),
+  listRoleMembers: createApiRoute(roleViewAccess, {
+    method: 'get',
+    path: '/roles/{roleId}/users',
+    operationId: 'iamListRoleMembers',
+    tags: ['IAM'],
+    summary: '分页查询角色已分配用户',
+    security: authenticated,
+    description:
+      '包含已禁用用户；仅返回 ID、用户名、显示名和状态。snapshot 覆盖整个角色成员集合，不受搜索及分页影响。',
+    request: { params: roleParam, query: roleMemberQuerySchema },
+    responses: {
+      200: { description: '成员页和全量成员确认快照', content: json(roleMemberPageSchema) },
+      400: error('参数无效'),
+      401: error('尚未登录'),
+      403: error('缺少 iam.role.view 权限'),
+      404: error('角色不存在'),
+      500: error('服务器内部错误'),
+    },
+  }),
+  listRoleMemberCandidates: createApiRoute(roleMemberManageAccess, {
+    method: 'get',
+    path: '/roles/{roleId}/user-candidates',
+    operationId: 'iamListRoleMemberCandidates',
+    tags: ['IAM'],
+    summary: '分页查询可添加的正常用户',
+    security: authenticated,
+    request: { params: roleParam, query: roleMemberQuerySchema },
+    responses: {
+      200: { description: '未分配此角色的正常用户', content: json(roleMemberPageSchema) },
+      400: error('参数无效'),
+      401: error('尚未登录'),
+      403: error('同时要求 iam.role.manage 和 iam.user.manage'),
+      404: error('角色不存在'),
+      500: error('服务器内部错误'),
+    },
+  }),
+  addRoleMembers: createApiRoute(roleMemberManageAccess, {
+    method: 'post',
+    path: '/roles/{roleId}/users',
+    operationId: 'iamAddRoleMembers',
+    tags: ['IAM'],
+    summary: '批量添加角色用户',
+    security: mutation,
+    request: {
+      params: roleParam,
+      body: { required: true, content: json(changeRoleMembersSchema) },
+    },
+    responses: {
+      200: { description: '成员变更结果', content: json(roleMemberChangeResultSchema) },
+      400: error('参数无效、用户不存在或不可用'),
+      401: error('尚未登录'),
+      403: error('同时要求 iam.role.manage 和 iam.user.manage；Origin/CSRF 必须有效'),
+      404: error('角色不存在'),
+      409: error('成员已变化或角色停用'),
+      415: error('Content-Type 不受支持'),
+      500: error('服务器内部错误'),
+    },
+  }),
+  removeRoleMembers: createApiRoute(roleMemberManageAccess, {
+    method: 'post',
+    path: '/roles/{roleId}/users/remove',
+    operationId: 'iamRemoveRoleMembers',
+    tags: ['IAM'],
+    summary: '批量解除角色分配',
+    security: mutation,
+    request: {
+      params: roleParam,
+      body: { required: true, content: json(changeRoleMembersSchema) },
+    },
+    responses: {
+      200: { description: '成员变更结果', content: json(roleMemberChangeResultSchema) },
+      400: error('参数无效'),
+      401: error('尚未登录'),
+      403: error('同时要求 iam.role.manage 和 iam.user.manage；Origin/CSRF 必须有效'),
+      404: error('角色不存在'),
+      409: error('成员已变化或将失去最后管理员'),
+      415: error('Content-Type 不受支持'),
+      500: error('服务器内部错误'),
+    },
+  }),
+  clearRoleMembers: createApiRoute(roleMemberManageAccess, {
+    method: 'post',
+    path: '/roles/{roleId}/users/clear',
+    operationId: 'iamClearRoleMembers',
+    tags: ['IAM'],
+    summary: '解除角色全部用户分配',
+    security: mutation,
+    description:
+      '作用于整个角色，包含已禁用用户，不受搜索和分页限制。要求确认快照一致，保护最后管理员，保留角色、功能权限、导航授权和用户其他角色。',
+    request: { params: roleParam, body: { required: true, content: json(clearRoleMembersSchema) } },
+    responses: {
+      200: { description: '成员变更结果', content: json(roleMemberChangeResultSchema) },
+      400: error('参数无效'),
+      401: error('尚未登录'),
+      403: error('同时要求 iam.role.manage 和 iam.user.manage；Origin/CSRF 必须有效'),
+      404: error('角色不存在'),
+      409: error('成员已变化或将失去最后管理员'),
+      415: error('Content-Type 不受支持'),
+      500: error('服务器内部错误'),
+    },
+  }),
   listPermissionCatalog: createApiRoute(roleViewAccess, {
     method: 'get',
     path: '/permissions',
@@ -420,6 +532,43 @@ export const iamApiRoutes = {
       404: error('用户不存在'),
       409: error('邮箱冲突、禁用自己或最后一个管理员'),
       415: error('Content-Type 不受支持'),
+      500: error('服务器内部错误'),
+    },
+  }),
+  userDeletionStatus: createApiRoute(userManageAccess, {
+    method: 'get',
+    path: '/users/{userId}/deletion',
+    operationId: 'iamUserDeletionStatus',
+    tags: ['IAM'],
+    summary: '检查用户是否可以永久删除',
+    security: authenticated,
+    request: { params: userParam },
+    responses: {
+      200: { description: '删除可用状态及阻止原因', content: json(userDeletionStatusSchema) },
+      400: error('路径参数无效'),
+      401: error('尚未登录'),
+      403: error('缺少 iam.user.manage 权限'),
+      404: error('用户不存在'),
+      500: error('服务器内部错误'),
+    },
+  }),
+  deleteUser: createApiRoute(userManageAccess, {
+    method: 'delete',
+    path: '/users/{userId}',
+    operationId: 'iamDeleteUser',
+    tags: ['IAM'],
+    summary: '永久删除已禁用用户',
+    security: mutation,
+    description:
+      '不能删除自己；仅已禁用且无组织/岗位引用的账号可删除。撤销全部会话并清理 IAM 凭据和角色分配，保留审计。',
+    request: { params: userParam },
+    responses: {
+      200: { description: '已删除的用户 ID', content: json(managedUserRefSchema) },
+      400: error('路径参数无效'),
+      401: error('尚未登录'),
+      403: error('权限、Origin 或 CSRF 校验失败'),
+      404: error('用户不存在'),
+      409: error('当前账号、账号未禁用或仍有组织/岗位引用'),
       500: error('服务器内部错误'),
     },
   }),

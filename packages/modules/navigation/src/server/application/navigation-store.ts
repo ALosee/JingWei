@@ -1,4 +1,5 @@
 import type { ApplicationContext, TenantId } from '@jingwei/kernel'
+import type { IamIdentityReferences } from '@jingwei/module-iam/server/public'
 
 import type {
   AdminNavigation,
@@ -41,6 +42,7 @@ export interface NavigationStore extends NavigationSource {
   ): Promise<void>
 }
 export interface NavigationTransaction {
+  identities: IamIdentityReferences
   store: NavigationStore
   record(
     context: ApplicationContext,

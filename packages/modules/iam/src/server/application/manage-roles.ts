@@ -54,6 +54,7 @@ export class ManageIamRoles {
   async create(context: AuthContext, input: CreateIamRole): Promise<IamRole> {
     await this.authorize(context, 'manage')
     return this.work.run(async (tx) => {
+      await tx.store.lockAdministration(context.tenantId)
       if (await tx.store.codeTaken(context.tenantId, input.code))
         fail('IAM_ROLE_CODE_CONFLICT', '角色编码在租户内已存在')
       const now = new Date().toISOString()
@@ -77,6 +78,8 @@ export class ManageIamRoles {
   async update(context: AuthContext, id: string, input: UpdateIamRole): Promise<IamRole> {
     await this.authorize(context, 'manage')
     return this.work.run(async (tx) => {
+      await tx.store.lockAdministration(context.tenantId)
+      await tx.store.lockRole(context.tenantId, id)
       const existing = await tx.store.get(context.tenantId, id)
       if (existing === null) fail('IAM_ROLE_NOT_FOUND', '角色不存在', 404)
       await tx.store.update(context, id, input)
@@ -91,11 +94,14 @@ export class ManageIamRoles {
   async remove(context: AuthContext, id: string) {
     await this.authorize(context, 'manage')
     return this.work.run(async (tx) => {
+      await tx.store.lockAdministration(context.tenantId)
+      await tx.store.lockRole(context.tenantId, id)
       const existing = await tx.store.get(context.tenantId, id)
       if (existing === null) fail('IAM_ROLE_NOT_FOUND', '角色不存在', 404)
       if (existing.isSystem) fail('IAM_ROLE_SYSTEM_PROTECTED', '系统角色不能删除，请改为停用')
       if (await tx.store.hasAssignments(context.tenantId, id))
         fail('IAM_ROLE_HAS_ASSIGNMENTS', '仍有用户分配该角色时不能删除，请先解除分配或改为停用')
+      for (const cleanup of tx.deletionCleanup) await cleanup.removeRoleGrants(context, id)
       await tx.store.delete(context, id)
       await tx.record(context, 'role_deleted', id, existing, null)
       return { id }
@@ -148,6 +154,8 @@ export class ManageIamRoles {
     await this.authorize(context, 'manage')
     await this.validateGrants(context, input.permissions)
     return this.work.run(async (tx) => {
+      await tx.store.lockAdministration(context.tenantId)
+      await tx.store.lockRole(context.tenantId, id)
       const existing = await tx.store.get(context.tenantId, id)
       if (existing === null) fail('IAM_ROLE_NOT_FOUND', '角色不存在', 404)
 

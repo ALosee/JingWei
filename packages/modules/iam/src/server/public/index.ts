@@ -11,3 +11,6 @@ export type {
   ProvisionInitialAdministratorInput,
   ProvisionedTenantIam,
 } from '../application/provision-tenant.js'
+
+export * from './identity-lifecycle.js'
+export { createIamIdentityReferences } from './create-identity-references.js'

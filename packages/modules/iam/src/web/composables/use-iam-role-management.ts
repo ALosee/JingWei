@@ -63,7 +63,9 @@ export function useIamRoleManagement(dependencies?: RoleManagementDependencies) 
   const catalog = ref<PermissionCatalogItem[]>([])
   const selectedId = ref('')
   const search = ref('')
-  const busy = ref(false)
+  let running = false
+  const mutationState = useApiRequestState()
+  const detailState = useApiRequestState()
   const error = ref('')
   const creating = ref(false)
   const selectionBeforeCreate = ref('')
@@ -81,8 +83,23 @@ export function useIamRoleManagement(dependencies?: RoleManagementDependencies) 
   const listState = useApiRequestState()
   const catalogState = useApiRequestState()
   const organizationState = useApiRequestState()
+  const busy = computed(
+    () =>
+      listState.loading.value ||
+      catalogState.loading.value ||
+      organizationState.loading.value ||
+      mutationState.loading.value ||
+      detailState.loading.value,
+  )
 
   const selected = computed(() => roles.value.find((role) => role.id === selectedId.value))
+  const deleteDisabledReason = computed(() => {
+    const role = selected.value
+    if (role === undefined) return '请先选择角色'
+    if (role.isSystem) return '系统角色不可删除'
+    if (role.assignmentCount > 0) return `仍有 ${role.assignmentCount} 位用户使用，请先解除分配`
+    return ''
+  })
   const filteredRoles = computed(() => {
     const keyword = search.value.trim().toLocaleLowerCase()
     if (keyword === '') return roles.value
@@ -99,15 +116,17 @@ export function useIamRoleManagement(dependencies?: RoleManagementDependencies) 
   }
 
   async function run(action: () => Promise<void>) {
-    if (busy.value) return
-    busy.value = true
+    if (running) return false
+    running = true
     error.value = ''
     try {
       await action()
+      return true
     } catch (cause) {
       error.value = errorMessage(cause)
+      return false
     } finally {
-      busy.value = false
+      running = false
     }
   }
 
@@ -161,7 +180,7 @@ export function useIamRoleManagement(dependencies?: RoleManagementDependencies) 
   }
 
   async function loadSelectedPermissions(id: string): Promise<void> {
-    const result = await services.loadRolePermissions(id)
+    const result = await services.loadRolePermissions(id, detailState.options)
     if (result.error !== null) throw result.error
     resetPermissionDraft(result.data.permissions)
   }
@@ -196,7 +215,7 @@ export function useIamRoleManagement(dependencies?: RoleManagementDependencies) 
 
   async function createRole(input: CreateIamRole) {
     await run(async () => {
-      const result = await services.createRole(input)
+      const result = await services.createRole(input, mutationState.options)
       if (result.error !== null) throw result.error
       roles.value = [...roles.value, result.data].toSorted((a, b) => a.code.localeCompare(b.code))
       creating.value = false
@@ -215,23 +234,34 @@ export function useIamRoleManagement(dependencies?: RoleManagementDependencies) 
         description: draftDescription.value.trim() === '' ? null : draftDescription.value.trim(),
         status: draftStatus.value,
       }
-      const result = await services.updateRole(role.id, input)
+      const result = await services.updateRole(role.id, input, mutationState.options)
       if (result.error !== null) throw result.error
       roles.value = roles.value.map((item) => (item.id === role.id ? result.data : item))
       applyRoleDraft(result.data)
     })
   }
 
-  async function removeSelected() {
+  async function removeSelected(): Promise<boolean> {
     const role = selected.value
-    if (role === undefined) return
-    await run(async () => {
-      const result = await services.removeRole(role.id)
+    if (role === undefined || deleteDisabledReason.value !== '') return false
+    return run(async () => {
+      const index = filteredRoles.value.findIndex((item) => item.id === role.id)
+      const candidates = filteredRoles.value.filter((item) => item.id !== role.id)
+      const nextId = candidates[Math.min(index, candidates.length - 1)]?.id
+      const result = await services.removeRole(role.id, mutationState.options)
       if (result.error !== null) throw result.error
       roles.value = roles.value.filter((item) => item.id !== role.id)
       selectedId.value = ''
       selectedPermissions.value = new Map()
       permissionsDirty.value = false
+      const refreshed = await services.loadRoles(listState.options)
+      if (refreshed.error !== null) throw refreshed.error
+      roles.value = refreshed.data.roles
+      const next = roles.value.find((item) => item.id === nextId)
+      if (next === undefined) return
+      selectedId.value = next.id
+      applyRoleDraft(next)
+      await loadSelectedPermissions(next.id)
     })
   }
 
@@ -300,10 +330,20 @@ export function useIamRoleManagement(dependencies?: RoleManagementDependencies) 
             : {}),
         }),
       )
-      const result = await services.replacePermissions(role.id, { permissions })
+      const result = await services.replacePermissions(
+        role.id,
+        { permissions },
+        mutationState.options,
+      )
       if (result.error !== null) throw result.error
       resetPermissionDraft(result.data.permissions)
     })
+  }
+
+  function applyMemberCount(value: { roleId: string; assignmentCount: number }): void {
+    roles.value = roles.value.map((role) =>
+      role.id === value.roleId ? { ...role, assignmentCount: value.assignmentCount } : role,
+    )
   }
 
   onMounted(() => {
@@ -328,9 +368,11 @@ export function useIamRoleManagement(dependencies?: RoleManagementDependencies) 
 
   return {
     roles,
+    applyMemberCount,
     filteredRoles,
     catalog,
     canManage,
+    deleteDisabledReason,
     selected,
     selectedId,
     search,

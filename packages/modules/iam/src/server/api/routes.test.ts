@@ -40,6 +40,12 @@ const accountStubs = {
   updateAccount: { execute: vi.fn() },
   changePassword: { execute: vi.fn() },
   readAccountRoles: { execute: vi.fn() },
+  roleMembers: {
+    list: () => Promise.reject(new Error('not used')),
+    add: () => Promise.reject(new Error('not used')),
+    remove: () => Promise.reject(new Error('not used')),
+    clear: () => Promise.reject(new Error('not used')),
+  },
   manageRoles: {
     list: vi.fn(),
     get: vi.fn(),
@@ -51,6 +57,8 @@ const accountStubs = {
     replacePermissions: vi.fn(),
   },
   manageUsers: {
+    remove: () => Promise.reject(new Error('not used')),
+    deletionStatus: () => Promise.reject(new Error('not used')),
     list: vi.fn(),
     get: vi.fn(),
     create: vi.fn(),

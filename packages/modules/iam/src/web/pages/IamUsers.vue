@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 
 import {
   Button,
+  DropdownMenu,
   ButtonLoading,
   Input,
   ManagementListToolbar,
@@ -39,11 +40,13 @@ const {
   rolesDirty,
   newPassword,
   canManage,
+  deleteDisabledReason,
   select,
   beginCreate,
   cancelCreate,
   createUser,
   saveSelected,
+  removeSelected,
   resetSelectedPassword,
   toggleRole,
   saveRoles,
@@ -156,6 +159,21 @@ async function onCreate() {
 async function onSave() {
   await saveSelected()
   if (error.value === '') toast.success('用户已更新')
+}
+
+function onRemove() {
+  const user = selected.value
+  if (user === undefined || busy.value || deleteDisabledReason.value !== '') return
+  dialog.warning('永久删除用户', {
+    description: `确认永久删除用户「${user.displayName}（${user.username}）」？凭据和角色分配将一并清理，审计记录保留。此操作不可恢复。`,
+    confirmText: '永久删除',
+    cancelText: '取消',
+    onConfirm: () => {
+      void (async () => {
+        if (await removeSelected()) toast.success('用户已删除')
+      })()
+    },
+  })
 }
 
 async function onResetPassword() {
@@ -278,6 +296,29 @@ async function onSaveRoles() {
               >保存角色</ButtonLoading
             >
           </template>
+          <DropdownMenu
+            v-if="canManage && !creating && selected"
+            :items="[
+              {
+                value: 'delete',
+                label: deleteDisabledReason
+                  ? '删除用户（' + deleteDisabledReason + '）'
+                  : '删除用户',
+                icon: 'lucide:trash-2',
+                disabled: deleteDisabledReason !== '',
+              },
+            ]"
+            placement="bottom-end"
+            :modal="false"
+            :disabled="busy"
+            @select="onRemove"
+          >
+            <template #trigger
+              ><Button variant="ghost" :disabled="busy" aria-label="更多操作"
+                >更多</Button
+              ></template
+            >
+          </DropdownMenu>
         </header>
         <div class="min-h-0 flex-1 overflow-y-auto px-5 py-4">
           <Tabs v-model="detailTab" :items="detailTabs" fill="auto">

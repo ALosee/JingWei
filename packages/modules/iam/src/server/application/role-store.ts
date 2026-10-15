@@ -6,8 +6,11 @@ import type {
   RolePermissionGrant,
   UpdateIamRole,
 } from '../../shared/index.js'
+import type { RoleDeletionCleanup } from '../public/identity-lifecycle.js'
 
 export interface RoleStore {
+  lockAdministration(tenantId: TenantId): Promise<void>
+  lockRole(tenantId: TenantId, id: string): Promise<void>
   list(tenantId: TenantId): Promise<IamRole[]>
   get(tenantId: TenantId, id: string): Promise<IamRole | null>
   codeTaken(tenantId: TenantId, code: string, exceptId?: string): Promise<boolean>
@@ -25,6 +28,7 @@ export interface RoleStore {
 
 export interface RoleTransaction {
   store: RoleStore
+  deletionCleanup: readonly RoleDeletionCleanup[]
   record(
     context: ApplicationContext,
     action: string,

@@ -97,8 +97,8 @@ export class ManageOrganizationMembers {
       const status = await tx.store.unitStatus(context.tenantId, orgUnitId)
       if (status === null) fail('ORGANIZATION_UNIT_NOT_FOUND', '组织不存在', 404)
       if (status === 'DISABLED') fail('ORGANIZATION_UNIT_DISABLED', '组织已禁用，不能新增成员')
-      const existing = await this.users.usersExist(context.tenantId, [input.userId])
-      if (!existing.has(input.userId)) fail('ORGANIZATION_USER_NOT_FOUND', '用户不存在', 404)
+      if (!(await tx.identities.lockUser(context.tenantId, input.userId)))
+        fail('ORGANIZATION_USER_NOT_FOUND', '用户不存在', 404)
       if (await tx.store.memberExists(context.tenantId, orgUnitId, input.userId))
         fail('ORGANIZATION_MEMBER_EXISTS', '用户已在该组织中')
 
@@ -149,6 +149,8 @@ export class ManageOrganizationMembers {
   ) {
     await this.authorizeManage(context)
     const updated = await this.work.run(async (tx) => {
+      if (!(await tx.identities.lockUser(context.tenantId, userId)))
+        fail('ORGANIZATION_USER_NOT_FOUND', '用户不存在', 404)
       const existing = await tx.store.getMember(context.tenantId, orgUnitId, userId)
       if (existing === null) fail('ORGANIZATION_MEMBER_NOT_FOUND', '成员不存在', 404)
       const demotedOrgs =
@@ -175,6 +177,8 @@ export class ManageOrganizationMembers {
   async remove(context: AuthContext, orgUnitId: string, userId: string) {
     await this.authorizeManage(context)
     return this.work.run(async (tx) => {
+      if (!(await tx.identities.lockUser(context.tenantId, userId)))
+        fail('ORGANIZATION_USER_NOT_FOUND', '用户不存在', 404)
       const existing = await tx.store.getMember(context.tenantId, orgUnitId, userId)
       if (existing === null) fail('ORGANIZATION_MEMBER_NOT_FOUND', '成员不存在', 404)
       await tx.store.deleteMemberPositionsInUnit(context, orgUnitId, userId)
@@ -192,6 +196,8 @@ export class ManageOrganizationMembers {
   ) {
     await this.authorizeManage(context)
     return this.work.run(async (tx) => {
+      if (!(await tx.identities.lockUser(context.tenantId, userId)))
+        fail('ORGANIZATION_USER_NOT_FOUND', '用户不存在', 404)
       const member = await tx.store.getMember(context.tenantId, orgUnitId, userId)
       if (member === null) fail('ORGANIZATION_MEMBER_NOT_FOUND', '成员不存在', 404)
       const before = await tx.store.listUserPositionsInUnit(context.tenantId, orgUnitId, userId)

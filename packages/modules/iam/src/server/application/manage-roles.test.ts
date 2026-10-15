@@ -30,6 +30,12 @@ class MemoryRoleStore implements RoleStore {
   grants = new Map<string, RolePermissionGrant[]>()
   assigned = new Set<string>()
 
+  lockAdministration() {
+    return Promise.resolve()
+  }
+  lockRole() {
+    return Promise.resolve()
+  }
   list() {
     return Promise.resolve(
       [...this.roles.values()].toSorted((a, b) => a.code.localeCompare(b.code)),
@@ -133,7 +139,7 @@ function createManage(
   }
   const work: RoleUnitOfWork = {
     run<T>(work: (transaction: RoleTransaction) => Promise<T>) {
-      return work({ store, record: () => Promise.resolve() })
+      return work({ store, deletionCleanup: [], record: () => Promise.resolve() })
     },
   }
   return new ManageIamRoles(

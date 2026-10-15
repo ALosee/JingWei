@@ -41,6 +41,12 @@ CLI 仍可能提示 `ui/theme` registry 项不存在；已生成的 theme 目录
 生成组件族保持原生目录与 `S*` 内部名称；Menu、PalettePicker、ThemeModeSegment 和 Tree motion/
 virtualizer 部件随新版依赖补齐。`public.d.ts` 仍是类型门面，公共组件没有暴露上游 `S*` 名。
 
+## Table 源码接入
+
+2026-10-15 通过 `pnpm ui:inspect table`、`pnpm ui:add table` 与 `pnpm ui:diff table` 接入 Table 和其 Checkbox / Empty 依赖组件族，没有增加 npm 依赖或导入 styled 包。STable 组合已固定的 `@vean/aria/table` TableCompact；业务使用 `@jingwei/ui` 的无前缀 Table / Checkbox API。保留原生完整目录、styles、辅助组件及 hooks，公共类型门面保留行/列/slot 泛型。
+
+模板适配限定于严格类型、lint 和 Oxfmt：列遍历 helpers 使用 `TableColumn<T>`，Empty slots 使用 VNodeChild，异步回调显式等待，去除多余类型参数、类型断言和 slot 变量遮蔽；缺省多选模式交由 TableCompact，保留缺省/单选/多选语义，不修改 Aria 内部实现。上游数据获取 hooks 不作为业务 HTTP 入口导出，角色成员页保持 Fetch lifecycle loading 与模块自有分页/跨页选择状态。升级时复查这些类型适配和选择边界，并运行组件与浏览器测试。
+
 ## 主题兼容与 API 调整
 
 0.50.0 的主题引擎已经更换，旧的 registry、sidebar/chart scheme 与 lightLevel/darkLevel API 均被移除。

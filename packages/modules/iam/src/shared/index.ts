@@ -216,6 +216,14 @@ export const managedUserListSchema = z
   })
   .meta({ id: 'IamManagedUserList' })
 
+export const userDeletionStatusSchema = z
+  .object({
+    allowed: z.boolean(),
+    reason: z.string().nullable(),
+  })
+  .strict()
+  .meta({ id: 'IamUserDeletionStatus' })
+
 export const managedUserRefSchema = z
   .object({ id: z.uuid() })
   .strict()
@@ -299,3 +307,57 @@ export type ResetManagedUserPassword = z.infer<typeof resetManagedUserPasswordSc
 export type ReplaceUserRoles = z.infer<typeof replaceUserRolesSchema>
 export type UserRoleAssignment = z.infer<typeof userRoleAssignmentSchema>
 export type UserRoleList = z.infer<typeof userRoleListSchema>
+
+export const roleMemberSchema = managedUserSchema
+  .pick({ id: true, username: true, displayName: true, status: true })
+  .meta({ id: 'IamRoleMember' })
+export const roleMemberQuerySchema = z
+  .object({
+    page: z.coerce.number().int().min(1).max(100_000),
+    pageSize: z.coerce.number().int().min(1).max(100).default(20),
+    search: z.string().trim().max(120).default(''),
+  })
+  .strict()
+  .meta({ id: 'IamRoleMemberQuery' })
+const membershipSnapshotSchema = z.string().regex(/^[a-f0-9]{64}$/u)
+export const roleMemberPageSchema = z
+  .object({
+    members: z.array(roleMemberSchema).max(100),
+    total: z.number().int().min(0),
+    assignmentCount: z.number().int().min(0),
+    snapshot: membershipSnapshotSchema,
+    page: z.number().int().min(1),
+    pageSize: z.number().int().min(1).max(100),
+  })
+  .strict()
+  .meta({ id: 'IamRoleMemberPage' })
+export const changeRoleMembersSchema = z
+  .object({
+    expectedSnapshot: membershipSnapshotSchema,
+    userIds: z
+      .array(z.uuid())
+      .min(1)
+      .max(500)
+      .refine((ids) => new Set(ids).size === ids.length, '用户不能重复'),
+  })
+  .strict()
+  .meta({ id: 'IamChangeRoleMembers' })
+export const clearRoleMembersSchema = z
+  .object({ expectedSnapshot: membershipSnapshotSchema })
+  .strict()
+  .meta({ id: 'IamClearRoleMembers' })
+export const roleMemberChangeResultSchema = z
+  .object({
+    affectedCount: z.number().int().min(0),
+    assignmentCount: z.number().int().min(0),
+    snapshot: membershipSnapshotSchema,
+    affectsCurrentUser: z.boolean(),
+  })
+  .strict()
+  .meta({ id: 'IamRoleMemberChangeResult' })
+export type RoleMember = z.infer<typeof roleMemberSchema>
+export type RoleMemberQuery = z.infer<typeof roleMemberQuerySchema>
+export type RoleMemberPage = z.infer<typeof roleMemberPageSchema>
+export type ChangeRoleMembers = z.infer<typeof changeRoleMembersSchema>
+export type ClearRoleMembers = z.infer<typeof clearRoleMembersSchema>
+export type RoleMemberChangeResult = z.infer<typeof roleMemberChangeResultSchema>

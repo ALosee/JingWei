@@ -1,6 +1,12 @@
 import type { InputClearProps } from '@vean/aria/input'
 import type { LayoutTriggerProps } from '@vean/aria/layout'
 import type { ProgressProviderProps } from '@vean/aria/progress'
+import type {
+  TableRowProps,
+  TableCellProps,
+  TableEngineTable,
+  TableRowEventPayload,
+} from '@vean/aria/table'
 import type { TextareaClearProps } from '@vean/aria/textarea'
 import type { ToastProviderProps as HeadlessToastProviderProps } from '@vean/aria/toast'
 import type {
@@ -17,7 +23,7 @@ import type { TreeNavOptionData } from '@vean/aria/tree-nav'
 import type { MaybeArray } from '@vean/aria/types'
 import type { PaletteLevel } from '@vean/theme'
 import type { ColorValue as ThemeColorValue } from '@vean/theme'
-import type { DefineComponent } from 'vue'
+import type { DefineComponent, PublicProps, VNode } from 'vue'
 
 import type {
   AppShellProps,
@@ -47,6 +53,18 @@ import type {
   ButtonShadow,
   ButtonVariant,
 } from './components/button/types'
+import type {
+  CheckboxProps,
+  CheckboxEmits,
+  CheckboxGroupProps,
+  CheckboxGroupEmits,
+  CheckboxCardProps,
+  CheckboxCardEmits,
+  CheckboxCardGroupProps,
+  CheckboxCardGroupEmits,
+  CheckboxGroupOptionData,
+  CheckboxCardGroupOptionData,
+} from './components/checkbox/types'
 import type { ThemeContext } from './components/config-provider/theme-context'
 import type { ConfigProviderProps } from './components/config-provider/types'
 import type { DialogEmits, DialogProps, DialogSlots } from './components/dialog/types'
@@ -56,6 +74,7 @@ import type {
   DropdownMenuSlots,
   MenuOptionData,
 } from './components/dropdown-menu/types'
+import type { EmptyProps, EmptySlots } from './components/empty/types'
 import type { IconProps, IconValue } from './components/icon/types'
 import type {
   InputNumberEmits,
@@ -115,6 +134,17 @@ import type {
   SplitterResizeHandleProps,
 } from './components/splitter/types'
 import type { SwitchEmits, SwitchProps, SwitchShape, SwitchSlots } from './components/switch/types'
+import type {
+  TableProps,
+  TableEmits,
+  TableSlots,
+  TableColumn,
+  TableBaseData,
+  TableSortOrder,
+  TableColumnType,
+  TableColumnFilterOption,
+  TableColumnFilterValue,
+} from './components/table/types'
 import type { TabsEmits, TabsOptionData, TabsProps, TabsSlots } from './components/tabs/types'
 import type { TextareaEmits, TextareaProps, TextareaSlots } from './components/textarea/types'
 import type {
@@ -353,4 +383,64 @@ export type {
   SplitNavProps,
   SplitNavEmits,
   SplitNavSlots,
+}
+
+type TableEventProps<T extends TableBaseData, R extends string | number, M extends boolean> = {
+  [Event in keyof TableEmits<T, R, M> as `on${Capitalize<Event>}`]?: (
+    ...args: TableEmits<T, R, M>[Event]
+  ) => void
+}
+type TablePublicContext<T extends TableBaseData, R extends string | number, M extends boolean> = {
+  props: TableProps<T, R, M> & TableEventProps<T, R, M> & PublicProps
+  slots: TableSlots<T>
+  attrs: Record<string, unknown>
+  emit: <Event extends keyof TableEmits<T, R, M>>(
+    event: Event,
+    ...args: TableEmits<T, R, M>[Event]
+  ) => void
+  expose: (exposed: TableEngineTable<T>) => void
+}
+/** Keep row/slot inference without rechecking the copied SFC under a consumer's compiler options. */
+export declare const Table: <
+  T extends TableBaseData,
+  R extends string | number,
+  M extends boolean = true,
+>(
+  props: TablePublicContext<T, R, M>['props'],
+  context?: Pick<TablePublicContext<T, R, M>, 'slots' | 'attrs' | 'emit'>,
+  exposed?: TablePublicContext<T, R, M>['expose'],
+) => VNode & { __ctx?: TablePublicContext<T, R, M> }
+export declare const TableRow: UiComponent<TableRowProps>
+export declare const TableCell: UiComponent<TableCellProps>
+export declare const Checkbox: UiComponent<CheckboxProps>
+export declare const CheckboxGroup: UiComponent<CheckboxGroupProps>
+export declare const CheckboxCard: UiComponent<CheckboxCardProps>
+export declare const CheckboxCardGroup: UiComponent<CheckboxCardGroupProps>
+export declare const Empty: UiComponent<EmptyProps>
+export type {
+  TableProps,
+  TableEmits,
+  TableSlots,
+  TableColumn,
+  TableBaseData,
+  TableSortOrder,
+  TableColumnType,
+  TableColumnFilterOption,
+  TableColumnFilterValue,
+  TableRowProps,
+  TableCellProps,
+  TableEngineTable,
+  TableRowEventPayload,
+  CheckboxProps,
+  CheckboxEmits,
+  CheckboxGroupProps,
+  CheckboxGroupEmits,
+  CheckboxCardProps,
+  CheckboxCardEmits,
+  CheckboxCardGroupProps,
+  CheckboxCardGroupEmits,
+  CheckboxGroupOptionData,
+  CheckboxCardGroupOptionData,
+  EmptyProps,
+  EmptySlots,
 }

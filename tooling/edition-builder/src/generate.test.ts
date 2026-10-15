@@ -47,10 +47,17 @@ describe('Edition integration generation', () => {
     const web = webModulesSource(['iam', 'organization'])
 
     expect(server).toContain('createOrganizationalScopeFacts(context.database)')
-    expect(server).toContain('createIamServerModule({ organizationalScopeFacts })')
+    expect(server).toContain('userDeletionReferences: [createOrganizationUserDeletionReferences]')
     expect(server).toContain('createOrganizationServerModule({ organizationalScopeFacts })')
     expect(web).toContain(
       'app.provide(customScopeReferenceDirectoryKey, organizationalScopeReferenceDirectory)',
     )
   })
+})
+
+it('composes role cleanup only when Navigation is enabled', () => {
+  const source = serverModulesSource(['iam', 'navigation'])
+  expect(source).toContain('roleDeletionCleanup: [createNavigationRoleDeletionCleanup]')
+  expect(source).not.toContain('module-organization')
+  expect(serverModulesSource(['iam'])).not.toContain('DeletionCleanup')
 })

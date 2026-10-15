@@ -1,6 +1,7 @@
 import type { Kysely } from 'kysely'
 
 import { PostgresAuditWriter } from '@jingwei/audit'
+import { createTransactionConnection } from '@jingwei/database'
 import type { ApplicationContext, TenantId } from '@jingwei/kernel'
 
 import type {
@@ -12,6 +13,8 @@ import type {
   UpdateIamRole,
 } from '../../shared/index.js'
 import type { RoleStore, RoleTransaction, RoleUnitOfWork } from '../application/role-store.js'
+import type { RoleDeletionCleanupFactory } from '../public/identity-lifecycle.js'
+import { lockIamAdministration } from './administration-lock.pg.js'
 import type { IamDatabase } from './credential-reader.pg.js'
 
 export type RoleDatabase = IamDatabase
@@ -42,6 +45,20 @@ function toRole(row: {
 
 export class PostgresRoleStore implements RoleStore {
   constructor(private readonly db: Kysely<RoleDatabase>) {}
+
+  lockAdministration(tenantId: TenantId) {
+    return lockIamAdministration(this.db, tenantId)
+  }
+
+  async lockRole(tenantId: TenantId, id: string): Promise<void> {
+    await this.db
+      .selectFrom('iam.role')
+      .select('id')
+      .where('tenant_id', '=', tenantId)
+      .where('id', '=', id)
+      .forUpdate()
+      .executeTakeFirst()
+  }
 
   async list(tenantId: TenantId): Promise<IamRole[]> {
     const rows = await this.db
@@ -257,12 +274,18 @@ export class PostgresRoleStore implements RoleStore {
 }
 
 export class PostgresRoleUnitOfWork implements RoleUnitOfWork {
-  constructor(private readonly db: Kysely<RoleDatabase>) {}
+  constructor(
+    private readonly db: Kysely<RoleDatabase>,
+    private readonly cleanup: readonly RoleDeletionCleanupFactory[] = [],
+  ) {}
 
   run<T>(work: (transaction: RoleTransaction) => Promise<T>): Promise<T> {
     return this.db.transaction().execute(async (transaction) =>
       work({
         store: new PostgresRoleStore(transaction),
+        deletionCleanup: this.cleanup.map((create) =>
+          create(createTransactionConnection(transaction)),
+        ),
         record: async (context, action, entityId, before, after) => {
           await new PostgresAuditWriter(transaction).append({
             context,

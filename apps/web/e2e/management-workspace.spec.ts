@@ -1,6 +1,11 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 
 import { defaultEffectiveBrand } from '@jingwei/module-branding/shared'
+import {
+  changeRoleMembersSchema,
+  clearRoleMembersSchema,
+  type RoleMember,
+} from '@jingwei/module-iam/shared'
 import type { NavigationNode, NavigationResponse } from '@jingwei/module-navigation/shared'
 
 const id = (value: number) => '00000000-0000-7000-8000-' + String(value).padStart(12, '0')
@@ -561,4 +566,352 @@ test('dictionary tree supports keyboard expansion and preserves selection on cat
   await search.fill('')
   await expect(category).toHaveAttribute('aria-expanded', 'false')
   await expect(type).toHaveCount(0)
+})
+
+test('protected role deletion remains discoverable across detail tabs', async ({ page }) => {
+  await page.goto('/iam/roles')
+  await page.getByRole('tab', { name: '功能权限', exact: true }).click()
+  await page.getByRole('button', { name: '更多操作', exact: true }).click()
+  await expect(
+    page.getByRole('menuitem', { name: '删除角色（系统角色不可删除）', exact: true }),
+  ).toBeDisabled()
+})
+
+test('user deletion explains disable and organization prerequisites', async ({ page }) => {
+  await page.goto('/iam/users')
+  await page.getByRole('button', { name: '更多操作', exact: true }).click()
+  await expect(
+    page.getByRole('menuitem', { name: '删除用户（请先禁用账号）', exact: true }),
+  ).toBeDisabled()
+  await page.keyboard.press('Escape')
+  await page.route('**/api/v1/iam/users', (route) =>
+    route.fulfill({
+      json: {
+        users: [
+          {
+            id: id(20),
+            username: 'member',
+            displayName: '组织成员',
+            email: null,
+            phone: null,
+            status: 'DISABLED',
+            lastLoginAt: null,
+            createdAt: now,
+            roleCount: 0,
+          },
+        ],
+      },
+    }),
+  )
+  await page.route('**/api/v1/iam/users/*/deletion', (route) =>
+    route.fulfill({ json: { allowed: false, reason: '用户仍有关联的组织或岗位，请先解除关联' } }),
+  )
+  await page.reload()
+  await page.getByRole('button', { name: '更多操作', exact: true }).click()
+  await expect(
+    page.getByRole('menuitem', { name: /删除用户（用户仍有关联的组织或岗位/ }),
+  ).toBeDisabled()
+})
+
+test('disabled user deletion confirms permanence, supports cancel and selects the next user', async ({
+  page,
+}) => {
+  let deleted = false
+  const target = {
+    id: id(20),
+    username: 'cleanup',
+    displayName: '待清理用户',
+    email: null,
+    phone: null,
+    status: 'DISABLED',
+    lastLoginAt: null,
+    createdAt: now,
+    roleCount: 0,
+  }
+  const next = {
+    ...target,
+    id: id(21),
+    username: 'next',
+    displayName: '下一个用户',
+    status: 'ACTIVE',
+  }
+  await page.route('**/api/v1/iam/users', (route) =>
+    route.fulfill({ json: { users: deleted ? [next] : [target, next] } }),
+  )
+  await page.route('**/api/v1/iam/users/*/deletion', (route) =>
+    route.fulfill({ json: { allowed: true, reason: null } }),
+  )
+  await page.route('**/api/v1/iam/users/' + target.id, (route) => {
+    expect(route.request().method()).toBe('DELETE')
+    deleted = true
+    return route.fulfill({ json: { id: target.id } })
+  })
+  await page.goto('/iam/users')
+  await page.getByRole('tab', { name: '账号安全', exact: true }).click()
+  await page.getByRole('button', { name: '更多操作', exact: true }).click()
+  await page.getByRole('menuitem', { name: '删除用户', exact: true }).click()
+  await expect(page.getByRole('alertdialog')).toContainText('此操作不可恢复')
+  await page.getByRole('button', { name: '取消', exact: true }).click()
+  expect(deleted).toBe(false)
+  await page.getByRole('button', { name: '更多操作', exact: true }).click()
+  await page.getByRole('menuitem', { name: '删除用户', exact: true }).click()
+  await page.getByRole('button', { name: '永久删除', exact: true }).click()
+  await expect(page.getByRole('heading', { name: '下一个用户', exact: true })).toBeVisible()
+  await expect(page.getByRole('button', { name: /待清理用户 cleanup/ })).toHaveCount(0)
+  expect(deleted).toBe(true)
+})
+
+test('role deletion from permissions tab explains grant cleanup and handles an empty list', async ({
+  page,
+}) => {
+  let deleted = false
+  const target = { ...role, isSystem: false, assignmentCount: 0 }
+  await page.route('**/api/v1/iam/roles', (route) =>
+    route.fulfill({ json: { roles: deleted ? [] : [target] } }),
+  )
+  await page.route('**/api/v1/iam/roles/' + target.id, (route) => {
+    expect(route.request().method()).toBe('DELETE')
+    deleted = true
+    return route.fulfill({ json: { id: target.id } })
+  })
+  await page.goto('/iam/roles')
+  await page.getByRole('tab', { name: '功能权限', exact: true }).click()
+  await page.getByRole('button', { name: '更多操作', exact: true }).click()
+  await page.getByRole('menuitem', { name: '删除角色', exact: true }).click()
+  await expect(page.getByRole('alertdialog')).toContainText('功能权限和导航授权将一并清理')
+  await page.getByRole('button', { name: '永久删除', exact: true }).click()
+  await expect(page.getByRole('button', { name: '更多操作', exact: true })).toHaveCount(0)
+  expect(deleted).toBe(true)
+})
+
+async function mockRoleMembers(page: Page, initial: RoleMember[]) {
+  let members = [...initial],
+    version = 1,
+    conflict = false
+  const calls: string[] = []
+  const available: RoleMember = {
+    id: id(222),
+    username: 'candidate',
+    displayName: '可添加用户',
+    status: 'ACTIVE',
+  }
+  const snapshot = () => version.toString(16).padStart(64, '0')
+  await page.route('**/api/v1/iam/roles', (route) =>
+    route.fulfill({
+      json: { roles: [{ ...role, isSystem: false, assignmentCount: members.length }] },
+    }),
+  )
+  await page.route('**/api/v1/iam/roles/' + role.id + '/**', async (route) => {
+    const url = new URL(route.request().url()),
+      path = url.pathname
+    const candidateQuery = path.endsWith('/user-candidates')
+    if (route.request().method() === 'GET' && (candidateQuery || path.endsWith('/users'))) {
+      const pageNumber = Number(url.searchParams.get('page') ?? 1),
+        pageSize = Number(url.searchParams.get('pageSize') ?? 20)
+      const search = (url.searchParams.get('search') ?? '').toLowerCase()
+      const source = candidateQuery
+        ? members.some((member) => member.id === available.id)
+          ? []
+          : [available]
+        : members
+      const filtered = source.filter((member) =>
+        (member.username + ' ' + member.displayName).toLowerCase().includes(search),
+      )
+      return route.fulfill({
+        json: {
+          members: filtered.slice((pageNumber - 1) * pageSize, pageNumber * pageSize),
+          total: filtered.length,
+          assignmentCount: members.length,
+          snapshot: snapshot(),
+          page: pageNumber,
+          pageSize,
+        },
+      })
+    }
+    if (route.request().method() !== 'POST' || !path.includes('/users')) return route.fallback()
+    const clearing = path.endsWith('/clear')
+    const input = clearing
+      ? clearRoleMembersSchema.parse(route.request().postDataJSON())
+      : changeRoleMembersSchema.parse(route.request().postDataJSON())
+    calls.push(clearing ? 'clear' : path.endsWith('/remove') ? 'remove' : 'add')
+    if (conflict || input.expectedSnapshot !== snapshot()) {
+      conflict = false
+      version += 1
+      members.push({
+        id: id(223),
+        username: 'new-member',
+        displayName: '并发加入用户',
+        status: 'ACTIVE',
+      })
+      return route.fulfill({
+        status: 409,
+        json: {
+          code: 'IAM_ROLE_MEMBERS_CONFLICT',
+          message: '角色成员已变化，请刷新列表后重新确认',
+          requestId: id(999),
+        },
+      })
+    }
+    const before = members
+    const userIds = clearing
+      ? []
+      : changeRoleMembersSchema.parse(route.request().postDataJSON()).userIds
+    if (clearing) members = []
+    else {
+      if (path.endsWith('/remove'))
+        members = members.filter((member) => !userIds.includes(member.id))
+      else if (userIds.includes(available.id)) members = [...members, available]
+    }
+    version += 1
+    const changedIds =
+      calls.at(-1) === 'add'
+        ? [available.id]
+        : before
+            .filter((member) => !members.some((current) => current.id === member.id))
+            .map((member) => member.id)
+    return route.fulfill({
+      json: {
+        assignmentCount: members.length,
+        affectedCount: changedIds.length,
+        snapshot: snapshot(),
+        affectsCurrentUser: changedIds.includes(id(200)),
+      },
+    })
+  })
+  return {
+    calls,
+    conflictNext: () => {
+      conflict = true
+    },
+  }
+}
+
+const roleMembers: RoleMember[] = [
+  { id: id(220), username: 'active-member', displayName: '正常成员', status: 'ACTIVE' },
+  { id: id(221), username: 'disabled-member', displayName: '禁用成员', status: 'DISABLED' },
+]
+
+test('role members support single removal, batch add and full clearing despite a search filter', async ({
+  page,
+}, testInfo) => {
+  const fixture = await mockRoleMembers(page, roleMembers)
+  await page.goto('/iam/roles')
+  await page.getByRole('tab', { name: '已分配用户（2）', exact: true }).click()
+  const panel = page.getByRole('region', { name: '角色已分配用户' })
+  await expect(panel.getByText('禁用成员', { exact: true })).toBeVisible()
+  await expect(panel.getByRole('table', { name: '角色已分配用户列表', exact: true })).toBeVisible()
+  await expect(panel.locator('[data-vean-table-root]')).toHaveCount(1)
+  await page.screenshot({ path: testInfo.outputPath('role-members.png'), animations: 'disabled' })
+  await panel.getByRole('button', { name: '解除 正常成员 的角色分配' }).click()
+  await page.getByRole('button', { name: '解除分配', exact: true }).click()
+  await expect(page.getByRole('tab', { name: '已分配用户（1）', exact: true })).toBeVisible()
+  await panel.getByRole('button', { name: '添加用户', exact: true }).click()
+  await page.getByRole('checkbox', { name: '选择本页候选用户', exact: true }).check()
+  await page.getByRole('button', { name: '添加选中（1）', exact: true }).click()
+  await expect(panel.getByText('可添加用户', { exact: true })).toBeVisible()
+  await expect(page.getByRole('dialog', { name: '添加角色用户', exact: true })).not.toBeVisible()
+  await expect(page.getByRole('tab', { name: '已分配用户（2）', exact: true })).toBeVisible()
+  await panel.getByRole('textbox', { name: '搜索已分配用户' }).fill('disabled')
+  await panel.getByRole('button', { name: '搜索', exact: true }).click()
+  await expect(panel.getByText('可添加用户', { exact: true })).toHaveCount(0)
+  await panel.getByRole('button', { name: '解除全部分配', exact: true }).click()
+  await expect(page.getByRole('alertdialog')).toContainText('全部 2 位用户')
+  await expect(page.getByRole('alertdialog')).toContainText('不受当前搜索或分页影响')
+  await page.getByRole('alertdialog').getByRole('button', { name: '取消', exact: true }).click()
+  await expect(page.getByRole('alertdialog')).toHaveCount(0)
+  expect(fixture.calls).toEqual(['remove', 'add'])
+  await panel.getByRole('button', { name: '解除全部分配', exact: true }).click()
+  await page
+    .getByRole('alertdialog')
+    .getByRole('button', { name: '解除全部分配', exact: true })
+    .click()
+  await expect(page.getByRole('tab', { name: '已分配用户（0）', exact: true })).toBeVisible()
+  expect(fixture.calls).toEqual(['remove', 'add', 'clear'])
+})
+
+test('role member batch selection spans pages and stale clearing requires a new confirmation', async ({
+  page,
+}) => {
+  const many = Array.from({ length: 21 }, (_, index) => ({
+    id: id(300 + index),
+    username: 'user' + String(index).padStart(2, '0'),
+    displayName: `成员${index}`,
+    status: 'ACTIVE' as const,
+  }))
+  const fixture = await mockRoleMembers(page, many)
+  await page.goto('/iam/roles')
+  await page.getByRole('tab', { name: '已分配用户（21）', exact: true }).click()
+  const panel = page.getByRole('region', { name: '角色已分配用户' })
+  await panel.getByRole('checkbox', { name: '选择本页用户', exact: true }).check()
+  await expect(panel.getByRole('button', { name: '解除选中（20）', exact: true })).toBeEnabled()
+  await panel.getByRole('button', { name: '下一页', exact: true }).click()
+  await expect(panel.getByText('成员20', { exact: true })).toBeVisible()
+  await panel.getByRole('checkbox', { name: '选择本页用户', exact: true }).check()
+  await expect(panel.getByRole('button', { name: '解除选中（21）', exact: true })).toBeEnabled()
+  await panel.getByRole('button', { name: '解除全部分配', exact: true }).click()
+  fixture.conflictNext()
+  await page
+    .getByRole('alertdialog')
+    .getByRole('button', { name: '解除全部分配', exact: true })
+    .click()
+  await expect(panel.getByRole('alert')).toContainText('请刷新列表后重新确认')
+  await expect(page.getByRole('alertdialog')).toHaveCount(0)
+  await expect(page.getByRole('tab', { name: '已分配用户（22）', exact: true })).toBeVisible()
+  await expect(panel.getByRole('button', { name: '解除选中（0）', exact: true })).toBeDisabled()
+  await panel.getByRole('button', { name: '解除全部分配', exact: true }).click()
+  await expect(page.getByRole('alertdialog')).toContainText('全部 22 位用户')
+  await page
+    .getByRole('alertdialog')
+    .getByRole('button', { name: '解除全部分配', exact: true })
+    .click()
+  await expect(page.getByRole('tab', { name: '已分配用户（0）', exact: true })).toBeVisible()
+})
+
+test('role viewers can inspect members while membership writes require both management permissions', async ({
+  page,
+}) => {
+  await mockRoleMembers(page, roleMembers)
+  await page.route('**/api/v1/iam/session', (route) =>
+    route.fulfill({
+      json: {
+        authenticated: true,
+        permissions: ['iam.role.view', 'iam.role.manage'],
+        user: { id: id(200), tenantId: id(201), displayName: '角色管理员', avatarUrl: null },
+      },
+    }),
+  )
+  await page.goto('/iam/roles')
+  await page.getByRole('tab', { name: '已分配用户（2）', exact: true }).click()
+  const panel = page.getByRole('region', { name: '角色已分配用户' })
+  await expect(panel.getByText('正常成员', { exact: true })).toBeVisible()
+  await expect(panel.getByRole('button', { name: '添加用户', exact: true })).toHaveCount(0)
+  await expect(panel.getByText('成员变更需要同时具有管理角色和管理用户权限。')).toBeVisible()
+})
+
+test('changing current user membership reloads the workspace permissions', async ({ page }) => {
+  await mockRoleMembers(page, [
+    { id: id(200), username: 'self', displayName: '当前用户', status: 'ACTIVE' },
+  ])
+  await page.goto('/iam/roles')
+  await page.getByRole('tab', { name: '已分配用户（1）', exact: true }).click()
+  await page.route('**/api/v1/iam/session', (route) =>
+    route.fulfill({
+      json: {
+        authenticated: true,
+        permissions: ['iam.role.view'],
+        user: { id: id(200), tenantId: id(201), displayName: '当前用户', avatarUrl: null },
+      },
+    }),
+  )
+  await page.getByRole('button', { name: '解除全部分配', exact: true }).click()
+  const reloaded = page.waitForEvent('load')
+  await page
+    .getByRole('alertdialog')
+    .getByRole('button', { name: '解除全部分配', exact: true })
+    .click()
+  await reloaded
+  await page.getByRole('tab', { name: '已分配用户（0）', exact: true }).click()
+  const panel = page.getByRole('region', { name: '角色已分配用户' })
+  await expect(panel.getByText('尚未分配用户', { exact: true })).toBeVisible()
+  await expect(panel.getByRole('button', { name: '添加用户', exact: true })).toHaveCount(0)
 })

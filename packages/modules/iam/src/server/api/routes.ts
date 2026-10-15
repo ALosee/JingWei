@@ -20,6 +20,7 @@ import type {
   UpdateAccountProfile,
 } from '../application/account-profile.js'
 import type { AuthenticateUser } from '../application/authenticate-user.js'
+import type { ManageRoleMembers } from '../application/manage-role-members.js'
 import type { ManageIamRoles } from '../application/manage-roles.js'
 import type { ManageIamUsers } from '../application/manage-users.js'
 import type { ReadSessionStatus } from '../application/read-session-status.js'
@@ -39,6 +40,7 @@ export function createIamRoutes(dependencies: {
   readonly updateAccount: Pick<UpdateAccountProfile, 'execute'>
   readonly changePassword: Pick<ChangeAccountPassword, 'execute'>
   readonly readAccountRoles: Pick<ReadAccountRoles, 'execute'>
+  readonly roleMembers: Pick<ManageRoleMembers, 'list' | 'add' | 'remove' | 'clear'>
   readonly manageRoles: Pick<
     ManageIamRoles,
     | 'list'
@@ -52,7 +54,15 @@ export function createIamRoutes(dependencies: {
   >
   readonly manageUsers: Pick<
     ManageIamUsers,
-    'list' | 'get' | 'create' | 'update' | 'resetPassword' | 'listRoles' | 'replaceRoles'
+    | 'list'
+    | 'get'
+    | 'create'
+    | 'update'
+    | 'resetPassword'
+    | 'listRoles'
+    | 'replaceRoles'
+    | 'remove'
+    | 'deletionStatus'
   >
   readonly secureCookies: boolean
   readonly logger: AuthenticationLogger
@@ -257,6 +267,57 @@ export function createIamRoutes(dependencies: {
       200,
     ),
   )
+  app.openapi(iamApiRoutes.listRoleMembers, async (context) =>
+    context.json(
+      await dependencies.roleMembers.list(
+        requireAuth(context),
+        context.req.valid('param').roleId,
+        context.req.valid('query'),
+      ),
+      200,
+    ),
+  )
+  app.openapi(iamApiRoutes.listRoleMemberCandidates, async (context) =>
+    context.json(
+      await dependencies.roleMembers.list(
+        requireAuth(context),
+        context.req.valid('param').roleId,
+        context.req.valid('query'),
+        true,
+      ),
+      200,
+    ),
+  )
+  app.openapi(iamApiRoutes.addRoleMembers, async (context) =>
+    context.json(
+      await dependencies.roleMembers.add(
+        requireAuth(context),
+        context.req.valid('param').roleId,
+        context.req.valid('json'),
+      ),
+      200,
+    ),
+  )
+  app.openapi(iamApiRoutes.removeRoleMembers, async (context) =>
+    context.json(
+      await dependencies.roleMembers.remove(
+        requireAuth(context),
+        context.req.valid('param').roleId,
+        context.req.valid('json'),
+      ),
+      200,
+    ),
+  )
+  app.openapi(iamApiRoutes.clearRoleMembers, async (context) =>
+    context.json(
+      await dependencies.roleMembers.clear(
+        requireAuth(context),
+        context.req.valid('param').roleId,
+        context.req.valid('json'),
+      ),
+      200,
+    ),
+  )
   app.openapi(iamApiRoutes.listPermissionCatalog, async (context) =>
     context.json(await dependencies.manageRoles.listPermissions(requireAuth(context)), 200),
   )
@@ -300,6 +361,24 @@ export function createIamRoutes(dependencies: {
         requireAuth(context),
         context.req.valid('param').userId,
         context.req.valid('json'),
+      ),
+      200,
+    ),
+  )
+  app.openapi(iamApiRoutes.userDeletionStatus, async (context) =>
+    context.json(
+      await dependencies.manageUsers.deletionStatus(
+        requireAuth(context),
+        context.req.valid('param').userId,
+      ),
+      200,
+    ),
+  )
+  app.openapi(iamApiRoutes.deleteUser, async (context) =>
+    context.json(
+      await dependencies.manageUsers.remove(
+        requireAuth(context),
+        context.req.valid('param').userId,
       ),
       200,
     ),

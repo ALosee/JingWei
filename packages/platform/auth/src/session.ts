@@ -1,6 +1,12 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
 
-import type { Kysely, Selectable, Transaction } from 'kysely'
+import {
+  QueryCreator,
+  type QueryExecutorProvider,
+  type Kysely,
+  type Selectable,
+  type Transaction,
+} from 'kysely'
 
 import {
   newSessionId,
@@ -217,13 +223,7 @@ export class PostgresSessionRepository implements SessionRepository {
     revokedAt: Date,
     reason: SessionRevocationReason,
   ): Promise<void> {
-    await this.database
-      .updateTable('platform.auth_session')
-      .set({ revoked_at: revokedAt, revocation_reason: reason })
-      .where('tenant_id', '=', tenantId)
-      .where('user_id', '=', userId)
-      .where('revoked_at', 'is', null)
-      .execute()
+    await revokeUserSessions(this.database, tenantId, userId, revokedAt, reason)
   }
 
   async revokeTenant(
@@ -311,6 +311,23 @@ async function rotateRefreshTokenInTransaction(
     .executeTakeFirstOrThrow()
 
   return { status: 'rotated', session: nextSession }
+}
+
+/** Revoke on an application-owned transaction, atomically with identity changes and audit. */
+export async function revokeUserSessions(
+  executor: QueryExecutorProvider,
+  tenantId: string,
+  userId: string,
+  revokedAt: Date,
+  reason: SessionRevocationReason,
+): Promise<void> {
+  await new QueryCreator<AuthDatabase>({ executor: executor.getExecutor() })
+    .updateTable('platform.auth_session')
+    .set({ revoked_at: revokedAt, revocation_reason: reason })
+    .where('tenant_id', '=', tenantId)
+    .where('user_id', '=', userId)
+    .where('revoked_at', 'is', null)
+    .execute()
 }
 
 export function newOpaqueToken(): string {

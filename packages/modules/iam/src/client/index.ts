@@ -8,6 +8,11 @@ import {
 } from '@jingwei/api-client'
 
 import {
+  roleMemberPageSchema,
+  roleMemberChangeResultSchema,
+  type RoleMemberQuery,
+  type ChangeRoleMembers,
+  type ClearRoleMembers,
   accountProfileSchema,
   accountRolesSchema,
   iamRoleListSchema,
@@ -16,6 +21,8 @@ import {
   loginResultSchema,
   managedUserListSchema,
   managedUserSchema,
+  managedUserRefSchema,
+  userDeletionStatusSchema,
   permissionCatalogSchema,
   rolePermissionListSchema,
   sessionStatusSchema,
@@ -325,6 +332,97 @@ export function replaceIamUserRoles(
       pathParams: { userId },
       body: input,
       schema: userRoleListSchema,
+      ...options,
+    }),
+  )
+}
+
+export function getIamUserDeletionStatus(userId: string, options?: ApiRequestOptions) {
+  return toApiResult(
+    api.client.get('/users/{userId}/deletion', {
+      pathParams: { userId },
+      schema: userDeletionStatusSchema,
+      ...options,
+    }),
+  )
+}
+
+export function deleteIamUser(userId: string, options?: ApiRequestOptions) {
+  return toApiResult(
+    api.client.delete('/users/{userId}', {
+      pathParams: { userId },
+      schema: managedUserRefSchema,
+      ...options,
+    }),
+  )
+}
+
+export function listIamRoleMembers(
+  roleId: string,
+  query: RoleMemberQuery,
+  options?: ApiRequestOptions,
+) {
+  return toApiResult(
+    api.client.get('/roles/{roleId}/users', {
+      pathParams: { roleId },
+      query,
+      schema: roleMemberPageSchema,
+      ...options,
+    }),
+  )
+}
+export function listIamRoleMemberCandidates(
+  roleId: string,
+  query: RoleMemberQuery,
+  options?: ApiRequestOptions,
+) {
+  return toApiResult(
+    api.client.get('/roles/{roleId}/user-candidates', {
+      pathParams: { roleId },
+      query,
+      schema: roleMemberPageSchema,
+      ...options,
+    }),
+  )
+}
+export function addIamRoleMembers(
+  roleId: string,
+  body: ChangeRoleMembers,
+  options?: ApiRequestOptions,
+) {
+  return toApiResult(
+    api.client.post('/roles/{roleId}/users', {
+      pathParams: { roleId },
+      body,
+      schema: roleMemberChangeResultSchema,
+      ...options,
+    }),
+  )
+}
+export function removeIamRoleMembers(
+  roleId: string,
+  body: ChangeRoleMembers,
+  options?: ApiRequestOptions,
+) {
+  return toApiResult(
+    api.client.post('/roles/{roleId}/users/remove', {
+      pathParams: { roleId },
+      body,
+      schema: roleMemberChangeResultSchema,
+      ...options,
+    }),
+  )
+}
+export function clearIamRoleMembers(
+  roleId: string,
+  body: ClearRoleMembers,
+  options?: ApiRequestOptions,
+) {
+  return toApiResult(
+    api.client.post('/roles/{roleId}/users/clear', {
+      pathParams: { roleId },
+      body,
+      schema: roleMemberChangeResultSchema,
       ...options,
     }),
   )

@@ -17,7 +17,11 @@ import type {
 } from '../../shared/index.js'
 import type { IamAccess } from '../public/navigation-access.js'
 import { iamPermissionRequirements } from '../public/permission-requirements.js'
-import type { UserAdminStore, UserAdminUnitOfWork } from './user-admin-store.js'
+import type {
+  UserAdminStore,
+  UserAdminTransaction,
+  UserAdminUnitOfWork,
+} from './user-admin-store.js'
 
 function fail(code: string, message: string, status = 409): never {
   throw new ApplicationError({ code, message, status })
@@ -68,6 +72,7 @@ export class ManageIamUsers {
     const usernameNormalized = normalizeLogin(input.username)
     const emailNormalized = normalizeEmail(input.email)
     return this.work.run(async (tx) => {
+      await tx.store.lockAdministration(context.tenantId)
       if (await tx.store.usernameTaken(context.tenantId, usernameNormalized))
         fail('IAM_USER_USERNAME_CONFLICT', '用户名在租户内已存在')
       if (
@@ -111,6 +116,8 @@ export class ManageIamUsers {
     await this.authorize(context, 'manage')
     const emailNormalized = input.email === undefined ? undefined : normalizeEmail(input.email)
     return this.work.run(async (tx) => {
+      await tx.store.lockAdministration(context.tenantId)
+      await tx.store.lockUser(context.tenantId, id)
       const existing = await tx.store.get(context.tenantId, id)
       if (existing === null) fail('IAM_USER_NOT_FOUND', '用户不存在', 404)
       if (id === context.userId && input.status === 'DISABLED')
@@ -155,6 +162,58 @@ export class ManageIamUsers {
     })
   }
 
+  private async deletionBlocker(context: AuthContext, user: ManagedUser, tx: UserAdminTransaction) {
+    if (user.id === context.userId)
+      return { code: 'IAM_USER_CANNOT_DELETE_SELF', message: '不能删除当前登录账号' }
+    if (user.status !== 'DISABLED')
+      return { code: 'IAM_USER_MUST_BE_DISABLED', message: '请先禁用账号，再执行删除' }
+    for (const references of tx.references) {
+      if (await references.hasReferences(context.tenantId, user.id))
+        return {
+          code: 'IAM_USER_HAS_REFERENCES',
+          message: '用户仍有关联的组织或岗位，请先解除关联',
+        }
+    }
+    return null
+  }
+
+  async deletionStatus(context: AuthContext, id: string) {
+    await this.authorize(context, 'manage')
+    return this.work.run(async (tx) => {
+      await tx.store.lockUser(context.tenantId, id)
+      const user = await tx.store.get(context.tenantId, id)
+      if (user === null) fail('IAM_USER_NOT_FOUND', '用户不存在', 404)
+      const blocker = await this.deletionBlocker(context, user, tx)
+      return { allowed: blocker === null, reason: blocker?.message ?? null }
+    })
+  }
+
+  async remove(context: AuthContext, id: string) {
+    await this.authorize(context, 'manage')
+    return this.work.run(async (tx) => {
+      await tx.store.lockAdministration(context.tenantId)
+      await tx.store.lockUser(context.tenantId, id)
+      const user = await tx.store.get(context.tenantId, id)
+      if (user === null) fail('IAM_USER_NOT_FOUND', '用户不存在', 404)
+      const blocker = await this.deletionBlocker(context, user, tx)
+      if (blocker !== null) fail(blocker.code, blocker.message)
+      await tx.revokeSessions(context, id)
+      await tx.store.deleteUser(context, id)
+      await tx.record(
+        context,
+        'user_deleted',
+        id,
+        {
+          username: user.username,
+          displayName: user.displayName,
+          status: user.status,
+        },
+        null,
+      )
+      return { id }
+    })
+  }
+
   async resetPassword(
     context: AuthContext,
     id: string,
@@ -162,6 +221,8 @@ export class ManageIamUsers {
   ): Promise<void> {
     await this.authorize(context, 'manage')
     await this.work.run(async (tx) => {
+      await tx.store.lockAdministration(context.tenantId)
+      await tx.store.lockUser(context.tenantId, id)
       const existing = await tx.store.get(context.tenantId, id)
       if (existing === null) fail('IAM_USER_NOT_FOUND', '用户不存在', 404)
       if (existing.status === 'DISABLED') fail('IAM_USER_DISABLED', '账号已禁用，无法重置密码')
@@ -186,6 +247,8 @@ export class ManageIamUsers {
   ): Promise<UserRoleList> {
     await this.authorize(context, 'manage')
     return this.work.run(async (tx) => {
+      await tx.store.lockAdministration(context.tenantId)
+      await tx.store.lockUser(context.tenantId, id)
       const existing = await tx.store.get(context.tenantId, id)
       if (existing === null) fail('IAM_USER_NOT_FOUND', '用户不存在', 404)
       const roleIds = [...new Set(input.roleIds)]
@@ -194,7 +257,6 @@ export class ManageIamUsers {
 
       if (
         existing.status === 'ACTIVE' &&
-        id !== context.userId &&
         (await tx.store.userHasActiveManagePermission(context.tenantId, id))
       ) {
         const stillManager =

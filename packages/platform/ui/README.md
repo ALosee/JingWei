@@ -36,7 +36,7 @@ src/
 `components` 内保留 vean 生成的 `SButton`、`SInput` 等上游命名，以便升级时直接比较；
 `src/index.ts` 在包边界导出 `Button`、`Input`、`InputNumber`、`Textarea`、`Switch`、`Segment`、`Select`、
 `Slider`、`Separator`、`SplitterGroup`、`SplitterPanel`、`SplitterResizeHandle`、`Dialog`、`AppShell`、`SplitNav`、`Layout`、`Tabs`、`Tree`、`TreeItem`、`TreeVirtualizer`、`TreeVirtualizerItem`、`TreeMenu`、`TreeNav`、`Menubar`、`Breadcrumb`、`Popover`、
-`PageTabs`、`ConfigProvider`、`ThemeModeSegment` 等简洁名称。不要为了改名去修改生成文件，也不要在业务代码中使用内部 `S*` 名称。
+`PageTabs`、`Table`、`TableRow`、`TableCell`、`Checkbox`、`CheckboxGroup`、`CheckboxCard`、`CheckboxCardGroup`、`Empty`、`ConfigProvider`、`ThemeModeSegment` 等简洁名称。不要为了改名去修改生成文件，也不要在业务代码中使用内部 `S*` 名称。
 
 `ThemeModeSegment` 使用 Provider 的明暗模式上下文，提供系统、浅色和深色图标选项；
 默认隐藏文字但保留无障碍名称，可用 `showLabel` 显示文字。Web 壳负责将上下文模式同步到当前账号的外观偏好。
@@ -58,6 +58,14 @@ Vean 的颜色通道不保存表面透明度，本地主题适配器为其余语
 通过 `@jingwei/ui/theme-unocss` 的 UnoCSS postprocess 与工具类透明度相乘；边框、输入框和蒙层
 继续使用引擎原有透明度规则。Provider 与 ThemeScope 生成同样的明暗透明度变量，并显式恢复
 未覆盖角色的透明度，保证局部预览不继承外部主题的透明状态。已保存的 `transparent` 无需迁移。
+
+## Table
+
+Table、Checkbox 和 Empty 完整组件族通过固定的 vean 0.50.0 CLI 拉取，保留 `components/table`、`components/checkbox`、`components/empty` 与对应 styles 的原生目录和内部 `S*` 名称。`Table` 使用 `@vean/aria/table` 的 TableCompact 与 headless engine，组件自身负责列配置、选中、排序、过滤和语义 DOM；业务模块只从 `@jingwei/ui` 导入。行数据、列配置和单元格 slots 的泛型由公共类型门面保留。
+
+服务端分页的业务组合应将当前页数据交给 Table；若需要跨页选择，在模块自有状态中合并当前页的 `update:selected`，不能把表头全选当作全租户或全角色选择。业务请求仍由 Soybean Fetch lifecycle 与 `useApiRequestState` 驱动，上游 `useTable` / `usePaginatedTable` 源文件保留在组件族内部，不导出为业务请求入口。Table 的 selection slots 可以组合本地 Checkbox 覆盖业务标签与禁用状态，Empty slot 可以覆盖业务空状态。
+
+本地仅做 Oxfmt 和严格 TypeScript/ESLint 适配：列 helper 保留行类型泛型，Empty slot 返回 VNodeChild，异步回调显式等待，缺省多选模式交给 TableCompact；原生 props、slots 和交互保持兼容，未复制或修改 headless 内部实现。交互测试覆盖受控选择、混合选中态、键盘激活、排序语义、行 slots 与空状态，角色成员页浏览器测试验证跨页勾选和清空流程。
 
 ## 新增或更新组件
 

@@ -12,6 +12,7 @@ import {
   UpdateAccountProfile,
 } from './application/account-profile.js'
 import { AuthenticateUser } from './application/authenticate-user.js'
+import { ManageRoleMembers } from './application/manage-role-members.js'
 import { ManageIamRoles } from './application/manage-roles.js'
 import { ManageIamUsers } from './application/manage-users.js'
 import { ReadPermissionCatalog } from './application/permission-catalog.js'
@@ -20,6 +21,7 @@ import { SessionLifecycle } from './application/session-lifecycle.js'
 import { PostgresAccountStore } from './infrastructure/account-store.pg.js'
 import { PostgresCredentialStore, type IamDatabase } from './infrastructure/credential-reader.pg.js'
 import { PostgresCurrentUserReader } from './infrastructure/current-user-reader.pg.js'
+import { PostgresRoleMemberUnitOfWork } from './infrastructure/role-member-store.pg.js'
 import { PostgresRoleStore, PostgresRoleUnitOfWork } from './infrastructure/role-store.pg.js'
 import {
   PostgresUserAdminStore,
@@ -27,8 +29,14 @@ import {
 } from './infrastructure/user-admin-store.pg.js'
 import type { OrganizationalScopeFacts } from './public/authorization.js'
 import { createIamAccess } from './public/create-access.js'
+import type {
+  UserDeletionReferencesFactory,
+  RoleDeletionCleanupFactory,
+} from './public/identity-lifecycle.js'
 
 export interface IamServerModuleDependencies {
+  readonly userDeletionReferences?: readonly UserDeletionReferencesFactory[]
+  readonly roleDeletionCleanup?: readonly RoleDeletionCleanupFactory[]
   readonly organizationalScopeFacts?: OrganizationalScopeFacts
 }
 
@@ -59,7 +67,7 @@ export function createIamServerModule(
       const access = createIamAccess(context.database, context.moduleRegistry, context.logger)
       const manageRoles = new ManageIamRoles(
         new PostgresRoleStore(database),
-        new PostgresRoleUnitOfWork(database),
+        new PostgresRoleUnitOfWork(database, dependencies.roleDeletionCleanup),
         access,
         context.moduleRegistry,
         new ReadPermissionCatalog(context.moduleRegistry),
@@ -67,7 +75,7 @@ export function createIamServerModule(
       )
       const manageUsers = new ManageIamUsers(
         new PostgresUserAdminStore(database),
-        new PostgresUserAdminUnitOfWork(database),
+        new PostgresUserAdminUnitOfWork(database, dependencies.userDeletionReferences),
         access,
         passwords,
         context.sessionService,
@@ -91,6 +99,7 @@ export function createIamServerModule(
           }),
           readAccountRoles: new ReadAccountRoles(accounts),
           manageRoles,
+          roleMembers: new ManageRoleMembers(new PostgresRoleMemberUnitOfWork(database), access),
           manageUsers,
           secureCookies: context.config.http.secureCookies,
           logger: context.logger,

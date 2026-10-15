@@ -6,8 +6,12 @@ import type {
   UpdateManagedUser,
   UserRoleAssignment,
 } from '../../shared/index.js'
+import type { UserDeletionReferences } from '../public/identity-lifecycle.js'
 
 export interface UserAdminStore {
+  lockAdministration(tenantId: TenantId): Promise<void>
+  lockUser(tenantId: TenantId, id: string): Promise<void>
+  deleteUser(context: ApplicationContext, id: string): Promise<void>
   list(tenantId: TenantId): Promise<ManagedUser[]>
   get(tenantId: TenantId, id: string): Promise<ManagedUser | null>
   usernameTaken(tenantId: TenantId, usernameNormalized: string): Promise<boolean>
@@ -52,6 +56,8 @@ export interface UserAdminStore {
 
 export interface UserAdminTransaction {
   store: UserAdminStore
+  references: readonly UserDeletionReferences[]
+  revokeSessions(context: ApplicationContext, userId: string): Promise<void>
   record(
     context: ApplicationContext,
     action: string,

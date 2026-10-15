@@ -13,6 +13,8 @@ PostgreSQL/Kysely 的平台运行时、事务和迁移基础。它统一管理�
 | `StaticMigrationProvider` | 向 Kysely Migrator 提供不可变迁移集合            |
 | `./migrations`            | 平台基础表迁移入口                               |
 
+`DatabaseConnection` / `createTransactionConnection(executor)` 将调用方事务 executor 绑定为模块自己的 `QueryCreator<T>`，用于同步 Public API 参与同一事务。该视图不能提交、回滚或销毁连接；事务生命周期仍由 Application Use Case 的 UnitOfWork 拥有。
+
 ## `DatabaseRuntime`
 
 ```ts

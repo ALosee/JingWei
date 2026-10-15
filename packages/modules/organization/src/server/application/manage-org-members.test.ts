@@ -232,6 +232,10 @@ function createManage(
   const work: MembershipUnitOfWork = {
     run<T>(callback: (transaction: MembershipTransaction) => Promise<T>) {
       return callback({
+        identities: {
+          lockUser: (_tenantId, id) => Promise.resolve(knownUsers.has(id)),
+          lockActiveRole: () => Promise.resolve(true),
+        },
         store,
         record: () => Promise.resolve(),
       })
@@ -333,6 +337,10 @@ describe('ManageOrganizationMembers', () => {
     const work: MembershipUnitOfWork = {
       run<T>(callback: (transaction: MembershipTransaction) => Promise<T>) {
         return callback({
+          identities: {
+            lockUser: () => Promise.resolve(true),
+            lockActiveRole: () => Promise.resolve(true),
+          },
           store,
           record: (_c, action, _entityId, _before, after) => {
             if (action === 'member_updated') recorded.push(after)

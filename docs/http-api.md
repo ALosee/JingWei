@@ -207,6 +207,26 @@ Refresh 请求在 Access Token 已过期时仍必须校验 Origin 与 CSRF；刷
 - 必须通过 CSRF 与 Origin 校验；
 - 撤销操作应幂等：重复退出不能恢复或延长任何 token family。
 
+### IAM 角色成员
+
+`GET /api/v1/iam/roles/:roleId/users?page=1&pageSize=20&search=` 要求 `iam.role.view`，返回最小用户投影 `members`、搜索匹配 `total`、全角色 `assignmentCount` 与完整成员集合 `snapshot`；包含已禁用账号。`GET /roles/:roleId/user-candidates` 使用相同分页参数，只返回正常且尚未分配的候选用户，要求下述组合管理权限。
+
+以下写接口同时要求 `iam.role.manage`、`iam.user.manage`、Origin 与 CSRF：
+
+- `POST /api/v1/iam/roles/:roleId/users`：`{ userIds, expectedSnapshot }`，批量添加，最多 500 人；停用角色禁止添加。
+- `POST /api/v1/iam/roles/:roleId/users/remove`：相同输入，解除指定成员与此角色的关系，包含单条解除。
+- `POST /api/v1/iam/roles/:roleId/users/clear`：`{ expectedSnapshot }`，解除整个角色所有分配，覆盖搜索/分页以外的用户。
+
+成功 `200 { affectedCount, assignmentCount, snapshot, affectsCurrentUser }`。过期确认 `409 IAM_ROLE_MEMBERS_CONFLICT`；失去最后一个有效管理员 `409 IAM_USER_LAST_MANAGER`；停用角色新增 `409 IAM_ROLE_DISABLED`；新增用户不存在/跨租户/非正常状态 `400 IAM_USER_NOT_AVAILABLE`；目标角色不存在/跨租户 `404 IAM_ROLE_NOT_FOUND`。参数必须通过 Zod 校验。用户其他角色、角色自身及功能/导航授权均保留，关系修改与审计同事务；没有新表和迁移。Web 遇到快照冲突刷新列表，必须重新确认；变更自己时重新加载工作区。
+
+### IAM 管理删除
+
+- `GET /api/v1/iam/users/:userId/deletion`：要求 `iam.user.manage`，返回 `{ allowed, reason }`；无删除权限不会暴露关联检查结果。
+- `DELETE /api/v1/iam/users/:userId`：要求 `iam.user.manage`、Origin、CSRF，仅删除已禁用且非当前账号、无组织/岗位引用的用户。成功 `200 { id }`；不存在或跨租户 `404 IAM_USER_NOT_FOUND`，自身 `409 IAM_USER_CANNOT_DELETE_SELF`，未禁用 `409 IAM_USER_MUST_BE_DISABLED`，有关联 `409 IAM_USER_HAS_REFERENCES`。撤销全部会话、清理凭据与角色分配、写审计在同一事务完成。
+- `DELETE /api/v1/iam/roles/:roleId`：要求 `iam.role.manage`、Origin、CSRF。系统角色 `409 IAM_ROLE_SYSTEM_PROTECTED`，仍有分配 `409 IAM_ROLE_HAS_ASSIGNMENTS`。启用 Navigation 时，同事务清理角色导航授权；成功 `200 { id }`。
+
+这些删除不清除历史审计，不提供恢复和批量删除。前端预检不替代 DELETE 的服务端重新校验。
+
 ## 6. Navigation 接口
 
 所有接口返回 `Cache-Control: no-store`。管理接口按 Session 隔离租户，不能通过 body/query 指定其他 tenantId。节点完整字段见 [Navigation 模块](../packages/modules/navigation/README.md#节点契约)。

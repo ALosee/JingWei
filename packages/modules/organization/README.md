@@ -43,7 +43,7 @@ Organization 不负责：
 | `organization.user_org`      | IAM user 与组织关系 | tenant/user/org 复合主键          |
 | `organization.user_position` | IAM user 与岗位关系 | tenant/user/position 复合主键     |
 
-跨模块 user ID 不建立到 IAM 表的数据库外键。应用层通过 IAM 公共契约保证主体存在；IAM 用户删除/禁用后的最终一致性处理尚未设计，不能假设当前存在事件消费链路。
+跨模块 user ID 不建立到 IAM 表的数据库外键。应用层通过 IAM 公共契约保证主体存在；IAM 删除用户前通过本模块公开的事务绑定引用检查阻止删除有组织/岗位关系的用户，须先显式解除关联；禁用保留关联。成员/岗位写事务先通过 IAM Public API 锁定用户，避免与删除并发形成悬空引用，不依赖事件消费链路。
 
 `20260916090001_organization_membership_primary.ts` 使用部分唯一索引强制每个租户用户最多一个主组织、最多一个主岗位；写用例在同一事务内先降级旧主项，再设置新主项。
 
@@ -127,6 +127,8 @@ Organization 不负责：
 
 用于后续 Data Scope 执行器；本模块只提供事实，不负责授权决策。
 
+删除门禁工厂：`createOrganizationUserDeletionReferences(connection)`，由 Edition 组合根注入 IAM，在删除事务中分别检查 `user_org` 与 `user_position`，均显式限定租户。
+
 工厂：`createOrganizationQuery(database)`、`createOrganizationManagement(database, registry)`、`createOrganizationSnapshot(database)`、`createOrganizationMembershipQuery(database)`。
 
 ## Web
@@ -145,7 +147,7 @@ Organization 不负责：
 
 成员归属 P0：加入/更新/移出、主组织唯一（partial unique index）、本组织岗位整组替换、主岗位唯一、IAM 用户目录水合、Audit、Web 成员面板与应用层单测。
 
-尚未实现：组织树/成员 PostgreSQL 集成测试、IAM 用户删除后的 membership 消费清理。
+用户删除与组织引用门禁已有真实 PostgreSQL 并发测试；组织树/成员其他集成场景仍待补齐。当前不通过异步消费自动清理成员。
 
 数据范围：`organization.view` 明确允许 `ALL / ORGANIZATION / ORGANIZATION_AND_DESCENDANTS / CUSTOM`，不允许 `SELF`。树、岗位列表、成员列表经 `AuthorizationEvaluator.requireScopedPermission` 校验；成功结果必有显式 scope，不存在 `null = ALL`。受限组织树由 Repository 使用 recursive CTE 只读取 scope 内节点及导航所需祖先，岗位/成员详情则要求目标组织严格落在 scope 内。Organization 实现 IAM 消费方定义的 `OrganizationalScopeFacts`；CUSTOM 组织 ID 在授权保存和求值时都按当前租户及启用状态校验，失效或跨租户 ID 会令授权 fail closed。`GET /scope-options` 只供具备 `iam.role.manage` 的集中式角色管理员读取当前租户全部有效组织，不复用 `organization.view` 数据范围。Edition 生成代码显式注入服务端事实适配器和 Web 选择目录，不使用全局注册器。`organization.manage` 仍为无数据范围功能权限，并通过独立的 `requireUnscopedPermission` 入口检查。
 

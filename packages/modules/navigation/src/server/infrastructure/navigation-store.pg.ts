@@ -1,7 +1,9 @@
-import type { Kysely } from 'kysely'
+import type { Kysely, QueryCreator, QueryExecutorProvider } from 'kysely'
 
 import { PostgresAuditWriter } from '@jingwei/audit'
+import { createTransactionConnection } from '@jingwei/database'
 import { newEntityId, type ApplicationContext, type TenantId } from '@jingwei/kernel'
+import { createIamIdentityReferences } from '@jingwei/module-iam/server/public'
 
 import {
   versionSchema,
@@ -76,7 +78,7 @@ export interface NavigationDatabase {
 }
 
 export class PostgresNavigationStore implements NavigationStore {
-  constructor(private readonly db: Kysely<NavigationDatabase>) {}
+  constructor(private readonly db: QueryCreator<NavigationDatabase>) {}
   async root(tenantId: TenantId, lock = false) {
     let query = this.db
       .selectFrom('navigation.navigation')
@@ -344,22 +346,31 @@ export class PostgresNavigationStore implements NavigationStore {
 export class PostgresNavigationUnitOfWork implements NavigationUnitOfWork {
   constructor(private readonly db: Kysely<NavigationDatabase>) {}
   run<T>(work: (transaction: NavigationTransaction) => Promise<T>): Promise<T> {
-    return this.db.transaction().execute(async (transaction) =>
-      work({
-        store: new PostgresNavigationStore(transaction),
-        record: async (context, action, entityId, before, after) => {
-          await new PostgresAuditWriter(transaction).append({
-            context,
-            module: 'navigation',
-            action,
-            entityType: 'navigation',
-            entityId,
-            result: 'SUCCESS',
-            before,
-            after,
-          })
-        },
-      }),
-    )
+    return this.db
+      .transaction()
+      .execute(async (transaction) => work(createNavigationTransaction(transaction)))
+  }
+}
+
+export function createNavigationTransaction(
+  executor: QueryExecutorProvider,
+): NavigationTransaction {
+  const connection = createTransactionConnection(executor)
+  const database = connection.view<NavigationDatabase>()
+  return {
+    store: new PostgresNavigationStore(database),
+    identities: createIamIdentityReferences(connection),
+    record: async (context, action, entityId, before, after) => {
+      await new PostgresAuditWriter(executor).append({
+        context,
+        module: 'navigation',
+        action,
+        entityType: 'navigation',
+        entityId,
+        result: 'SUCCESS',
+        before,
+        after,
+      })
+    },
   }
 }
