@@ -19,6 +19,12 @@ const scroller = computed(
 const overflow = ref(false)
 const atLeft = ref(true)
 const atRight = ref(true)
+const scrollMask = computed(() => {
+  if (!overflow.value) return undefined
+  const left = atLeft.value ? '#000' : 'transparent'
+  const right = atRight.value ? '#000' : 'transparent'
+  return `linear-gradient(to right, ${left}, #000 24px, #000 calc(100% - 24px), ${right})`
+})
 
 function updateScroll(): void {
   const element = scroller.value
@@ -51,15 +57,11 @@ watch(
 
 <template>
   <div class="flex h-full min-w-0 flex-1 items-center" aria-label="页面标签栏">
-    <ButtonIcon
-      v-if="overflow"
-      icon="lucide:chevron-left"
-      class="shrink-0"
-      :disabled="atLeft"
-      aria-label="向左滚动标签"
-      @click="scroll(-1)"
-    />
-    <div ref="viewport" class="h-full min-w-0 flex-1 overflow-hidden">
+    <div
+      ref="viewport"
+      class="h-full min-w-0 flex-1 overflow-hidden"
+      :style="{ maskImage: scrollMask }"
+    >
       <PageTabs
         v-model="activeValue"
         v-model:items="items"
@@ -70,14 +72,20 @@ watch(
         :ui="{ root: 'h-full min-w-0 overflow-x-auto items-end px-2', item: 'h-8 shrink-0' }"
       />
     </div>
-    <ButtonIcon
-      v-if="overflow"
-      icon="lucide:chevron-right"
-      class="shrink-0"
-      :disabled="atRight"
-      aria-label="向右滚动标签"
-      @click="scroll(1)"
-    />
+    <div v-if="overflow" class="flex h-full shrink-0 items-center gap-1 px-1">
+      <ButtonIcon
+        icon="lucide:chevron-left"
+        :disabled="atLeft"
+        aria-label="向左滚动标签"
+        @click="scroll(-1)"
+      />
+      <ButtonIcon
+        icon="lucide:chevron-right"
+        :disabled="atRight"
+        aria-label="向右滚动标签"
+        @click="scroll(1)"
+      />
+    </div>
     <div class="flex h-full shrink-0 items-center gap-1 border-l border-border px-1">
       <ButtonIcon icon="lucide:rotate-cw" aria-label="刷新当前页面" @click="emit('refresh')" />
       <ButtonIcon

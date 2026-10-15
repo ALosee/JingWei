@@ -215,22 +215,40 @@ test('native mouse and keyboard dragging reorder within zones and cannot pass th
   await expectOrder(page, ['/account/me', '/roles', '/account/b', '/account/a'])
 })
 
-test('overflow buttons scroll the native viewport and actions stay visible', async ({ page }) => {
+test('overflow controls stay on the right and edge fades follow the scroll position', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 640, height: 720 })
   await page.goto('/roles')
   for (let index = 0; index < 10; index++) await visit(page, `/account/${index}`)
   const scroller = page.locator('[data-vean-page-tabs-root]')
+  const viewport = scroller.locator('..')
   const left = page.getByRole('button', { name: '向左滚动标签' })
   const right = page.getByRole('button', { name: '向右滚动标签' })
   await expect(left).toBeVisible()
   await expect(right).toBeVisible()
   await expect(right).toBeDisabled()
+  const viewportBounds = await viewport.boundingBox()
+  const leftBounds = await left.boundingBox()
+  const rightBounds = await right.boundingBox()
+  if (!viewportBounds || !leftBounds || !rightBounds) throw new Error('Tab bounds are missing')
+  expect(leftBounds.x).toBeGreaterThanOrEqual(viewportBounds.x + viewportBounds.width)
+  expect(rightBounds.x).toBeGreaterThanOrEqual(leftBounds.x + leftBounds.width)
+  await expect(viewport).toHaveCSS(
+    'mask-image',
+    /^linear-gradient\(to right, rgba\(0, 0, 0, 0\), .*, rgb\(0, 0, 0\)\)$/,
+  )
   const end = await scroller.evaluate((element) => element.scrollLeft)
   await left.click()
   await expect
     .poll(() => scroller.evaluate((element) => element.scrollLeft))
     .toBeLessThan(end - 100)
   await expect(right).toBeEnabled()
+  await expect(viewport).toHaveCSS(
+    'mask-image',
+    /^linear-gradient\(to right, rgba\(0, 0, 0, 0\), .*, rgba\(0, 0, 0, 0\)\)$/,
+  )
+  await page.screenshot({ path: '/tmp/jingwei-workspace-tabs-overflow-middle.png' })
   await right.click()
   await expect(right).toBeDisabled()
   await expect(page.getByRole('button', { name: '刷新当前页面' })).toBeInViewport()
@@ -239,10 +257,30 @@ test('overflow buttons scroll the native viewport and actions stay visible', asy
     true,
   )
   await page.screenshot({ path: '/tmp/jingwei-workspace-tabs-overflow.png' })
+  await scroller.evaluate((element) => {
+    element.scrollLeft = 0
+  })
+  await expect(left).toBeDisabled()
+  await expect(right).toBeEnabled()
+  await expect(viewport).toHaveCSS(
+    'mask-image',
+    /^linear-gradient\(to right, rgb\(0, 0, 0\), .*, rgba\(0, 0, 0, 0\)\)$/,
+  )
+  await page.screenshot({ path: '/tmp/jingwei-workspace-tabs-overflow-start.png' })
+  await page.emulateMedia({ colorScheme: 'dark' })
+  await page.screenshot({ path: '/tmp/jingwei-workspace-tabs-overflow-dark.png' })
+  await page.setViewportSize({ width: 1920, height: 720 })
+  await expect(left).toHaveCount(0)
+  await expect(right).toHaveCount(0)
+  await expect(viewport).toHaveCSS('mask-image', 'none')
+  await page.setViewportSize({ width: 640, height: 720 })
+  await expect(left).toBeVisible()
+  await expect(right).toBeVisible()
   await selectMenu(page, '/account/9', '关闭所有')
   await expectOrder(page, ['/account/me'])
   await expect(left).toHaveCount(0)
   await expect(right).toHaveCount(0)
+  await expect(viewport).toHaveCSS('mask-image', 'none')
 })
 
 test('refresh reloads only the current page while preserving the URL, pins and tab order', async ({
